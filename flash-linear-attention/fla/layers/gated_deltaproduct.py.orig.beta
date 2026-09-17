@@ -169,17 +169,6 @@ class GatedDeltaProduct(nn.Module):
                 for _ in range(num_householder)
             ]
         )
-
-        # --- PATCH(beta-parametrisation) ---
-        # Upstream: beta = 2*sigmoid(Wh) with bias=False, so beta starts at 1.0
-        # (a projection) and the gradient vanishes as it approaches 2.0 (the
-        # reflection a permutation actually needs). These two attributes let an
-        # experiment swap that out. Defaults are byte-equivalent to upstream.
-        self.beta_mode = "sigmoid"
-        self.beta_bias = nn.Parameter(
-            torch.zeros(num_householder, self.num_heads)
-        )
-        # --- END PATCH ---
         if use_short_conv:
             self.q_conv1ds = nn.ModuleList(
                 [
@@ -334,19 +323,9 @@ class GatedDeltaProduct(nn.Module):
             ks.append(k)
             vs.append(v)
 
-            # --- PATCH(beta-parametrisation) ---
-            raw = self.b_projs[i](hidden_states) + self.beta_bias[i]
-            if self.beta_mode == "clamp":
-                # attains both endpoints exactly; gradient 0.25 inside, 0 out
-                beta = (raw * 0.25 + 0.5).clamp(0.0, 1.0)
-            elif self.beta_mode == "ste":
-                # forward value is the sigmoid, backward gradient is the linear
-                _lin = (raw * 0.25 + 0.5).clamp(0.0, 1.0)
-                _sig = raw.sigmoid()
-                beta = _lin + (_sig - _lin).detach()
-            else:
-                beta = raw.sigmoid()
-            # --- END PATCH ---
+            beta = self.b_projs[i](
+                hidden_states
+            ).sigmoid()  # bs, sequence_length, num_heads
             if attention_mask is not None:
                 beta = beta.mul(attention_mask[:, -hidden_states.shape[1]:, None])
             if self.allow_neg_eigval:

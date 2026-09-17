@@ -63,7 +63,19 @@ class GatedDeltaProductBlock(nn.Module):
                 norm_eps=config.norm_eps,
                 allow_neg_eigval=config.allow_neg_eigval,
                 num_householder=config.num_householder,
-                layer_idx=layer_idx
+                layer_idx=layer_idx,
+                # --- PATCH(adaptive-order) ---------------------------------
+                # Forwarded with getattr defaults, so a config that does not
+                # define these behaves exactly as upstream. Without this the
+                # model would silently build non-adaptive layers even when the
+                # caller asked for adaptive_order.
+                adaptive_order=getattr(config, "adaptive_order", False),
+                gate_mlp_dim=getattr(config, "gate_mlp_dim", 64),
+                gate_per_head=getattr(config, "gate_per_head", False),
+                gate_init_open_bias=getattr(config, "gate_init_open_bias", 4.0),
+                gate_use_state_summary=getattr(config, "gate_use_state_summary", False),
+                gate_hard=getattr(config, "gate_hard", False),
+                # --- END PATCH ---------------------------------------------
             )
         self.mlp_norm = (RMSNorm if config.fuse_norm else nn.RMSNorm)(config.hidden_size, eps=config.norm_eps)
         self.mlp = GatedDeltaProductMLP(
