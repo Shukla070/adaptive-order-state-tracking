@@ -1,0 +1,21 @@
+This repository contains third-party code.
+
+The initial commit of this repository is an unmodified snapshot of
+
+    automl/DeltaProduct   (https://github.com/automl/DeltaProduct)
+    commit d62241a81d07aa32b1b65e7d17377f6a7cd0a5d8
+
+released under the MIT License, which is reproduced in LICENSE and applies to
+that code. It accompanies:
+
+    Siems, J., Carstensen, T., Zela, A., Hutter, F., Pontil, M., Grazzi, R.
+    DeltaProduct: Improving State-Tracking in Linear RNNs via Householder
+    Products. NeurIPS 2025. arXiv:2502.10297.
+
+The vendored copy of flash-linear-attention (flash-linear-attention/) is
+likewise third-party code under its own licence.
+
+Everything committed after the initial commit is the work of this project.
+Modifications to third-party files are marked in-line with the comment
+PATCH(adaptive-order), and the unmodified originals are retained alongside as
+*.orig files.
