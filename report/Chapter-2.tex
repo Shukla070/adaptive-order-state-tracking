@@ -1,0 +1,161 @@
+\begin{center}
+	\chapter{LITERATURE REVIEW}
+\end{center}
+\justifying
+
+\section{Background and Related Works}
+
+\subsection{Linear recurrent architectures}
+
+Attention computes, at every position, a weighted combination over the entire
+preceding sequence, giving cost quadratic in sequence length \cite{attention}.
+Linear attention replaces the softmax with a kernel feature map, which allows the
+summation to be reorganised into a recurrence over a fixed-size state and reduces
+the cost to linear \cite{lineartransformers}. Schlag et al. \cite{fastweight}
+subsequently identified this recurrence as a form of fast weight programming and
+observed that the elementary additive update overwrites capacity as the sequence
+lengthens, motivating an update rule with an explicit removal term.
+
+Structured state-space models arrive at a similar recurrence from a different
+direction, parameterising a linear dynamical system whose transition operator is
+diagonal or diagonal-plus-low-rank \cite{s4}, with selective, input-dependent
+parameterisations following later \cite{mamba}. Gated linear attention
+\cite{gla} introduces data-dependent decay into the linear-attention recurrence
+and supplies hardware-efficient chunked kernels for training it at scale.
+
+\subsection{State tracking and its limits}
+
+The capability that separates these architectures is state tracking. Merrill et
+al. \cite{illusionofstate} show that state-space models whose transition operator
+is diagonal cannot express the composition of non-commuting operations, placing
+them below the complexity class required for permutation tracking regardless of
+depth or width. Shakerinava et al. \cite{diagonalssm} refine this
+characterisation for input-dependent complex-valued diagonal models, and report
+in addition that multi-layer models frequently fail to learn state tracking for
+non-Abelian groups even in configurations where they possess the representational
+capacity to express it, indicating a gap between expressivity and optimisation.
+Liu et al. \cite{shortcuts} establish the complementary result for
+attention-based models, showing that shallow transformers learn shortcut
+solutions to automata that generalise poorly beyond the training length.
+
+Permutation-group word problems are the standard instrument in this line of work.
+Sequences are drawn from an alphabet of permutations and the target at each
+position is the running product. The symmetric group $S_5$ is the usual hard
+case, since it is non-solvable and therefore lies outside what a constant number
+of diagonal layers can express.
+
+\subsection{Householder products as transition operators}
+
+DeltaNet \cite{deltanet} makes the delta-rule recurrence parallelisable over
+sequence length by expressing a chunk of updates as a matrix product, which
+yields a state-transition operator that is a product of rank-one modifications of
+the identity. DeltaProduct \cite{deltaproduct} generalises this by taking $n_h$
+such factors per token, each a generalized Householder transformation
+$H(\beta,k) = I - \beta k k^{\!\top}$ with $\lVert k \rVert = 1$ and
+$\beta \in [0,2]$. The parameter $\beta$ interpolates between three regimes: at
+$\beta = 0$ the factor is the identity, at $\beta = 1$ it is the orthogonal
+projection removing the component along $k$, and at $\beta = 2$ it is the
+reflection in the hyperplane orthogonal to $k$. Since a transposition of two
+coordinates is precisely such a reflection, a permutation expressible as a
+product of $\ell$ transpositions is realisable by $\ell$ reflection factors, and
+DeltaProduct accordingly reports that state-tracking performance on $S_n$
+improves as $n_h$ is raised towards the maximum transposition length. The number
+of factors is a global hyperparameter, and the paper identifies per-token
+adaptive order as an open direction.
+
+\subsection{Adaptive computation}
+
+Allocating a variable amount of computation per input is a well-established
+mechanism. Adaptive Computation Time \cite{act} attaches a halting unit to a
+recurrent step, accumulates halting probabilities until they exceed a threshold,
+and penalises the expected number of steps through a ponder cost. PonderNet
+\cite{pondernet} reformulates the halting distribution probabilistically and
+supplies an unbiased gradient estimator with improved stability. Universal
+Transformers \cite{universaltransformer} apply the same principle to depth in an
+attention model. These mechanisms are mature and are adopted here without
+modification; the contribution of the present work lies elsewhere.
+
+\section{Outcome of Literature Review}
+
+Table \ref{table:survey} summarises the surveyed works along the two axes
+relevant to this project: whether the architecture can express non-commutative
+state transitions, and whether the computation it spends per token is fixed or
+variable.
+
+\begin{table}[ht]
+	\caption{Position of the surveyed architectures} % title of Table
+	\centering
+	\begin{tabular}{P{4.6cm} P{3.4cm} P{3.4cm}}
+		\hline\hline
+		Architecture family & Non-commutative state tracking & Computation per token \\ [0.5ex]
+		\hline
+		Softmax attention \cite{attention} & yes, at quadratic cost & fixed \\
+		Linear attention \cite{lineartransformers, gla} & no & fixed \\
+		Diagonal state-space models \cite{s4, mamba} & no \cite{illusionofstate} & fixed \\
+		Delta rule \cite{fastweight, deltanet} & limited, one factor & fixed \\
+		Householder products \cite{deltaproduct} & yes, for $n_h$ sufficiently large & fixed, global $n_h$ \\
+		Adaptive computation \cite{act, pondernet} & not applicable & variable \\ [1ex]
+		\hline
+	\end{tabular}
+	\label{table:survey}
+\end{table}
+
+Three observations follow from the survey.
+
+First, the expressivity question for this architecture family is settled in
+outline. Diagonal transition operators cannot track non-commutative structure,
+products of rank-one modifications can, and the factor count governs how much
+structure is reachable. What has not been established is the correct value of
+that count for a given task, as distinct from the observation that larger values
+perform better.
+
+Second, the cost accounting in this line of work treats the required expressivity
+as an attribute of the individual symbol, through the identification of the
+factor count with the transposition length of the corresponding permutation. This
+identification is exact for the standard representation of a symmetric group, but
+it is not exact in general, and the discrepancy is not incidental. Chapter 3
+establishes that the requirement is determined by the group generated by the
+whole alphabet, and that the same symbol may require two factors under one
+alphabet and four under another.
+
+Third, adaptive computation supplies a mature halting mechanism that can be
+applied without modification. The open question is therefore not how a model
+should halt, but what the correct allocation is and whether it can be inferred
+from the task without supervision.
+
+\section{Problem Statement}
+
+In linear recurrent architectures whose state-transition operator is a product of
+generalized Householder factors, the number of factors per token, $n_h$, is a
+global hyperparameter applied uniformly to every input symbol. The expressivity
+actually required varies across symbols, so a model with a fixed order must be
+provisioned for the maximum requirement and incurs that cost at every position.
+Furthermore, the required value is not determined by local properties of the
+symbols and cannot be obtained by inspection of the data. The problem addressed
+in this work is to determine the correct per-token requirement, and to make the
+factor count per-token and learned, without loss of accuracy relative to a
+fixed-order model provisioned for the worst case.
+
+\section{Objectives of the Project}
+
+\begin{enumerate}[label={(\arabic*)}]
+	\item To establish the correct expressivity cost model for state transitions
+	expressed as products of generalized Householder factors, and to verify it by
+	explicit construction rather than by optimisation.
+	\item To reproduce the published state-tracking behaviour of the base
+	architecture on the available hardware, so that all subsequent comparisons
+	rest on a validated baseline.
+	\item To design and implement a monotone halting gate that predicts a
+	per-token factor count and satisfies the reachability constraints imposed by
+	the expressivity analysis.
+	\item To train the gate end to end under a penalty on expected computation,
+	with no supervision on the allocation, and to compare the allocation it
+	produces against the allocation derived from ground truth.
+	\item To quantify the reduction in required computation that a correct
+	per-token allocation achieves relative to the cheapest fixed order that solves
+	the same task.
+	\item To characterise the training behaviour of the architecture across
+	alphabets of differing requirement distributions, and to establish a
+	measurement protocol appropriate to that behaviour.
+\end{enumerate}
+\null

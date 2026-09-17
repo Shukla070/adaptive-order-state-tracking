@@ -1,0 +1,31 @@
+# ---- generated / regenerable ----
+# state_tracking/data is ~246 MB of CSVs; regenerate with src/generate_data.py
+state_tracking/data/
+state_tracking/checkpoints/
+wandb/
+results/*.png
+results/*.csv
+
+# ---- environment ----
+.venv/
+venv/
+.python-version
+*.deb
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# ---- editors / os ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---- raw training logs ----
+# Multi-MB console logs from long runs. Every figure quoted in the project
+# documents is taken from the JSON in results/, which is committed.
+results_S5_*.log
+nohup.out

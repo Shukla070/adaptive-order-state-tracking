@@ -1,0 +1,188 @@
+%% Bibliography — Adaptive-Order State Transitions in Linear RNNs
+%% All entries verified against arXiv abstract pages and official proceedings pages.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% The base architecture and the delta-rule family
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@inproceedings{deltaproduct,
+  title     = {DeltaProduct: Improving State-Tracking in Linear {RNN}s via Householder Products},
+  author    = {Siems, Julien and Carstensen, Timur and Zela, Arber and Hutter, Frank and Pontil, Massimiliano and Grazzi, Riccardo},
+  booktitle = {Advances in Neural Information Processing Systems 38 (NeurIPS 2025)},
+  year      = {2025},
+  eprint    = {2502.10297},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{deltanet,
+  title     = {Parallelizing Linear Transformers with the Delta Rule over Sequence Length},
+  author    = {Yang, Songlin and Wang, Bailin and Zhang, Yu and Shen, Yikang and Kim, Yoon},
+  booktitle = {Advances in Neural Information Processing Systems 37 (NeurIPS 2024)},
+  year      = {2024},
+  eprint    = {2406.06484},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+@inproceedings{fastweight,
+  title     = {Linear Transformers Are Secretly Fast Weight Programmers},
+  author    = {Schlag, Imanol and Irie, Kazuki and Schmidhuber, J{\"u}rgen},
+  booktitle = {Proceedings of the 38th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {139},
+  pages     = {9355--9366},
+  publisher = {PMLR},
+  year      = {2021},
+  eprint    = {2102.11174},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Linear attention and state-space models
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@inproceedings{attention,
+  title     = {Attention is All you Need},
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, Lukasz and Polosukhin, Illia},
+  booktitle = {Advances in Neural Information Processing Systems 30 (NIPS 2017)},
+  year      = {2017},
+  eprint    = {1706.03762},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+@inproceedings{lineartransformers,
+  title     = {Transformers are {RNN}s: Fast Autoregressive Transformers with Linear Attention},
+  author    = {Katharopoulos, Angelos and Vyas, Apoorv and Pappas, Nikolaos and Fleuret, Fran{\c{c}}ois},
+  booktitle = {Proceedings of the 37th International Conference on Machine Learning (ICML)},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {119},
+  pages     = {5156--5165},
+  publisher = {PMLR},
+  year      = {2020},
+  eprint    = {2006.16236},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{s4,
+  title     = {Efficiently Modeling Long Sequences with Structured State Spaces},
+  author    = {Gu, Albert and Goel, Karan and R{\'e}, Christopher},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  eprint    = {2111.00396},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{mamba,
+  title     = {Mamba: Linear-Time Sequence Modeling with Selective State Spaces},
+  author    = {Gu, Albert and Dao, Tri},
+  booktitle = {First Conference on Language Modeling (COLM)},
+  year      = {2024},
+  eprint    = {2312.00752},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{gla,
+  title     = {Gated Linear Attention Transformers with Hardware-Efficient Training},
+  author    = {Yang, Songlin and Wang, Bailin and Shen, Yikang and Panda, Rameswar and Kim, Yoon},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  eprint    = {2312.06635},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Expressivity and state tracking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@inproceedings{illusionofstate,
+  title     = {The Illusion of State in State-Space Models},
+  author    = {Merrill, William and Petty, Jackson and Sabharwal, Ashish},
+  booktitle = {Proceedings of the 41st International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  eprint    = {2404.08819},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{diagonalssm,
+  title     = {The Expressive Limits of Diagonal {SSM}s for State-Tracking},
+  author    = {Shakerinava, Mehran and Khavari, Behnoush and Ravanbakhsh, Siamak and Chandar, Sarath},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  eprint    = {2603.01959},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{shortcuts,
+  title     = {Transformers Learn Shortcuts to Automata},
+  author    = {Liu, Bingbin and Ash, Jordan T. and Goel, Surbhi and Krishnamurthy, Akshay and Zhang, Cyril},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  eprint    = {2210.10749},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Adaptive computation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@article{act,
+  title   = {Adaptive Computation Time for Recurrent Neural Networks},
+  author  = {Graves, Alex},
+  journal = {arXiv preprint arXiv:1603.08983},
+  year    = {2016},
+  eprint  = {1603.08983},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.NE}
+}
+
+@inproceedings{pondernet,
+  title     = {PonderNet: Learning to Ponder},
+  author    = {Banino, Andrea and Balaguer, Jan and Blundell, Charles},
+  booktitle = {8th ICML Workshop on Automated Machine Learning (AutoML)},
+  year      = {2021},
+  eprint    = {2107.05407},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG}
+}
+
+@inproceedings{universaltransformer,
+  title     = {Universal Transformers},
+  author    = {Dehghani, Mostafa and Gouws, Stephan and Vinyals, Oriol and Uszkoreit, Jakob and Kaiser, {\L}ukasz},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019},
+  eprint    = {1807.03819},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Classical mathematics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@book{geometricalgebra,
+  title     = {Geometric Algebra},
+  author    = {Artin, Emil},
+  publisher = {Interscience Publishers},
+  address   = {New York},
+  year      = {1957},
+  note      = {Standard reference for the Cartan--Dieudonn\'e theorem}
+}
+
+@book{serre,
+  title     = {Linear Representations of Finite Groups},
+  author    = {Serre, Jean-Pierre},
+  publisher = {Springer-Verlag},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {42},
+  year      = {1977}
+}

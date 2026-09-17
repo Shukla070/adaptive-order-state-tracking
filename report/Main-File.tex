@@ -1,0 +1,180 @@
+\documentclass[12pt]{report}
+\usepackage{pdfpages}
+\usepackage{lscape}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    %filecolor=magenta,      
+    urlcolor=black,
+    breaklinks=true,
+   % citecolor=blue,
+}
+\usepackage[nottoc,notlof,notlot]{tocbibind} 
+\usepackage{framed}
+\usepackage{rotfloat}
+\usepackage{subfig}
+\usepackage{graphicx}
+\usepackage{caption} 
+%\captionsetup[table]{skip=10pt}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{verbatim}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage[english]{babel}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{pbox}
+\usepackage{url}
+\usepackage{tkz-graph}
+\usetikzlibrary{arrows}
+\usepackage{array}
+\usepackage{amssymb}
+\providecommand{\checkmark}{\ensuremath{\surd}}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage{ragged2e}
+\usepackage{slashbox}
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+\usepackage{sectsty}
+\usepackage{comment}
+\usepackage{soul}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{chngcntr}
+\usepackage{cancel}
+\usepackage{multirow}
+%\usepackage{subfigure}
+\usepackage[toc,page]{appendix}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage{afterpage}
+\usetikzlibrary{shapes,arrows}
+\graphicspath{ {images/} }
+%\topmargin -23 mm
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords---}} #1}
+%\headheight 8pt
+%\oddsidemargin 0mm
+%\evensidemargin -5mm
+\textwidth 161mm
+\textheight 210mm
+\linespread{1}
+%\footskip = 60pt
+\usepackage{titlesec}
+\chapterfont{\centering}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\renewcommand{\baselinestretch}{1.3} 
+\titleformat{\chapter}[display]   
+{\normalfont\huge\bfseries\centering}{\chaptertitlename\ \thechapter}{10pt}{\Huge\centering}   
+\titlespacing*{\chapter}{0pt}{-50pt}{5pt}
+\usepackage{pdfpages}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage[  
+ top    = 1.5in,
+  bottom = 1in,
+  left   = 1.5in,
+  right  = 1in, 
+  %headsep=5mm,%%% Example
+  %includeheadfoot%%%%%%%%%%%%%%%%%%%%%%%%%%
+  ]{geometry}
+%below code used for page bordering
+\iffalse
+\usepackage{pgf}
+\usepackage{pgfpages}0
+\pgfpagesdeclarelayout{boxed}
+{
+  \edef\pgfpageoptionborder{4pt}
+}
+{
+  \pgfpagesphysicalpageoptions
+  {%
+    logical pages=1,%
+  }
+  \pgfpageslogicalpageoptions{1}
+  {
+    border code=\pgfsetlinewidth{1.5pt}\pgfstroke,%
+    border shrink=\pgfpageoptionborder,%
+    resized width=.95\pgfphysicalwidth,%
+    resized height=.95\pgfphysicalheight,%
+    center=\pgfpoint{.5\pgfphysicalwidth}{.5\pgfphysicalheight}%
+  }%
+}
+\pgfpagesuselayout{boxed}
+\setlength{\parindent}{2cm}
+\usetikzlibrary{calc}
+\usepackage{eso-pic}
+\fi
+
+\begin{document}
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
+\thispagestyle{empty}
+\iffalse
+\AddToShipoutPictureBG*{%
+\begin{tikzpicture}[overlay,remember picture]
+\draw[line width=4pt]
+    ($ (current page.north west) + (1cm,-1cm) $)
+    rectangle
+    ($ (current page.south east) + (-1cm,1cm) $);
+\draw[line width=1.5pt]
+    ($ (current page.north west) + (1.2cm,-1.2cm) $)
+    rectangle
+    ($ (current page.south east) + (-1.2cm,1.2cm) $);
+\end{tikzpicture}
+}
+\fi
+\input{./Coverpage.tex}
+\clearpage
+\thispagestyle{empty}
+
+\input{./Declaration.tex}
+\clearpage
+
+\input{./Certificate.tex}
+\input{./Acknowledgement.tex}
+
+\pagenumbering{roman}
+\input{./Abstract.tex}
+\renewcommand*{\contentsname}{\MakeUppercase{Contents}}
+\renewcommand*{\listfigurename}{\MakeUppercase{List of Figures}}
+\renewcommand*{\listtablename}{\MakeUppercase{List of Tables}}
+\renewcommand{\bibname}{REFERENCES}
+\tableofcontents
+\clearpage
+
+\begingroup
+\addcontentsline{toc}{chapter}{LIST OF FIGURES}
+\listoffigures
+\clearpage
+\endgroup
+
+\begingroup
+\addcontentsline{toc}{chapter}{LIST OF TABLES}
+\listoftables
+\clearpage
+\endgroup
+
+\renewcommand{\chaptername}{CHAPTER}
+% ===================================================Chapter 1===============================================================
+\input{./Chapter-1.tex}
+% ===================================================Chapter 2===============================================================
+\input{./Chapter-2.tex}
+%====================================================Chapter 3===============================================================
+\input{./Chapter-3.tex}
+%====================================================Chapter 4===============================================================
+\input{./Chapter-4.tex}
+%===================================================Chapter5=================================================================
+\input{./Chapter-5.tex}
+
+\bibliographystyle{unsrt}
+\bibliography{ref.bib}
+\newpage
+
+
+\end{document}
