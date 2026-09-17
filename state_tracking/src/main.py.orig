@@ -569,7 +569,6 @@ def train(
         metric_fns["token_accuracy"] = token_accuracy
         metric_fns["sequence_accuracies"] = cumulative_sequence_accuracies
 
-    TRAIN_METRIC_EVERY = 50  # PATCH(adaptive-order): see training loop
     global_step = 0
     best_val_acc = 0.0
 
@@ -590,24 +589,15 @@ def train(
                 target = batch["labels"]
                 with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=enable_mix_precision):
                     output = model(source)
-                    # --- PATCH(adaptive-order) -------------------------------
-                    # Train metrics every TRAIN_METRIC_EVERY steps instead of
-                    # every batch. cumulative_sequence_accuracies loops over all
-                    # k positions and gather_for_metrics forces a GPU sync; doing
-                    # this per batch cost ~98% of epoch wall-clock (22.6 min/epoch
-                    # vs ~23 s of actual work). train_results is only consumed
-                    # once per epoch by reduce_metrics(). Revert: main.py.orig
-                    if global_step % TRAIN_METRIC_EVERY == 0:
-                        predictions, references = accelerator.gather_for_metrics((output, target))
-                        train_results.append(
-                            compute_metrics(
-                                [(predictions, references)],
-                                tokenizer=tokenizer,
-                                metric_fns=metric_fns,
-                                prefix="train",
-                            )
+                    predictions, references = accelerator.gather_for_metrics((output, target))
+                    train_results.append(
+                        compute_metrics(
+                            [(predictions, references)],
+                            tokenizer=tokenizer,
+                            metric_fns=metric_fns,
+                            prefix="train",
                         )
-                    # --- END PATCH -------------------------------------------
+                    )
 
                     target = target[:, :curriculum_idx]
                     output = output[:, :curriculum_idx, :]
@@ -620,7 +610,7 @@ def train(
                 epoch_train_loss += loss.item()
                 n_batches += 1
 
-                if global_step % 100 == 0 and global_step % TRAIN_METRIC_EVERY == 0:
+                if global_step % 100 == 0:
                     log.debug(f"preds: {predictions.argmax(dim=-1)}")
                     log.debug(f"trgts: {references}")
 
