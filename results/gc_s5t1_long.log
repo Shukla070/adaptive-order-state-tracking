@@ -1,0 +1,188 @@
+==============================================================================
+GROUP CLOSURE -- is per-token cost a property of the token?
+==============================================================================
+  arm          tokens    <A>  group  D_max  targets   prediction
+  --------------------------------------------------------------------------
+  S5_c5_t1         25     S5    120      4      120   n_h=2:FAIL  n_h=3:FAIL  n_h=4:solve
+
+  Note A5_c5_3c has MORE tokens than S5_c5_t1 but is predicted
+  easier. If alphabet size drove difficulty it would be the reverse.
+
+------------------------------------------------------------------------------
+ARM S5_c5_t1   25 tokens, generates S5, D_max = 4
+------------------------------------------------------------------------------
+      n_h=2  step       1  loss 4.8711  lr 4.00e-07
+      n_h=2  step    5000  loss 3.9681  lr 1.00e-03
+      n_h=2  step   10000  loss 3.8001  lr 9.99e-04   token 0.0806  seq 0.0000   [0.1h elapsed, 2.1h left]
+      n_h=2  step   15000  loss 3.7902  lr 9.96e-04
+      n_h=2  step   20000  loss 3.7776  lr 9.91e-04   token 0.0865  seq 0.0000   [0.1h elapsed, 1.7h left]
+      n_h=2  step   25000  loss 3.4774  lr 9.84e-04
+      n_h=2  step   30000  loss 2.8766  lr 9.75e-04   token 0.2743  seq 0.0000   [0.2h elapsed, 1.5h left]
+      n_h=2  step   35000  loss 2.6852  lr 9.63e-04
+      n_h=2  step   40000  loss 2.8076  lr 9.50e-04   token 0.3037  seq 0.0000   [0.3h elapsed, 1.4h left]
+      n_h=2  step   45000  loss 2.7468  lr 9.36e-04
+      n_h=2  step   50000  loss 2.6499  lr 9.19e-04   token 0.3198  seq 0.0000   [0.3h elapsed, 1.3h left]
+      n_h=2  step   55000  loss 2.5812  lr 9.01e-04
+      n_h=2  step   60000  loss 2.6173  lr 8.81e-04   token 0.3203  seq 0.0000   [0.4h elapsed, 1.2h left]
+      n_h=2  step   65000  loss 2.4709  lr 8.59e-04
+      n_h=2  step   70000  loss 2.6990  lr 8.36e-04   token 0.3304  seq 0.0000   [0.4h elapsed, 1.2h left]
+      n_h=2  step   75000  loss 2.6494  lr 8.12e-04
+      n_h=2  step   80000  loss 2.5201  lr 7.86e-04   token 0.3328  seq 0.0000   [0.5h elapsed, 1.1h left]
+      n_h=2  step   85000  loss 2.6533  lr 7.59e-04
+      n_h=2  step   90000  loss 2.6662  lr 7.31e-04   token 0.3362  seq 0.0000   [0.6h elapsed, 1.0h left]
+      n_h=2  step   95000  loss 2.6100  lr 7.02e-04
+      n_h=2  step  100000  loss 2.6061  lr 6.73e-04   token 0.3375  seq 0.0000   [0.6h elapsed, 0.9h left]
+      n_h=2  step  105000  loss 2.5972  lr 6.42e-04
+      n_h=2  step  110000  loss 2.6900  lr 6.11e-04   token 0.3401  seq 0.0020   [0.7h elapsed, 0.9h left]
+      n_h=2  step  115000  loss 2.7380  lr 5.80e-04
+      n_h=2  step  120000  loss 2.5978  lr 5.48e-04   token 0.3435  seq 0.0000   [0.8h elapsed, 0.8h left]
+      n_h=2  step  125000  loss 2.6826  lr 5.16e-04
+      n_h=2  step  130000  loss 2.6318  lr 4.84e-04   token 0.3438  seq 0.0000   [0.8h elapsed, 0.7h left]
+      n_h=2  step  135000  loss 2.6794  lr 4.52e-04
+      n_h=2  step  140000  loss 2.7233  lr 4.20e-04   token 0.3436  seq 0.0020   [0.9h elapsed, 0.7h left]
+      n_h=2  step  145000  loss 2.7106  lr 3.89e-04
+      n_h=2  step  150000  loss 2.5296  lr 3.58e-04   token 0.3447  seq 0.0000   [0.9h elapsed, 0.6h left]
+      n_h=2  step  155000  loss 2.5519  lr 3.27e-04
+      n_h=2  step  160000  loss 2.5703  lr 2.98e-04   token 0.3443  seq 0.0000   [1.0h elapsed, 0.6h left]
+      n_h=2  step  165000  loss 2.5716  lr 2.69e-04
+      n_h=2  step  170000  loss 2.6526  lr 2.41e-04   token 0.3477  seq 0.0000   [1.1h elapsed, 0.5h left]
+      n_h=2  step  175000  loss 2.5766  lr 2.14e-04
+      n_h=2  step  180000  loss 2.5285  lr 1.88e-04   token 0.3482  seq 0.0000   [1.1h elapsed, 0.4h left]
+      n_h=2  step  185000  loss 2.6235  lr 1.64e-04
+      n_h=2  step  190000  loss 2.5665  lr 1.41e-04   token 0.3474  seq 0.0020   [1.2h elapsed, 0.4h left]
+      n_h=2  step  195000  loss 2.4653  lr 1.19e-04
+      n_h=2  step  200000  loss 2.6306  lr 9.93e-05   token 0.3484  seq 0.0000   [1.2h elapsed, 0.3h left]
+      n_h=2  step  205000  loss 2.5710  lr 8.10e-05
+      n_h=2  step  210000  loss 2.6435  lr 6.43e-05   token 0.3503  seq 0.0000   [1.3h elapsed, 0.2h left]
+      n_h=2  step  215000  loss 2.5888  lr 4.95e-05
+      n_h=2  step  220000  loss 2.5222  lr 3.65e-05   token 0.3479  seq 0.0039   [1.4h elapsed, 0.2h left]
+      n_h=2  step  225000  loss 2.6027  lr 2.55e-05
+      n_h=2  step  230000  loss 2.4689  lr 1.64e-05   token 0.3496  seq 0.0020   [1.4h elapsed, 0.1h left]
+      n_h=2  step  235000  loss 2.4570  lr 9.22e-06
+      n_h=2  step  240000  loss 2.5919  lr 4.10e-06   token 0.3505  seq 0.0020   [1.5h elapsed, 0.1h left]
+      n_h=2  step  245000  loss 2.6010  lr 1.03e-06
+      n_h=2  step  250000  loss 2.6212  lr 0.00e+00   token 0.3503  seq 0.0000   [1.5h elapsed, 0.0h left]
+    -> n_h=2   token 0.3617   seq 0.0000   (5518s)
+      n_h=3  step       1  loss 4.8718  lr 4.00e-07
+      n_h=3  step    5000  loss 3.5706  lr 1.00e-03
+      n_h=3  step   10000  loss 2.4546  lr 9.99e-04   token 0.3835  seq 0.0039   [0.1h elapsed, 2.0h left]
+      n_h=3  step   15000  loss 2.4653  lr 9.96e-04
+      n_h=3  step   20000  loss 2.2650  lr 9.91e-04   token 0.4144  seq 0.0059   [0.2h elapsed, 1.9h left]
+      n_h=3  step   25000  loss 2.3768  lr 9.84e-04
+      n_h=3  step   30000  loss 2.3302  lr 9.75e-04   token 0.4305  seq 0.0078   [0.2h elapsed, 1.8h left]
+      n_h=3  step   35000  loss 2.0943  lr 9.63e-04
+      n_h=3  step   40000  loss 2.2764  lr 9.50e-04   token 0.4397  seq 0.0098   [0.3h elapsed, 1.7h left]
+      n_h=3  step   45000  loss 2.2437  lr 9.36e-04
+      n_h=3  step   50000  loss 2.1275  lr 9.19e-04   token 0.4478  seq 0.0059   [0.4h elapsed, 1.6h left]
+      n_h=3  step   55000  loss 2.0090  lr 9.01e-04
+      n_h=3  step   60000  loss 2.0961  lr 8.81e-04   token 0.4511  seq 0.0117   [0.5h elapsed, 1.6h left]
+      n_h=3  step   65000  loss 1.9327  lr 8.59e-04
+      n_h=3  step   70000  loss 2.1453  lr 8.36e-04   token 0.4573  seq 0.0039   [0.6h elapsed, 1.5h left]
+      n_h=3  step   75000  loss 2.1168  lr 8.12e-04
+      n_h=3  step   80000  loss 2.0054  lr 7.86e-04   token 0.4568  seq 0.0078   [0.7h elapsed, 1.4h left]
+      n_h=3  step   85000  loss 2.1267  lr 7.59e-04
+      n_h=3  step   90000  loss 2.1518  lr 7.31e-04   token 0.4597  seq 0.0059   [0.7h elapsed, 1.3h left]
+      n_h=3  step   95000  loss 2.0774  lr 7.02e-04
+      n_h=3  step  100000  loss 2.0648  lr 6.73e-04   token 0.4591  seq 0.0117   [0.8h elapsed, 1.2h left]
+      n_h=3  step  105000  loss 2.0982  lr 6.42e-04
+      n_h=3  step  110000  loss 2.1693  lr 6.11e-04   token 0.4609  seq 0.0117   [0.9h elapsed, 1.2h left]
+      n_h=3  step  115000  loss 2.2521  lr 5.80e-04
+      n_h=3  step  120000  loss 2.1004  lr 5.48e-04   token 0.4615  seq 0.0078   [1.0h elapsed, 1.1h left]
+      n_h=3  step  125000  loss 2.2081  lr 5.16e-04
+      n_h=3  step  130000  loss 2.1465  lr 4.84e-04   token 0.4622  seq 0.0098   [1.1h elapsed, 1.0h left]
+      n_h=3  step  135000  loss 2.1492  lr 4.52e-04
+      n_h=3  step  140000  loss 2.1635  lr 4.20e-04   token 0.4641  seq 0.0078   [1.2h elapsed, 0.9h left]
+      n_h=3  step  145000  loss 2.2252  lr 3.89e-04
+      n_h=3  step  150000  loss 2.0103  lr 3.58e-04   token 0.4648  seq 0.0117   [1.2h elapsed, 0.8h left]
+      n_h=3  step  155000  loss 1.9903  lr 3.27e-04
+      n_h=3  step  160000  loss 2.0060  lr 2.98e-04   token 0.4647  seq 0.0059   [1.3h elapsed, 0.7h left]
+      n_h=3  step  165000  loss 2.0707  lr 2.69e-04
+      n_h=3  step  170000  loss 2.1470  lr 2.41e-04   token 0.4633  seq 0.0098   [1.4h elapsed, 0.7h left]
+      n_h=3  step  175000  loss 2.1196  lr 2.14e-04
+      n_h=3  step  180000  loss 2.0108  lr 1.88e-04   token 0.4653  seq 0.0176   [1.5h elapsed, 0.6h left]
+      n_h=3  step  185000  loss 2.1544  lr 1.64e-04
+      n_h=3  step  190000  loss 2.0851  lr 1.41e-04   token 0.4660  seq 0.0078   [1.6h elapsed, 0.5h left]
+      n_h=3  step  195000  loss 1.9612  lr 1.19e-04
+      n_h=3  step  200000  loss 2.1305  lr 9.93e-05   token 0.4657  seq 0.0117   [1.6h elapsed, 0.4h left]
+      n_h=3  step  205000  loss 2.1035  lr 8.10e-05
+      n_h=3  step  210000  loss 2.1326  lr 6.43e-05   token 0.4666  seq 0.0078   [1.7h elapsed, 0.3h left]
+      n_h=3  step  215000  loss 2.0973  lr 4.95e-05
+      n_h=3  step  220000  loss 1.9207  lr 3.65e-05   token 0.4665  seq 0.0098   [1.8h elapsed, 0.2h left]
+      n_h=3  step  225000  loss 2.1078  lr 2.55e-05
+      n_h=3  step  230000  loss 1.9542  lr 1.64e-05   token 0.4684  seq 0.0137   [1.9h elapsed, 0.2h left]
+      n_h=3  step  235000  loss 1.9622  lr 9.22e-06
+      n_h=3  step  240000  loss 2.0897  lr 4.10e-06   token 0.4672  seq 0.0117   [2.0h elapsed, 0.1h left]
+      n_h=3  step  245000  loss 2.1319  lr 1.03e-06
+      n_h=3  step  250000  loss 2.1637  lr 0.00e+00   token 0.4687  seq 0.0098   [2.1h elapsed, 0.0h left]
+    -> n_h=3   token 0.4828   seq 0.0200   (7393s)
+      n_h=4  step       1  loss 4.8700  lr 4.00e-07
+      n_h=4  step    5000  loss 3.4618  lr 1.00e-03
+      n_h=4  step   10000  loss 2.0974  lr 9.99e-04   token 0.4528  seq 0.0039   [0.1h elapsed, 2.6h left]
+      n_h=4  step   15000  loss 2.0894  lr 9.96e-04
+      n_h=4  step   20000  loss 1.8164  lr 9.91e-04   token 0.5051  seq 0.0078   [0.2h elapsed, 2.4h left]
+      n_h=4  step   25000  loss 1.9514  lr 9.84e-04
+      n_h=4  step   30000  loss 1.9298  lr 9.75e-04   token 0.5166  seq 0.0117   [0.3h elapsed, 2.3h left]
+      n_h=4  step   35000  loss 1.7263  lr 9.63e-04
+      n_h=4  step   40000  loss 1.9230  lr 9.50e-04   token 0.5262  seq 0.0156   [0.4h elapsed, 2.2h left]
+      n_h=4  step   45000  loss 1.8680  lr 9.36e-04
+      n_h=4  step   50000  loss 1.8441  lr 9.19e-04   token 0.5268  seq 0.0137   [0.5h elapsed, 2.1h left]
+      n_h=4  step   55000  loss 1.7134  lr 9.01e-04
+      n_h=4  step   60000  loss 1.7836  lr 8.81e-04   token 0.5352  seq 0.0176   [0.6h elapsed, 2.0h left]
+      n_h=4  step   65000  loss 1.6297  lr 8.59e-04
+      n_h=4  step   70000  loss 1.7979  lr 8.36e-04   token 0.5318  seq 0.0137   [0.7h elapsed, 1.9h left]
+      n_h=4  step   75000  loss 1.7688  lr 8.12e-04
+      n_h=4  step   80000  loss 1.7096  lr 7.86e-04   token 0.5304  seq 0.0098   [0.8h elapsed, 1.8h left]
+      n_h=4  step   85000  loss 1.7874  lr 7.59e-04
+      n_h=4  step   90000  loss 1.8536  lr 7.31e-04   token 0.5358  seq 0.0176   [0.9h elapsed, 1.7h left]
+      n_h=4  step   95000  loss 1.7754  lr 7.02e-04
+      n_h=4  step  100000  loss 1.7417  lr 6.73e-04   token 0.5390  seq 0.0156   [1.0h elapsed, 1.6h left]
+      n_h=4  step  105000  loss 1.7866  lr 6.42e-04
+      n_h=4  step  110000  loss 1.8678  lr 6.11e-04   token 0.5421  seq 0.0195   [1.2h elapsed, 1.5h left]
+      n_h=4  step  115000  loss 1.9130  lr 5.80e-04
+      n_h=4  step  120000  loss 1.7385  lr 5.48e-04   token 0.5457  seq 0.0195   [1.3h elapsed, 1.4h left]
+      n_h=4  step  125000  loss 1.8895  lr 5.16e-04
+      n_h=4  step  130000  loss 1.8522  lr 4.84e-04   token 0.5444  seq 0.0195   [1.4h elapsed, 1.3h left]
+      n_h=4  step  135000  loss 1.8193  lr 4.52e-04
+      n_h=4  step  140000  loss 1.8162  lr 4.20e-04   token 0.5461  seq 0.0137   [1.5h elapsed, 1.1h left]
+      n_h=4  step  145000  loss 1.9255  lr 3.89e-04
+      n_h=4  step  150000  loss 1.6722  lr 3.58e-04   token 0.5464  seq 0.0137   [1.6h elapsed, 1.0h left]
+      n_h=4  step  155000  loss 1.6852  lr 3.27e-04
+      n_h=4  step  160000  loss 1.6521  lr 2.98e-04   token 0.5487  seq 0.0234   [1.7h elapsed, 0.9h left]
+      n_h=4  step  165000  loss 1.7311  lr 2.69e-04
+      n_h=4  step  170000  loss 1.8663  lr 2.41e-04   token 0.5500  seq 0.0195   [1.8h elapsed, 0.8h left]
+      n_h=4  step  175000  loss 1.8201  lr 2.14e-04
+      n_h=4  step  180000  loss 1.6841  lr 1.88e-04   token 0.5486  seq 0.0215   [1.9h elapsed, 0.7h left]
+      n_h=4  step  185000  loss 1.8318  lr 1.64e-04
+      n_h=4  step  190000  loss 1.7751  lr 1.41e-04   token 0.5497  seq 0.0234   [2.0h elapsed, 0.6h left]
+      n_h=4  step  195000  loss 1.6486  lr 1.19e-04
+      n_h=4  step  200000  loss 1.8129  lr 9.93e-05   token 0.5504  seq 0.0215   [2.1h elapsed, 0.5h left]
+      n_h=4  step  205000  loss 1.7992  lr 8.10e-05
+      n_h=4  step  210000  loss 1.8066  lr 6.43e-05   token 0.5515  seq 0.0215   [2.2h elapsed, 0.4h left]
+      n_h=4  step  215000  loss 1.7505  lr 4.95e-05
+      n_h=4  step  220000  loss 1.5724  lr 3.65e-05   token 0.5506  seq 0.0215   [2.3h elapsed, 0.3h left]
+      n_h=4  step  225000  loss 1.7601  lr 2.55e-05
+      n_h=4  step  230000  loss 1.5819  lr 1.64e-05   token 0.5515  seq 0.0215   [2.4h elapsed, 0.2h left]
+      n_h=4  step  235000  loss 1.6468  lr 9.22e-06
+      n_h=4  step  240000  loss 1.7633  lr 4.10e-06   token 0.5520  seq 0.0215   [2.5h elapsed, 0.1h left]
+      n_h=4  step  245000  loss 1.7948  lr 1.03e-06
+      n_h=4  step  250000  loss 1.8156  lr 0.00e+00   token 0.5521  seq 0.0234   [2.6h elapsed, 0.0h left]
+    -> n_h=4   token 0.5661   seq 0.0385   (9402s)
+
+==============================================================================
+arm          group  D_max        n_h=2       n_h=3       n_h=4
+------------------------------------------------------------------------------
+S5_c5_t1        S5      4     0.3617 x    0.4828 x    0.5661 x
+==============================================================================
+  LEARNABILITY GAP  S5_c5_t1 n_h=4: capacity sufficient (D=4) but did not train (token 0.5661)
+
+  consistent with the bound        : 2
+  capacity enough but not learned  : 1   (Claim 3 evidence, NOT evidence against Claim 2)
+  solved below the bound           : 0   (none: model survives)
+
+  Caution: a plateau failure and a capacity failure are
+  indistinguishable from the outside. A predicted-fail cell that
+  fails is therefore WEAK evidence on its own. The strong evidence
+  is the paired contrast below, on alphabets one token apart.
+
+==============================================================================
+written: results/gc_s5t1_long.json

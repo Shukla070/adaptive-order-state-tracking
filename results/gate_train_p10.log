@@ -1,0 +1,313 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p100=128.csv   p = 0.1
+  demand      E[D] = 1.300   fixed order must provision 4
+  budget      20000 steps x batch 128, lr 0.001
+  gammas      0, 0.01, 0.03, 0.1   (0 = gate present, never penalised)
+  schedule    penalty off for 4000 steps, then ramped over 4000
+  seeds       1, 2, 3
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+fixed4  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8671
+      step   2000  task 0.0060
+      step   4000  task 0.0034
+      step   6000  task 0.0034
+      step   8000  task 0.0030
+      step  10000  task 0.0022
+      step  12000  task 0.0022
+      step  14000  task 0.0025
+      step  16000  task 0.0023
+      step  18000  task 0.0021
+      step  20000  task 0.0022
+------------------------------------------------------------------------------
+oracle  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8661
+      step   2000  task 0.0180
+      step   4000  task 0.0102
+      step   6000  task 0.0086
+      step   8000  task 0.0055
+      step  10000  task 0.0053
+      step  12000  task 0.0051
+      step  14000  task 0.0055
+      step  16000  task 0.0046
+      step  18000  task 0.0034
+      step  20000  task 0.0044
+------------------------------------------------------------------------------
+learned  gamma 0  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8671  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0062  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0044  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0046  gamma_eff 0.0000  mean n_t 0.000
+      step   8000  task 0.0035  gamma_eff 0.0000  mean n_t 0.000
+      step  10000  task 0.0037  gamma_eff 0.0000  mean n_t 0.000
+      step  12000  task 0.0035  gamma_eff 0.0000  mean n_t 0.000
+      step  14000  task 0.0039  gamma_eff 0.0000  mean n_t 0.000
+      step  16000  task 0.0038  gamma_eff 0.0000  mean n_t 0.000
+      step  18000  task 0.0031  gamma_eff 0.0000  mean n_t 0.000
+      step  20000  task 0.0031  gamma_eff 0.0000  mean n_t 0.000
+------------------------------------------------------------------------------
+learned  gamma 0.01  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8671  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0061  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0047  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0051  gamma_eff 0.0050  mean n_t 2.283
+      step   8000  task 0.0048  gamma_eff 0.0100  mean n_t 1.753
+      step  10000  task 0.0036  gamma_eff 0.0100  mean n_t 1.571
+      step  12000  task 0.0035  gamma_eff 0.0100  mean n_t 1.542
+      step  14000  task 0.0039  gamma_eff 0.0100  mean n_t 1.546
+      step  16000  task 0.0037  gamma_eff 0.0100  mean n_t 1.535
+      step  18000  task 0.0030  gamma_eff 0.0100  mean n_t 1.516
+      step  20000  task 0.0034  gamma_eff 0.0100  mean n_t 1.519
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8671  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0070  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0049  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0067  gamma_eff 0.0150  mean n_t 1.603
+      step   8000  task 0.0045  gamma_eff 0.0300  mean n_t 1.432
+      step  10000  task 0.0038  gamma_eff 0.0300  mean n_t 1.389
+      step  12000  task 0.0033  gamma_eff 0.0300  mean n_t 1.366
+      step  14000  task 0.0040  gamma_eff 0.0300  mean n_t 1.363
+      step  16000  task 0.0036  gamma_eff 0.0300  mean n_t 1.314
+      step  18000  task 0.0027  gamma_eff 0.0300  mean n_t 1.299
+      step  20000  task 0.0028  gamma_eff 0.0300  mean n_t 1.310
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8671  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0068  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0051  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0048  gamma_eff 0.0500  mean n_t 1.307
+      step   8000  task 0.0034  gamma_eff 0.1000  mean n_t 1.305
+      step  10000  task 0.0031  gamma_eff 0.1000  mean n_t 1.296
+      step  12000  task 0.0031  gamma_eff 0.1000  mean n_t 1.294
+      step  14000  task 0.0037  gamma_eff 0.1000  mean n_t 1.306
+      step  16000  task 0.0032  gamma_eff 0.1000  mean n_t 1.305
+      step  18000  task 0.0027  gamma_eff 0.1000  mean n_t 1.294
+      step  20000  task 0.0032  gamma_eff 0.1000  mean n_t 1.306
+------------------------------------------------------------------------------
+fixed4  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8692
+      step   2000  task 0.2473
+      step   4000  task 0.1840
+      step   6000  task 0.1688
+      step   8000  task 0.1239
+      step  10000  task 0.1034
+      step  12000  task 0.0798
+      step  14000  task 0.1057
+      step  16000  task 0.0473
+      step  18000  task 0.0593
+      step  20000  task 0.0634
+------------------------------------------------------------------------------
+oracle  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8725
+      step   2000  task 0.0201
+      step   4000  task 0.0210
+      step   6000  task 0.0090
+      step   8000  task 0.0100
+      step  10000  task 0.0071
+      step  12000  task 0.0046
+      step  14000  task 0.0043
+      step  16000  task 0.0035
+      step  18000  task 0.0045
+      step  20000  task 0.0037
+------------------------------------------------------------------------------
+learned  gamma 0  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8718  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0253  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0106  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0082  gamma_eff 0.0000  mean n_t 0.000
+      step   8000  task 0.0074  gamma_eff 0.0000  mean n_t 0.000
+      step  10000  task 0.0070  gamma_eff 0.0000  mean n_t 0.000
+      step  12000  task 0.0058  gamma_eff 0.0000  mean n_t 0.000
+      step  14000  task 0.0076  gamma_eff 0.0000  mean n_t 0.000
+      step  16000  task 0.0050  gamma_eff 0.0000  mean n_t 0.000
+      step  18000  task 0.0052  gamma_eff 0.0000  mean n_t 0.000
+      step  20000  task 0.0058  gamma_eff 0.0000  mean n_t 0.000
+------------------------------------------------------------------------------
+learned  gamma 0.01  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8718  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0151  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0091  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0080  gamma_eff 0.0050  mean n_t 4.000
+      step   8000  task 0.0086  gamma_eff 0.0100  mean n_t 4.000
+      step  10000  task 0.0056  gamma_eff 0.0100  mean n_t 4.000
+      step  12000  task 0.0051  gamma_eff 0.0100  mean n_t 4.000
+      step  14000  task 0.0081  gamma_eff 0.0100  mean n_t 4.000
+      step  16000  task 0.0063  gamma_eff 0.0100  mean n_t 4.000
+      step  18000  task 0.0057  gamma_eff 0.0100  mean n_t 4.000
+      step  20000  task 0.0052  gamma_eff 0.0100  mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8718  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0159  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0099  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0087  gamma_eff 0.0150  mean n_t 4.000
+      step   8000  task 0.0127  gamma_eff 0.0300  mean n_t 4.000
+      step  10000  task 0.0058  gamma_eff 0.0300  mean n_t 4.000
+      step  12000  task 0.0053  gamma_eff 0.0300  mean n_t 4.000
+      step  14000  task 0.0088  gamma_eff 0.0300  mean n_t 4.000
+      step  16000  task 0.0056  gamma_eff 0.0300  mean n_t 4.000
+      step  18000  task 0.0064  gamma_eff 0.0300  mean n_t 4.000
+      step  20000  task 0.0055  gamma_eff 0.0300  mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8718  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0281  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0122  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0083  gamma_eff 0.0500  mean n_t 4.000
+      step   8000  task 0.0081  gamma_eff 0.1000  mean n_t 4.000
+      step  10000  task 0.0072  gamma_eff 0.1000  mean n_t 4.000
+      step  12000  task 0.0052  gamma_eff 0.1000  mean n_t 4.000
+      step  14000  task 0.0064  gamma_eff 0.1000  mean n_t 4.000
+      step  16000  task 0.0051  gamma_eff 0.1000  mean n_t 4.000
+      step  18000  task 0.0054  gamma_eff 0.1000  mean n_t 4.000
+      step  20000  task 0.0058  gamma_eff 0.1000  mean n_t 4.000
+------------------------------------------------------------------------------
+fixed4  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8639
+      step   2000  task 0.0106
+      step   4000  task 0.0041
+      step   6000  task 0.0028
+      step   8000  task 0.0023
+      step  10000  task 0.0026
+      step  12000  task 0.0023
+      step  14000  task 0.0021
+      step  16000  task 0.0022
+      step  18000  task 0.0021
+      step  20000  task 0.0020
+------------------------------------------------------------------------------
+oracle  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8683
+      step   2000  task 0.0051
+      step   4000  task 0.0042
+      step   6000  task 0.0039
+      step   8000  task 0.0032
+      step  10000  task 0.0036
+      step  12000  task 0.0030
+      step  14000  task 0.0030
+      step  16000  task 0.0032
+      step  18000  task 0.0032
+      step  20000  task 0.0030
+------------------------------------------------------------------------------
+learned  gamma 0  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8681  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0114  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0055  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0038  gamma_eff 0.0000  mean n_t 0.000
+      step   8000  task 0.0050  gamma_eff 0.0000  mean n_t 0.000
+      step  10000  task 0.0042  gamma_eff 0.0000  mean n_t 0.000
+      step  12000  task 0.0032  gamma_eff 0.0000  mean n_t 0.000
+      step  14000  task 0.0030  gamma_eff 0.0000  mean n_t 0.000
+      step  16000  task 0.0032  gamma_eff 0.0000  mean n_t 0.000
+      step  18000  task 0.0035  gamma_eff 0.0000  mean n_t 0.000
+      step  20000  task 0.0034  gamma_eff 0.0000  mean n_t 0.000
+------------------------------------------------------------------------------
+learned  gamma 0.01  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8681  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0098  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0050  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0046  gamma_eff 0.0050  mean n_t 4.000
+      step   8000  task 0.0037  gamma_eff 0.0100  mean n_t 4.000
+      step  10000  task 0.0045  gamma_eff 0.0100  mean n_t 4.000
+      step  12000  task 0.0031  gamma_eff 0.0100  mean n_t 4.000
+      step  14000  task 0.0033  gamma_eff 0.0100  mean n_t 4.000
+      step  16000  task 0.0032  gamma_eff 0.0100  mean n_t 4.000
+      step  18000  task 0.0033  gamma_eff 0.0100  mean n_t 4.000
+      step  20000  task 0.0031  gamma_eff 0.0100  mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8681  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0127  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0056  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0044  gamma_eff 0.0150  mean n_t 4.000
+      step   8000  task 0.0048  gamma_eff 0.0300  mean n_t 4.000
+      step  10000  task 0.0043  gamma_eff 0.0300  mean n_t 4.000
+      step  12000  task 0.0032  gamma_eff 0.0300  mean n_t 4.000
+      step  14000  task 0.0030  gamma_eff 0.0300  mean n_t 4.000
+      step  16000  task 0.0027  gamma_eff 0.0300  mean n_t 4.000
+      step  18000  task 0.0030  gamma_eff 0.0300  mean n_t 4.000
+      step  20000  task 0.0039  gamma_eff 0.0300  mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8681  gamma_eff 0.0000  mean n_t 0.000
+      step   2000  task 0.0086  gamma_eff 0.0000  mean n_t 0.000
+      step   4000  task 0.0040  gamma_eff 0.0000  mean n_t 0.000
+      step   6000  task 0.0040  gamma_eff 0.0500  mean n_t 4.000
+      step   8000  task 0.0030  gamma_eff 0.1000  mean n_t 4.000
+      step  10000  task 0.0034  gamma_eff 0.1000  mean n_t 4.000
+      step  12000  task 0.0026  gamma_eff 0.1000  mean n_t 4.000
+      step  14000  task 0.0028  gamma_eff 0.1000  mean n_t 4.000
+      step  16000  task 0.0029  gamma_eff 0.1000  mean n_t 4.000
+      step  18000  task 0.0031  gamma_eff 0.1000  mean n_t 4.000
+      step  20000  task 0.0026  gamma_eff 0.1000  mean n_t 4.000
+==============================================================================
+arm               seed    token     seq    cost    mae   under   corr
+------------------------------------------------------------------------------
+fixed4               1   0.9998  0.9885   4.000    n/a     n/a    n/a
+oracle               1   0.9996  0.9770   1.298   0.00    0.00   1.00
+learned(g=0)         1   0.9969  0.8815   3.369   2.07    0.00   0.43
+learned(g=0.01)      1   0.9958  0.7220   1.478   0.18    0.00   0.91
+learned(g=0.03)      1   0.9999  0.9910   1.298   0.00    0.00   1.00
+learned(g=0.1)       1   1.0000  0.9970   1.298   0.00    0.00   1.00
+fixed4               2   0.9811  0.7240   4.000    n/a     n/a    n/a
+oracle               2   0.9996  0.9645   1.298   0.00    0.00   1.00
+learned(g=0)         2   0.9995  0.9700   4.000   2.70    0.00   0.00
+learned(g=0.01)      2   0.9996  0.9850   4.000   2.70    0.00   0.00
+learned(g=0.03)      2   0.9995  0.9705   4.000   2.70    0.00   0.00
+learned(g=0.1)       2   0.9993  0.9560   4.000   2.70    0.00   0.00
+fixed4               3   0.9999  0.9875   4.000    n/a     n/a    n/a
+oracle               3   1.0000  0.9985   1.298   0.00    0.00   1.00
+learned(g=0)         3   0.9998  0.9870   4.000   2.70    0.00   0.00
+learned(g=0.01)      3   0.9999  0.9915   4.000   2.70    0.00   0.00
+learned(g=0.03)      3   0.9997  0.9800   4.000   2.70    0.00   0.00
+learned(g=0.1)       3   0.9999  0.9860   4.000   2.70    0.00   0.00
+==============================================================================
+  oracle reference: token 1.0000 at cost 1.298
+
+  gamma = 0   (3 run(s))
+    GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+    allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    !! allocation is FLAT across demands: the gate reached this
+       cost by closing uniformly, not by tracking demand.
+
+  gamma = 0.01   (3 run(s))
+    GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+    allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    !! allocation is FLAT across demands: the gate reached this
+       cost by closing uniformly, not by tracking demand.
+
+  gamma = 0.03   (3 run(s))
+    USEFUL ALLOCATION — oracle accuracy held at cost 1.298 against a fixed cost of 4
+    allocation by true demand — D=1: n_t 1.00 · D=4: n_t 4.00
+
+  gamma = 0.1   (3 run(s))
+    USEFUL ALLOCATION — oracle accuracy held at cost 1.298 against a fixed cost of 4
+    allocation by true demand — D=1: n_t 1.00 · D=4: n_t 4.00
+
+  Cost is required work per token. Path A computes all K factors and
+  multiplies the disabled ones by zero, so none of this is wall-clock.
+
+written: results/gate_train_p10.json

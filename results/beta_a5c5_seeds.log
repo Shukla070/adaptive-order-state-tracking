@@ -1,0 +1,117 @@
+==============================================================================
+BETA PARAMETRISATION -- can we make the failed cells train?
+==============================================================================
+  hypothesis: beta = 2*sigmoid(x) cannot attain 2, and its gradient
+  vanishes as it approaches 2 -- the value a permutation needs.
+  With bias=False it also STARTS at 1.0, the worst possible value.
+
+  cell A5_c5:n_h=2   <A> = A5   D=2   historical (other script): 0.1259
+       note: A5 is the even half of S5, so this cell has NO
+       odd targets and the parity split is undefined on it.
+  modes: sigmoid(bias 0), clamp(bias 2)
+  seeds: 666, 667, 668  (data fixed at seed 666)
+  budget: 20000 steps x batch 128
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed666
+------------------------------------------------------------------------------
+      step      1  loss 4.8687
+      step   5000  loss 3.7125
+      step  10000  loss 3.6401
+      step  15000  loss 3.6473
+      step  20000  loss 3.6140
+    -> token 0.1177   seq 0.0000   (542s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.433  median 1.843  max 1.9982  frac>1.9 0.462
+       |det|: mean 0.5898  median 0.6089  max 0.9962  frac>0.99 0.333   (1.0 = a permutation)
+       parity: EVEN targets 0.1177 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed667
+------------------------------------------------------------------------------
+      step      1  loss 4.8675
+      step   5000  loss 3.6980
+      step  10000  loss 3.6304
+      step  15000  loss 3.6140
+      step  20000  loss 3.6048
+    -> token 0.1237   seq 0.0000   (439s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.116  median 0.923  max 1.9991  frac>1.9 0.333
+       |det|: mean 0.4681  median 0.3260  max 0.9982  frac>0.99 0.333   (1.0 = a permutation)
+       parity: EVEN targets 0.1237 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed668
+------------------------------------------------------------------------------
+      step      1  loss 4.8661
+      step   5000  loss 3.6915
+      step  10000  loss 3.6181
+      step  15000  loss 3.6187
+      step  20000  loss 3.5691
+    -> token 0.1204   seq 0.0000   (437s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.350  median 1.678  max 1.9987  frac>1.9 0.458
+       |det|: mean 0.5784  median 0.5603  max 0.9973  frac>0.99 0.417   (1.0 = a permutation)
+       parity: EVEN targets 0.1204 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:clamp(2):seed666
+------------------------------------------------------------------------------
+      step      1  loss 4.8701
+      step   5000  loss 3.7292
+      step  10000  loss 3.6843
+      step  15000  loss 3.6676
+      step  20000  loss 3.6429
+    -> token 0.1160   seq 0.0000   (439s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.775  median 2.000  max 2.0000  frac>1.9 0.833
+       |det|: mean 0.8139  median 1.0000  max 1.0000  frac>0.99 0.750   (1.0 = a permutation)
+       parity: EVEN targets 0.1160 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:clamp(2):seed667
+------------------------------------------------------------------------------
+      step      1  loss 4.8662
+      step   5000  loss 0.1837
+      step  10000  loss 0.0845
+      step  15000  loss 0.0810
+      step  20000  loss 0.0744
+    -> token 0.9791   seq 0.3055   (443s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.289  median 2.000  max 2.0000  frac>1.9 0.542
+       |det|: mean 0.6754  median 0.6927  max 1.0000  frac>0.99 0.417   (1.0 = a permutation)
+       parity: EVEN targets 0.9791 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:clamp(2):seed668
+------------------------------------------------------------------------------
+      step      1  loss 4.8678
+      step   5000  loss 3.6642
+      step  10000  loss 3.6373
+      step  15000  loss 3.6397
+      step  20000  loss 3.6051
+    -> token 0.1166   seq 0.0000   (454s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.644  median 2.000  max 2.0000  frac>1.9 0.658
+       |det|: mean 0.6616  median 1.0000  max 1.0000  frac>0.99 0.521   (1.0 = a permutation)
+       parity: EVEN targets 0.1166 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+==============================================================================
+cell               mode         token (per seed)              seq   |det|    hist
+------------------------------------------------------------------------------
+A5_c5:2            sigmoid(0)   0.1177 0.1237 0.1204        0.000  0.5603  0.1259
+A5_c5:2            clamp(2)     0.1160 0.9791 0.1166        0.000  1.0000  0.1259
+==============================================================================
+  NOT FIXED against the in-run control.
+  Look at |det| before concluding nothing happened: a mode that
+  reaches |det| = 1.0 exactly is representing permutations even
+  if accuracy has not moved. That is a real mechanistic result
+  and a different claim from 'it trains now'.
+  Next candidates, in order of cost:
+    1. curriculum on the demand mixture (low frac(D=max) first --
+       the trainability table says that regime trains reliably)
+    2. grow K by inserting a beta=0 factor into a trained K-1
+       model -- our construction proof says that embedding is exact
+    3. orthogonality regularisation on the transition matrices
+
+written: results/beta_a5c5_seeds.json

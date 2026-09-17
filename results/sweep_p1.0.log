@@ -1,0 +1,136 @@
+==============================================================================
+CHECKPOINT A — capability at matched compute   (p = 1.0)
+==============================================================================
+  data      S5_limit_to_het_p1000=128.csv   100000 train / 2000 test, k=128
+  demand    E[L] = 4.000   fixed order must provision L_max = 4
+  budget    20000 steps x batch 128, lr 0.001 (constant), seed 666
+  model     1 layer, 12 heads x 32
+
+  -- fixed1 (n_h=1)
+    fixed1     step     1  loss 4.8665
+    fixed1     step  1000  loss 4.0177
+    fixed1     step  2000  loss 3.9882
+    fixed1     step  3000  loss 3.9485
+    fixed1     step  4000  loss 3.9219
+    fixed1     step  5000  loss 3.9144
+    fixed1     step  6000  loss 3.9078
+    fixed1     step  7000  loss 3.8976
+    fixed1     step  8000  loss 3.8962
+    fixed1     step  9000  loss 3.8944
+    fixed1     step 10000  loss 3.8808
+    fixed1     step 11000  loss 3.8900
+    fixed1     step 12000  loss 3.8841
+    fixed1     step 13000  loss 3.8868
+    fixed1     step 14000  loss 3.8841
+    fixed1     step 15000  loss 3.8789
+    fixed1     step 16000  loss 3.8817
+    fixed1     step 17000  loss 3.8775
+    fixed1     step 18000  loss 3.8821
+    fixed1     step 19000  loss 3.8740
+    fixed1     step 20000  loss 3.8705
+
+  -- fixed2 (n_h=2)
+    fixed2     step     1  loss 4.8705
+    fixed2     step  1000  loss 3.9950
+    fixed2     step  2000  loss 3.9153
+    fixed2     step  3000  loss 3.8158
+    fixed2     step  4000  loss 3.7094
+    fixed2     step  5000  loss 3.6773
+    fixed2     step  6000  loss 3.6627
+    fixed2     step  7000  loss 3.6498
+    fixed2     step  8000  loss 3.6424
+    fixed2     step  9000  loss 3.6267
+    fixed2     step 10000  loss 3.6150
+    fixed2     step 11000  loss 3.6063
+    fixed2     step 12000  loss 3.6317
+    fixed2     step 13000  loss 3.6206
+    fixed2     step 14000  loss 3.6387
+    fixed2     step 15000  loss 3.6071
+    fixed2     step 16000  loss 3.6013
+    fixed2     step 17000  loss 3.5991
+    fixed2     step 18000  loss 3.5982
+    fixed2     step 19000  loss 3.6016
+    fixed2     step 20000  loss 3.6089
+
+  -- fixed3 (n_h=3)
+    fixed3     step     1  loss 4.8682
+    fixed3     step  1000  loss 3.9872
+    fixed3     step  2000  loss 2.2040
+    fixed3     step  3000  loss 0.0183
+    fixed3     step  4000  loss 0.0090
+    fixed3     step  5000  loss 0.0083
+    fixed3     step  6000  loss 0.0067
+    fixed3     step  7000  loss 0.0062
+    fixed3     step  8000  loss 0.0060
+    fixed3     step  9000  loss 0.0052
+    fixed3     step 10000  loss 0.0053
+    fixed3     step 11000  loss 0.0048
+    fixed3     step 12000  loss 0.0039
+    fixed3     step 13000  loss 0.0056
+    fixed3     step 14000  loss 0.0042
+    fixed3     step 15000  loss 0.0045
+    fixed3     step 16000  loss 0.0051
+    fixed3     step 17000  loss 0.0038
+    fixed3     step 18000  loss 0.0036
+    fixed3     step 19000  loss 0.0038
+    fixed3     step 20000  loss 0.0031
+
+  -- fixed4 (n_h=4)
+    fixed4     step     1  loss 4.8695
+    fixed4     step  1000  loss 3.9920
+    fixed4     step  2000  loss 0.8447
+    fixed4     step  3000  loss 0.0111
+    fixed4     step  4000  loss 0.0074
+    fixed4     step  5000  loss 0.0055
+    fixed4     step  6000  loss 0.0046
+    fixed4     step  7000  loss 0.0037
+    fixed4     step  8000  loss 0.0023
+    fixed4     step  9000  loss 0.0034
+    fixed4     step 10000  loss 0.0027
+    fixed4     step 11000  loss 0.0038
+    fixed4     step 12000  loss 0.0038
+    fixed4     step 13000  loss 0.0018
+    fixed4     step 14000  loss 0.0025
+    fixed4     step 15000  loss 0.0021
+    fixed4     step 16000  loss 0.0019
+    fixed4     step 17000  loss 0.0028
+    fixed4     step 18000  loss 0.0022
+    fixed4     step 19000  loss 0.0016
+    fixed4     step 20000  loss 0.0024
+
+  -- oracle (n_h=4, oracle gates)
+    oracle     step     1  loss 4.8762
+    oracle     step  1000  loss 3.9916
+    oracle     step  2000  loss 0.0079
+    oracle     step  3000  loss 0.0065
+    oracle     step  4000  loss 0.0058
+    oracle     step  5000  loss 0.0063
+    oracle     step  6000  loss 0.0048
+    oracle     step  7000  loss 0.0048
+    oracle     step  8000  loss 0.0051
+    oracle     step  9000  loss 0.0050
+    oracle     step 10000  loss 0.0050
+    oracle     step 11000  loss 0.0045
+    oracle     step 12000  loss 0.0052
+    oracle     step 13000  loss 0.0052
+    oracle     step 14000  loss 0.0047
+    oracle     step 15000  loss 0.0048
+    oracle     step 16000  loss 0.0045
+    oracle     step 17000  loss 0.0054
+    oracle     step 18000  loss 0.0049
+    oracle     step 19000  loss 0.0047
+    oracle     step 20000  loss 0.0046
+
+==============================================================================
+arm         cost/token  token acc   seq acc    params  train s
+------------------------------------------------------------------------------
+fixed1           1.000     0.0648    0.0000      481k      344
+fixed2           2.000     0.1207    0.0000      586k      448
+fixed3           3.000     0.9994    0.9535      690k      603
+fixed4           4.000     0.9995    0.9600      795k      760
+oracle           4.000     0.9998    0.9825      803k      763
+==============================================================================
+CLAIM DOES NOT HOLD: oracle cost 4.000 is not below the cheapest solving fixed order (3)
+==============================================================================
+
+written: results/matched_compute_p1.0.json

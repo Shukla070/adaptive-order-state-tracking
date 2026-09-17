@@ -1,0 +1,66 @@
+{
+  "config": {
+    "k": 128,
+    "n_train": 300000,
+    "n_test": 2000,
+    "steps": 250000,
+    "batch": 128,
+    "lr": 0.001,
+    "n_heads": 12,
+    "head_dim": 32,
+    "hidden": 128,
+    "n_layers": 1,
+    "seed": 666,
+    "log_every": 5000,
+    "eval_every": 10000,
+    "warmup": 5000,
+    "cosine": true,
+    "orders": "2,3,4",
+    "arms": "S5_c5_t1",
+    "out": "results/gc_s5t1_long.json",
+    "vocab": 127
+  },
+  "meta": {
+    "S5_c5_t1": {
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    }
+  },
+  "results": [
+    {
+      "arm": "S5_c5_t1",
+      "n_h": 2,
+      "token_acc": 0.36172265625,
+      "seq_acc": 0.0,
+      "train_s": 5517.655921726982,
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    },
+    {
+      "arm": "S5_c5_t1",
+      "n_h": 3,
+      "token_acc": 0.48277734375,
+      "seq_acc": 0.02,
+      "train_s": 7393.2124052099825,
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    },
+    {
+      "arm": "S5_c5_t1",
+      "n_h": 4,
+      "token_acc": 0.56610546875,
+      "seq_acc": 0.0385,
+      "train_s": 9401.959774349001,
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    }
+  ]
+}

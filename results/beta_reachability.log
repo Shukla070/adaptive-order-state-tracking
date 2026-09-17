@@ -1,0 +1,125 @@
+
+##############################################################################
+#  FREE-BETA REACHABILITY   (float64, CPU)
+##############################################################################
+
+==============================================================================
+E1  rank(A - I) <= K for any beta,  and  rank(P - I) = L(p)
+==============================================================================
+  random free-beta products, d in 5/8/16, K in 0..6, 40 draws each
+    rank(A - I) <= K always : True   [PASS]
+    rank(P - I) == L(p) for all 120 : True   [PASS]
+
+  => K >= L(p) is forced for every beta. Free beta cannot beat it.
+
+==============================================================================
+E2/E3  exact reachability -- learnable beta vs beta pinned at 2
+==============================================================================
+  LEARNABLE beta in [0,2] (a gate can close a factor)
+    . = reached exactly by construction     x = not reachable
+               K=0     K=1     K=2     K=3     K=4
+    L=0          .       .       .       .       .
+    L=1          x       .       .       .       .
+    L=2          x       x       .       .       .
+    L=3          x       x       x       .       .
+    L=4          x       x       x       x       .
+    worst reconstruction error over all 120 elements: 1.17e-15
+
+  PINNED beta = 2 (pure reflections, no gate)
+    . = reached exactly by construction     x = not reachable
+               K=0     K=1     K=2     K=3     K=4
+    L=0          .       x       .       x       .
+    L=1          x       .       x       .       x
+    L=2          x       x       .       x       .
+    L=3          x       x       x       .       x
+    L=4          x       x       x       x       .
+    worst reconstruction error over all 120 elements: 1.17e-15
+
+  learnable beta reaches p iff K >= L        : True   [PASS]
+  pinned beta reaches p iff K >= L AND       : True   [PASS]
+==============================================================================
+E4  does a wider / different representation lower the required order?
+==============================================================================
+  representation             dim  faithful  rank(g5 - I)  rank(t - I)  mult of 4
+  ----------------------------------------------------------------------------
+  standard (4)                 4      True             4            1       True
+  permutation (5)              5      True             4            1       True
+  perm padded to 8             8      True             4            1       True
+  perm padded to 32           32      True             4            1       True
+  std + std (8)                8      True             8            2       True
+  perm + perm (10)            10      True             8            2       True
+  std (x) std (16)            16      True            12            6       True
+  perm (x) perm (25)          25      True            20            8       True
+  std (x) std + std (20)      20      True            16            7       True
+  regular (120)              120      True            96           60       True
+
+  every faithful rep has rank(5-cycle - I) = 4 * m, m >= 1 : True   [PASS]
+  minimum over faithful reps tested                        : 4
+
+  Character theory says why. For g of order m,
+      dim Fix(g) = (1/m) sum_j chi(g^j),
+  and for a 5-cycle in S5 this collapses to
+      rank(rho(g) - I) = 4 * (# non-linear irrep constituents).
+  Faithfulness forces at least one (the only normal subgroups of S5
+  are 1, A5, S5, so a rep with no non-linear part kills A5). Hence 4
+  is the floor, in ANY dimension -- and the regular rep pays 96.
+
+  => the model's 32-dim head cannot buy a cheaper 5-cycle by picking
+     a smarter embedding. Widening the state does not help.
+
+==============================================================================
+E5  best approximation strictly below L  (the fixed n_h=3 question)
+==============================================================================
+  target: 5-cycle, L=4, ||P||_F = 2.2361
+      K     residual   relative         source
+      0    3.162e+00      1.414      optimized
+      1    2.594e+00      1.160      optimized
+      2    1.663e+00      0.743      optimized
+      3    1.512e+00      0.676      optimized
+      4    1.175e-15      0.000   construction
+
+  target: 4-cycle, L=3, ||P||_F = 2.2361
+      K     residual   relative         source
+      0    2.828e+00      1.265      optimized
+      1    2.000e+00      0.894      optimized
+      2    1.732e+00      0.775      optimized
+      3    9.421e-16      0.000   construction
+      4    9.421e-16      0.000   construction
+
+  The best a 3-factor layer can do against a 5-cycle is 68% relative error.
+  That is not a near miss. And it compounds: the task is a RUNNING
+  product, so a per-token error of that size cannot survive 128
+  steps. Whatever fixed n_h=3 is doing to reach 0.54 sequence
+  accuracy, it is NOT approximating each 5-cycle with its three
+  Householder factors.
+
+  Which leaves three candidates, none of which this file can settle:
+    (a) the additive v k^T channel -- DeltaNet's state update is
+        S_t = A_t S_{t-1} + v_t k_t^T, and only the A_t half is
+        constrained by any of the above;
+    (b) 12 heads coding the group jointly, so no single head ever
+        represents the permutation;
+    (c) it is not tracking at all, just getting most tokens right --
+        0.95 per hard token over ~12.8 hard tokens per sequence is
+        0.95^12.8 = 0.52, suspiciously close to the observed 0.54.
+  (c) is the cheapest to test and should be tested first.
+
+==============================================================================
+VERDICT
+==============================================================================
+  1. K >= L(g) is forced by rank, not by parity or orthogonality.
+     No choice of beta beats it.
+  2. Pinning beta = 2 imposes an EXTRA constraint, K = L (mod 2).
+     Free beta removes that one. Our gate needs free beta; that
+     is now proved, not assumed.
+  3. No faithful representation of S5 makes a 5-cycle cheaper
+     than 4. Width does not help.
+  4. The best order-3 approximation to a 5-cycle is far from
+     exact, so fixed n_h=3's partial success needs a different
+     explanation -- the additive v k^T channel, or multi-head
+     distributed coding. That is the next thing to measure.
+
+  elapsed 31s
+==============================================================================
+written: results/beta_reachability.json
+

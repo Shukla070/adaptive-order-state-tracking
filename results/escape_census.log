@@ -1,0 +1,503 @@
+==============================================================================
+BETA PARAMETRISATION -- can we make the failed cells train?
+==============================================================================
+  hypothesis: beta = 2*sigmoid(x) cannot attain 2, and its gradient
+  vanishes as it approaches 2 -- the value a permutation needs.
+  With bias=False it also STARTS at 1.0, the worst possible value.
+
+  cell A5_c5:n_h=2   <A> = A5   D=2   historical (other script): 0.1259
+       note: A5 is the even half of S5, so this cell has NO
+       odd targets and the parity split is undefined on it.
+  cell A5_c5_dt:n_h=2   <A> = A5   D=2   historical (other script): 0.0443
+       note: A5 is the even half of S5, so this cell has NO
+       odd targets and the parity split is undefined on it.
+  cell A5_c5_dt:n_h=4   <A> = A5   D=2   historical (other script): 0.0429
+       note: A5 is the even half of S5, so this cell has NO
+       odd targets and the parity split is undefined on it.
+  cell S5_c5_t:n_h=4   <A> = S5   D=4   historical (other script): 0.0706
+  modes: sigmoid(bias 0)
+  seeds: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10  (data fixed at seed 666)
+  budget: 20000 steps x batch 128
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed1
+------------------------------------------------------------------------------
+      step      1  loss 4.8624
+      step   5000  loss 3.6850
+      step  10000  loss 3.6247
+      step  15000  loss 3.6117
+      step  20000  loss 3.5800
+    -> token 0.1178   seq 0.0000   (540s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.331  median 1.483  max 1.9979  frac>1.9 0.342
+       |det|: mean 0.4935  median 0.3712  max 0.9958  frac>0.99 0.333   (1.0 = a permutation)
+       parity: EVEN targets 0.1178 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed2
+------------------------------------------------------------------------------
+      step      1  loss 4.8720
+      step   5000  loss 3.7201
+      step  10000  loss 3.6649
+      step  15000  loss 3.6180
+      step  20000  loss 3.6223
+    -> token 0.1165   seq 0.0000   (464s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.415  median 1.504  max 1.9988  frac>1.9 0.436
+       |det|: mean 0.4996  median 0.4350  max 0.9976  frac>0.99 0.333   (1.0 = a permutation)
+       parity: EVEN targets 0.1165 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed3
+------------------------------------------------------------------------------
+      step      1  loss 4.8757
+      step   5000  loss 3.6790
+      step  10000  loss 3.6549
+      step  15000  loss 3.6374
+      step  20000  loss 3.6208
+    -> token 0.1162   seq 0.0000   (441s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.282  median 1.355  max 1.9983  frac>1.9 0.292
+       |det|: mean 0.4453  median 0.3084  max 0.9966  frac>0.99 0.250   (1.0 = a permutation)
+       parity: EVEN targets 0.1162 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed4
+------------------------------------------------------------------------------
+      step      1  loss 4.8789
+      step   5000  loss 3.7715
+      step  10000  loss 0.6187
+      step  15000  loss 0.4407
+      step  20000  loss 0.3770
+    -> token 0.9257   seq 0.0225   (437s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.249  median 1.415  max 1.9993  frac>1.9 0.417
+       |det|: mean 0.5961  median 0.6378  max 0.9982  frac>0.99 0.375   (1.0 = a permutation)
+       parity: EVEN targets 0.9257 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed5
+------------------------------------------------------------------------------
+      step      1  loss 4.8717
+      step   5000  loss 3.6789
+      step  10000  loss 3.6330
+      step  15000  loss 3.6198
+      step  20000  loss 3.5956
+    -> token 0.1275   seq 0.0000   (444s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.500  median 1.971  max 1.9994  frac>1.9 0.583
+       |det|: mean 0.6640  median 0.8408  max 0.9984  frac>0.99 0.500   (1.0 = a permutation)
+       parity: EVEN targets 0.1275 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed6
+------------------------------------------------------------------------------
+      step      1  loss 4.8666
+      step   5000  loss 0.2085
+      step  10000  loss 0.1172
+      step  15000  loss 0.1060
+      step  20000  loss 0.1248
+    -> token 0.9728   seq 0.2945   (450s, 2000 seqs)  (historical 0.1259)
+       beta : mean 0.962  median 0.363  max 2.0000  frac>1.9 0.361
+       |det|: mean 0.7281  median 0.8081  max 1.0000  frac>0.99 0.163   (1.0 = a permutation)
+       parity: EVEN targets 0.9728 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed7
+------------------------------------------------------------------------------
+      step      1  loss 4.8716
+      step   5000  loss 0.2124
+      step  10000  loss 0.1341
+      step  15000  loss 0.0924
+      step  20000  loss 0.1579
+    -> token 0.9621   seq 0.1645   (450s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.080  median 0.795  max 1.9998  frac>1.9 0.342
+       |det|: mean 0.6289  median 0.5428  max 0.9993  frac>0.99 0.229   (1.0 = a permutation)
+       parity: EVEN targets 0.9621 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed8
+------------------------------------------------------------------------------
+      step      1  loss 4.8702
+      step   5000  loss 3.7399
+      step  10000  loss 3.6436
+      step  15000  loss 3.6053
+      step  20000  loss 3.5998
+    -> token 0.1192   seq 0.0000   (456s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.400  median 1.827  max 1.9984  frac>1.9 0.463
+       |det|: mean 0.5853  median 0.5751  max 0.9967  frac>0.99 0.410   (1.0 = a permutation)
+       parity: EVEN targets 0.1192 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed9
+------------------------------------------------------------------------------
+      step      1  loss 4.8674
+      step   5000  loss 3.7084
+      step  10000  loss 3.6242
+      step  15000  loss 3.6014
+      step  20000  loss 3.5990
+    -> token 0.1201   seq 0.0000   (455s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.432  median 1.678  max 1.9987  frac>1.9 0.462
+       |det|: mean 0.5135  median 0.3326  max 0.9974  frac>0.99 0.417   (1.0 = a permutation)
+       parity: EVEN targets 0.1201 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5:n_h=2:sigmoid(0):seed10
+------------------------------------------------------------------------------
+      step      1  loss 4.8652
+      step   5000  loss 3.6643
+      step  10000  loss 3.6447
+      step  15000  loss 3.6071
+      step  20000  loss 3.6099
+    -> token 0.1198   seq 0.0000   (460s, 2000 seqs)  (historical 0.1259)
+       beta : mean 1.278  median 1.390  max 1.9989  frac>1.9 0.335
+       |det|: mean 0.4747  median 0.3267  max 0.9971  frac>0.99 0.333   (1.0 = a permutation)
+       parity: EVEN targets 0.1198 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed1
+------------------------------------------------------------------------------
+      step      1  loss 4.8676
+      step   5000  loss 3.9972
+      step  10000  loss 0.4250
+      step  15000  loss 0.1556
+      step  20000  loss 0.1424
+    -> token 0.9585   seq 0.1710   (447s, 2000 seqs)  (historical 0.0443)
+       beta : mean 0.905  median 1.006  max 1.9995  frac>1.9 0.099
+       |det|: mean 0.3560  median 0.2217  max 0.9986  frac>0.99 0.083   (1.0 = a permutation)
+       parity: EVEN targets 0.9585 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed2
+------------------------------------------------------------------------------
+      step      1  loss 4.8744
+      step   5000  loss 4.0007
+      step  10000  loss 3.9913
+      step  15000  loss 3.9781
+      step  20000  loss 3.9697
+    -> token 0.0426   seq 0.0000   (444s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.421  median 1.478  max 1.9839  frac>1.9 0.102
+       |det|: mean 0.2526  median 0.2097  max 0.9003  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0426 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed3
+------------------------------------------------------------------------------
+      step      1  loss 4.8690
+      step   5000  loss 3.9992
+      step  10000  loss 3.9825
+      step  15000  loss 3.9660
+      step  20000  loss 3.9582
+    -> token 0.0466   seq 0.0000   (447s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.286  median 1.313  max 1.9707  frac>1.9 0.046
+       |det|: mean 0.1850  median 0.1044  max 0.8962  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0466 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed4
+------------------------------------------------------------------------------
+      step      1  loss 4.8767
+      step   5000  loss 4.0181
+      step  10000  loss 3.9967
+      step  15000  loss 3.9881
+      step  20000  loss 3.9862
+    -> token 0.0396   seq 0.0000   (445s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.373  median 1.421  max 1.9386  frac>1.9 0.013
+       |det|: mean 0.1986  median 0.1444  max 0.7845  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0396 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed5
+------------------------------------------------------------------------------
+      step      1  loss 4.8692
+      step   5000  loss 3.9971
+      step  10000  loss 3.9713
+      step  15000  loss 3.9497
+      step  20000  loss 3.9262
+    -> token 0.0514   seq 0.0000   (442s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.224  median 1.128  max 1.9973  frac>1.9 0.229
+       |det|: mean 0.2703  median 0.1476  max 0.9914  frac>0.99 0.002   (1.0 = a permutation)
+       parity: EVEN targets 0.0514 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed6
+------------------------------------------------------------------------------
+      step      1  loss 4.8709
+      step   5000  loss 3.9997
+      step  10000  loss 3.9890
+      step  15000  loss 3.9730
+      step  20000  loss 3.9639
+    -> token 0.0436   seq 0.0000   (438s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.324  median 1.401  max 1.9837  frac>1.9 0.064
+       |det|: mean 0.2387  median 0.1337  max 0.8907  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0436 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed7
+------------------------------------------------------------------------------
+      step      1  loss 4.8681
+      step   5000  loss 4.0080
+      step  10000  loss 3.9957
+      step  15000  loss 3.9889
+      step  20000  loss 3.9831
+    -> token 0.0404   seq 0.0000   (438s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.443  median 1.468  max 1.9769  frac>1.9 0.044
+       |det|: mean 0.2286  median 0.1794  max 0.8209  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0404 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed8
+------------------------------------------------------------------------------
+      step      1  loss 4.8648
+      step   5000  loss 3.9960
+      step  10000  loss 3.9883
+      step  15000  loss 3.9789
+      step  20000  loss 3.9678
+    -> token 0.0435   seq 0.0000   (440s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.577  median 1.659  max 1.9903  frac>1.9 0.231
+       |det|: mean 0.3753  median 0.3097  max 0.9536  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0435 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed9
+------------------------------------------------------------------------------
+      step      1  loss 4.8686
+      step   5000  loss 3.9966
+      step  10000  loss 3.9844
+      step  15000  loss 3.9783
+      step  20000  loss 3.9702
+    -> token 0.0421   seq 0.0000   (436s, 2000 seqs)  (historical 0.0443)
+       beta : mean 1.333  median 1.355  max 1.9717  frac>1.9 0.024
+       |det|: mean 0.1774  median 0.1153  max 0.8731  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0421 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=2:sigmoid(0):seed10
+------------------------------------------------------------------------------
+      step      1  loss 4.8697
+      step   5000  loss 3.9989
+      step  10000  loss 3.9371
+      step  15000  loss 0.0211
+      step  20000  loss 0.0225
+    -> token 0.9985   seq 0.8695   (435s, 2000 seqs)  (historical 0.0443)
+       beta : mean 0.876  median 0.834  max 1.9998  frac>1.9 0.208
+       |det|: mean 0.3826  median 0.1476  max 0.9985  frac>0.99 0.167   (1.0 = a permutation)
+       parity: EVEN targets 0.9985 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed1
+------------------------------------------------------------------------------
+      step      1  loss 4.8663
+      step   5000  loss 4.0013
+      step  10000  loss 3.9871
+      step  15000  loss 3.9769
+      step  20000  loss 3.9680
+    -> token 0.0418   seq 0.0000   (764s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.334  median 1.418  max 1.9513  frac>1.9 0.020
+       |det|: mean 0.0621  median 0.0268  max 0.4815  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0418 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed2
+------------------------------------------------------------------------------
+      step      1  loss 4.8692
+      step   5000  loss 3.9998
+      step  10000  loss 3.9906
+      step  15000  loss 3.9842
+      step  20000  loss 3.9793
+    -> token 0.0399   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.345  median 1.375  max 1.9422  frac>1.9 0.011
+       |det|: mean 0.0404  median 0.0092  max 0.4582  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0399 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed3
+------------------------------------------------------------------------------
+      step      1  loss 4.8712
+      step   5000  loss 3.9934
+      step  10000  loss 3.9760
+      step  15000  loss 3.9577
+      step  20000  loss 0.0341
+    -> token 0.9891   seq 0.6090   (756s, 2000 seqs)  (historical 0.0429)
+       beta : mean 0.460  median 0.267  max 1.9996  frac>1.9 0.062
+       |det|: mean 0.2998  median 0.2763  max 0.7456  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.9891 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed4
+------------------------------------------------------------------------------
+      step      1  loss 4.8716
+      step   5000  loss 4.0005
+      step  10000  loss 3.9913
+      step  15000  loss 3.9807
+      step  20000  loss 3.9781
+    -> token 0.0392   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.383  median 1.421  max 1.9749  frac>1.9 0.016
+       |det|: mean 0.0442  median 0.0154  max 0.4430  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0392 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed5
+------------------------------------------------------------------------------
+      step      1  loss 4.8706
+      step   5000  loss 4.0112
+      step  10000  loss 3.9951
+      step  15000  loss 3.9889
+      step  20000  loss 3.9848
+    -> token 0.0395   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.367  median 1.404  max 1.9529  frac>1.9 0.013
+       |det|: mean 0.0366  median 0.0132  max 0.3287  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0395 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed6
+------------------------------------------------------------------------------
+      step      1  loss 4.8726
+      step   5000  loss 4.0019
+      step  10000  loss 3.9901
+      step  15000  loss 3.9831
+      step  20000  loss 3.9778
+    -> token 0.0400   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.385  median 1.416  max 1.9789  frac>1.9 0.048
+       |det|: mean 0.0477  median 0.0162  max 0.5642  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0400 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed7
+------------------------------------------------------------------------------
+      step      1  loss 4.8707
+      step   5000  loss 3.9986
+      step  10000  loss 3.9915
+      step  15000  loss 3.9832
+      step  20000  loss 3.9783
+    -> token 0.0398   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.401  median 1.431  max 1.9650  frac>1.9 0.039
+       |det|: mean 0.0544  median 0.0191  max 0.6951  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0398 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed8
+------------------------------------------------------------------------------
+      step      1  loss 4.8698
+      step   5000  loss 3.9956
+      step  10000  loss 3.9823
+      step  15000  loss 3.9748
+      step  20000  loss 3.9648
+    -> token 0.0415   seq 0.0000   (755s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.330  median 1.342  max 1.9777  frac>1.9 0.025
+       |det|: mean 0.0297  median 0.0077  max 0.4856  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0415 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed9
+------------------------------------------------------------------------------
+      step      1  loss 4.8693
+      step   5000  loss 4.0166
+      step  10000  loss 3.9979
+      step  15000  loss 3.9882
+      step  20000  loss 3.9828
+    -> token 0.0393   seq 0.0000   (756s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.304  median 1.368  max 1.9575  frac>1.9 0.014
+       |det|: mean 0.0333  median 0.0116  max 0.3833  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0393 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+A5_c5_dt:n_h=4:sigmoid(0):seed10
+------------------------------------------------------------------------------
+      step      1  loss 4.8645
+      step   5000  loss 3.9956
+      step  10000  loss 3.9885
+      step  15000  loss 3.9748
+      step  20000  loss 3.9656
+    -> token 0.0427   seq 0.0000   (757s, 2000 seqs)  (historical 0.0429)
+       beta : mean 1.370  median 1.393  max 1.9765  frac>1.9 0.058
+       |det|: mean 0.0500  median 0.0119  max 0.6713  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0427 (n=256000)   ODD targets n/a (n=0)   predictions even 1.000
+               -> no odd targets in this test set -- this alphabet generates A5, so the odd split is undefined here, not failed
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed1
+------------------------------------------------------------------------------
+      step      1  loss 4.8709
+      step   5000  loss 4.0102
+      step  10000  loss 3.9979
+      step  15000  loss 3.9882
+      step  20000  loss 3.9883
+    -> token 0.0397   seq 0.0000   (771s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.412  median 1.530  max 1.9963  frac>1.9 0.072
+       |det|: mean 0.0938  median 0.0537  max 0.5190  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0452 (n=128601)   ODD targets 0.0341 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed2
+------------------------------------------------------------------------------
+      step      1  loss 4.8689
+      step   5000  loss 4.6570
+      step  10000  loss 3.9991
+      step  15000  loss 3.9616
+      step  20000  loss 3.9065
+    -> token 0.0666   seq 0.0000   (762s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.524  median 1.842  max 1.9999  frac>1.9 0.459
+       |det|: mean 0.3197  median 0.1458  max 0.9905  frac>0.99 0.002   (1.0 = a permutation)
+       parity: EVEN targets 0.0742 (n=128601)   ODD targets 0.0590 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed3
+------------------------------------------------------------------------------
+      step      1  loss 4.8691
+      step   5000  loss 4.0058
+      step  10000  loss 3.9695
+      step  15000  loss 0.1772
+      step  20000  loss 0.0056
+    -> token 0.9994   seq 0.9415   (757s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.007  median 0.811  max 2.0000  frac>1.9 0.244
+       |det|: mean 0.1629  median 0.0811  max 0.9983  frac>0.99 0.083   (1.0 = a permutation)
+       parity: EVEN targets 0.9995 (n=128601)   ODD targets 0.9994 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed4
+------------------------------------------------------------------------------
+      step      1  loss 4.8702
+      step   5000  loss 4.5862
+      step  10000  loss 3.9961
+      step  15000  loss 3.9839
+      step  20000  loss 3.9003
+/pytorch/aten/src/ATen/native/cuda/IndexKernel.cu:94: operator(): block: [5,0,0], thread: [4,0,0] Assertion `-sizes[i] <= index && index < sizes[i] && "index out of bounds"` failed.
+Traceback (most recent call last):
+  File "/mnt/c/D/B.Tech/Major Project/DeltaProduct/work/exp_beta_param.py", line 694, in <module>
+    main()
+  File "/mnt/c/D/B.Tech/Major Project/DeltaProduct/work/exp_beta_param.py", line 644, in main
+    for k_, v_ in parity_counts(y, pred, par).items():
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/D/B.Tech/Major Project/DeltaProduct/work/exp_beta_param.py", line 199, in parity_counts
+    ev_c=int(eq[m_even].sum()), ev_n=int(m_even.sum()),
+             ~~^^^^^^^^
+RuntimeError: CUDA error: device-side assert triggered
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+

@@ -1,0 +1,132 @@
+==============================================================================
+BETA PARAMETRISATION -- can we make the failed cells train?
+==============================================================================
+  hypothesis: beta = 2*sigmoid(x) cannot attain 2, and its gradient
+  vanishes as it approaches 2 -- the value a permutation needs.
+  With bias=False it also STARTS at 1.0, the worst possible value.
+
+  cell S5_c5_t:n_h=4   <A> = S5   D=4   historical (other script): 0.0706
+  modes: sigmoid(bias 0)
+  seeds: 4, 5, 6, 7, 8, 9, 10  (data fixed at seed 666)
+  budget: 20000 steps x batch 128
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed4
+------------------------------------------------------------------------------
+      step      1  loss 4.8702
+      step   5000  loss 4.0007
+      step  10000  loss 3.9777
+      step  15000  loss 3.9101
+      step  20000  loss 0.0474
+    -> token 0.9933   seq 0.5400   (853s, 2000 seqs)  (historical 0.0706)
+       beta : mean 0.848  median 0.561  max 1.9999  frac>1.9 0.167
+       |det|: mean 0.2144  median 0.1445  max 0.9973  frac>0.99 0.083   (1.0 = a permutation)
+       parity: EVEN targets 0.9945 (n=128601)   ODD targets 0.9921 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed5
+------------------------------------------------------------------------------
+      step      1  loss 4.8713
+      step   5000  loss 4.0047
+      step  10000  loss 3.9942
+      step  15000  loss 3.9876
+      step  20000  loss 3.9555
+    -> token 0.0468   seq 0.0000   (753s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.513  median 1.630  max 1.9994  frac>1.9 0.144
+       |det|: mean 0.1306  median 0.0940  max 0.5881  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0515 (n=128601)   ODD targets 0.0421 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed6
+------------------------------------------------------------------------------
+      step      1  loss 4.8712
+      step   5000  loss 4.0105
+      step  10000  loss 3.9908
+      step  15000  loss 3.9833
+      step  20000  loss 3.9408
+    -> token 0.0510   seq 0.0000   (757s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.490  median 1.667  max 1.9989  frac>1.9 0.222
+       |det|: mean 0.2529  median 0.1261  max 0.9859  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0598 (n=128601)   ODD targets 0.0422 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed7
+------------------------------------------------------------------------------
+      step      1  loss 4.8690
+      step   5000  loss 4.6187
+      step  10000  loss 4.6149
+      step  15000  loss 3.9362
+      step  20000  loss 0.1634
+    -> token 0.9581   seq 0.0880   (756s, 2000 seqs)  (historical 0.0706)
+       beta : mean 0.844  median 0.616  max 1.9998  frac>1.9 0.196
+       |det|: mean 0.2530  median 0.1882  max 0.9955  frac>0.99 0.069   (1.0 = a permutation)
+       parity: EVEN targets 0.9628 (n=128601)   ODD targets 0.9534 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed8
+------------------------------------------------------------------------------
+      step      1  loss 4.8665
+      step   5000  loss 4.0003
+      step  10000  loss 3.9902
+      step  15000  loss 3.9704
+      step  20000  loss 3.9017
+    -> token 0.0579   seq 0.0000   (754s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.577  median 1.733  max 1.9999  frac>1.9 0.293
+       |det|: mean 0.2505  median 0.1218  max 0.9822  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0628 (n=128601)   ODD targets 0.0529 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed9
+------------------------------------------------------------------------------
+      step      1  loss 4.8670
+      step   5000  loss 4.0307
+      step  10000  loss 4.0178
+      step  15000  loss 4.0142
+      step  20000  loss 4.0100
+    -> token 0.0360   seq 0.0000   (755s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.290  median 1.591  max 1.9998  frac>1.9 0.361
+       |det|: mean 0.2799  median 0.1173  max 0.9254  frac>0.99 0.000   (1.0 = a permutation)
+       parity: EVEN targets 0.0446 (n=128601)   ODD targets 0.0274 (n=127399)   predictions even 0.502
+
+------------------------------------------------------------------------------
+S5_c5_t:n_h=4:sigmoid(0):seed10
+------------------------------------------------------------------------------
+      step      1  loss 4.8655
+      step   5000  loss 3.9945
+      step  10000  loss 3.9088
+      step  15000  loss 3.6425
+      step  20000  loss 3.6248
+    -> token 0.1398   seq 0.0000   (757s, 2000 seqs)  (historical 0.0706)
+       beta : mean 1.433  median 1.614  max 2.0000  frac>1.9 0.423
+       |det|: mean 0.3186  median 0.0662  max 0.9960  frac>0.99 0.059   (1.0 = a permutation)
+       parity: EVEN targets 0.1422 (n=128601)   ODD targets 0.1375 (n=127399)   predictions even 0.502
+
+==============================================================================
+cell             mode           escape  median    best |det| max    hist
+------------------------------------------------------------------------------
+S5_c5_t:4        sigmoid(0)        2/7  0.0579  0.9933    0.9973  0.0706
+------------------------------------------------------------------------------
+  escape = runs reaching token acc > 0.5. Report this, not a mean:
+  the distribution is bimodal, so a mean describes no actual run.
+    S5_c5_t:4 sigmoid(0): 0.0360 0.0468 0.0510 0.0579 0.1398 0.9581 0.9933
+==============================================================================
+
+  NOT ESTABLISHED against the in-run control.
+
+  Two claims must be kept apart here:
+   (a) ATTAINABILITY. clamp reaches beta = 2.0000 and |det| =
+       1.0000 exactly; sigmoid tops out near 0.998 and never
+       reaches 1. That is the open-vs-closed interval showing up
+       numerically, and it holds in every run.
+   (b) LEARNING. Attainability does NOT imply the task is
+       learned. Runs have reached |det| = 1.0000 and still scored
+       at chance, while a run that solved it sat at 0.69. Do not
+       cite |det| as evidence the cell trains.
+  Next candidates, in order of cost:
+    1. curriculum on the demand mixture (low frac(D=max) first --
+       the trainability table says that regime trains reliably)
+    2. grow K by inserting a beta=0 factor into a trained K-1
+       model -- our construction proof says that embedding is exact
+    3. orthogonality regularisation on the transition matrices
+
+written: results/escape_census2.json

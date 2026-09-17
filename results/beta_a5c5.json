@@ -1,0 +1,91 @@
+{
+  "config": {
+    "cells": "A5_c5:2",
+    "modes": "sigmoid:0,sigmoid:4,clamp:2",
+    "k": 128,
+    "n_train": 100000,
+    "n_test": 2000,
+    "steps": 20000,
+    "batch": 128,
+    "lr": 0.001,
+    "n_heads": 12,
+    "head_dim": 32,
+    "hidden": 128,
+    "n_layers": 1,
+    "seed": 666,
+    "log_every": 5000,
+    "out": "results/beta_a5c5.json",
+    "vocab": 127
+  },
+  "results": [
+    {
+      "arm": "A5_c5",
+      "n_h": 2,
+      "mode": "sigmoid",
+      "bias": 0.0,
+      "token_acc": 0.9597574869791666,
+      "seq_acc": 0.1484375,
+      "train_s": 534.5224265670113,
+      "baseline": 0.1259,
+      "beta": {
+        "mean": 1.0957286357879639,
+        "median": 1.306220293045044,
+        "max": 1.9995664358139038,
+        "frac_above_1_9": 0.4166666567325592,
+        "abs_det_mean": 0.697800874710083,
+        "abs_det_median": 0.7656184434890747,
+        "abs_det_max": 0.9991216063499451,
+        "frac_det_above_0_99": 0.3052419126033783
+      },
+      "acc_even": 0.9597574869791666,
+      "acc_odd": 0.0,
+      "frac_pred_even": 1.0
+    },
+    {
+      "arm": "A5_c5",
+      "n_h": 2,
+      "mode": "sigmoid",
+      "bias": 4.0,
+      "token_acc": 0.11753336588541667,
+      "seq_acc": 0.0,
+      "train_s": 440.82628004899016,
+      "baseline": 0.1259,
+      "beta": {
+        "mean": 1.3900976181030273,
+        "median": 1.4743163585662842,
+        "max": 1.9992859363555908,
+        "frac_above_1_9": 0.3978084921836853,
+        "abs_det_mean": 0.48038017749786377,
+        "abs_det_median": 0.2935132086277008,
+        "abs_det_max": 0.9975687265396118,
+        "frac_det_above_0_99": 0.3333333432674408
+      },
+      "acc_even": 0.11753336588541667,
+      "acc_odd": 0.0,
+      "frac_pred_even": 1.0
+    },
+    {
+      "arm": "A5_c5",
+      "n_h": 2,
+      "mode": "clamp",
+      "bias": 2.0,
+      "token_acc": 0.9996541341145834,
+      "seq_acc": 0.9661458333333334,
+      "train_s": 449.4353376829822,
+      "baseline": 0.1259,
+      "beta": {
+        "mean": 1.6082099676132202,
+        "median": 2.0,
+        "max": 2.0,
+        "frac_above_1_9": 0.7083333134651184,
+        "abs_det_mean": 0.7155592441558838,
+        "abs_det_median": 1.0,
+        "abs_det_max": 1.0,
+        "frac_det_above_0_99": 0.5833333134651184
+      },
+      "acc_even": 0.9996541341145834,
+      "acc_odd": 0.0,
+      "frac_pred_even": 1.0
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+
+##############################################################################
+#  MINIMAL ORDER -- the real per-token demand
+##############################################################################
+
+==============================================================================
+V1  the icosahedral rotation group
+==============================================================================
+    elements built            : 60
+    distinct                  : 60   [PASS]
+    all det = +1 (rotations)  : True
+    orthogonality error       : 1.39e-16
+    closed under multiplication (sampled) : True   [PASS]
+    element-order profile     : {1: 1, 2: 15, 3: 20, 5: 24}
+    matches A5 (1,15,20,24)   : True   [PASS]
+
+==============================================================================
+V2  the isomorphism onto A5
+==============================================================================
+    two-fold axes             : 15
+    orthogonal triples        : 5   [PASS]
+    action is faithful (60 distinct perms) : True   [PASS]
+    every image is an EVEN permutation     : True   [PASS]
+    image is exactly A5 (all 60)           : True   [PASS]
+    rho(ab) = rho(a)rho(b) (sampled)       : True   [PASS]
+
+==============================================================================
+V3/V4  cost of each element in the 3-dimensional representation
+==============================================================================
+    element type                  count  L (perm rep)  rank in 3-D
+    ----------------------------------------------------------------
+    identity                          1             0            0
+    double transposition             15             2            2
+    3-cycle                          20             2            2
+    5-cycle                          24             4            2
+
+    every non-identity element has rank 2  : True   [PASS]
+    all factor as exactly 2 reflections    : True   [PASS]   worst error 1.31e-15
+
+    So a 5-cycle costs 4 factors inside S5 and 2 inside A5.
+    The token did not change. The alphabet did.
+
+==============================================================================
+V5  demand D(g) vs transposition length L(g)
+==============================================================================
+    D(g) = min over the faithful reps available to the layer of
+           rank(rho(g) - I).  L(g) is what our oracle currently charges.
+
+    S3   |G|=  6  min faithful dim 2   max D = 2  (max L = 2)
+          L=0:D=0   L=1:D=1   L=2:D=2
+          demand over non-identity elements: [1, 2]   varies: True
+
+    S4   |G|= 24  min faithful dim 3   max D = 3  (max L = 3)
+          L=0:D=0   L=1:D=1   L=2:D=2   L=3:D=3
+          demand over non-identity elements: [1, 2, 3]   varies: True
+
+    A4   |G|= 12  min faithful dim 3   max D = 2  (max L = 2)
+          L=0:D=0   L=2:D=2
+          demand over non-identity elements: [2]   varies: False   <-- adaptivity cannot help here
+
+    A5   |G|= 60  min faithful dim 3   max D = 2  (max L = 4)  <-- D < L
+          L=0:D=0   L=2:D=2   L=4:D=2
+          demand over non-identity elements: [2]   varies: False   <-- adaptivity cannot help here
+
+    S5   |G|=120  min faithful dim 4   max D = 4  (max L = 4)
+          L=0:D=0   L=1:D=1   L=2:D=2   L=3:D=3   L=4:D=4
+          demand over non-identity elements: [1, 2, 3, 4]   varies: True
+
+==============================================================================
+WHAT THIS CHANGES
+==============================================================================
+  1. Our oracle charges L(g). That is correct for S5 -- in the
+     4-dimensional standard rep, rank(rho(g) - I) = L(g) exactly --
+     so the p = 0.05 / 0.1 / 0.25 results stand as measured.
+
+  2. It is WRONG for A5. At p = 1.0 the alphabet is 24 five-cycles,
+     which generate A5, where every element costs 2. The oracle
+     charged 4. The 'negative control' fired for the right reason
+     (no gap at p=1) but with the wrong number, and fixed n_h=3
+     solving the task is the tell.
+
+  3. The demand is a property of the ALPHABET, not the token. That
+     is the testable prediction: add one transposition to a 5-cycle
+     alphabet -- the cheapest token there is -- and every 5-cycle
+     goes from costing 2 to costing 4.
+
+  4. And it bounds our own mechanism honestly: where D is constant
+     across the group (A5), adaptive order cannot help at all. Where
+     D varies (S5), it can. We can now predict which before running.
+==============================================================================
+
+written: results/minimal_order.json
+

@@ -1,0 +1,41 @@
+{
+  "config": {
+    "k": 128,
+    "n_train": 100000,
+    "n_test": 2000,
+    "steps": 80000,
+    "batch": 128,
+    "lr": 0.001,
+    "n_heads": 12,
+    "head_dim": 32,
+    "hidden": 128,
+    "n_layers": 1,
+    "seed": 666,
+    "log_every": 5000,
+    "orders": "4",
+    "arms": "S5_c5_t1",
+    "out": "results/group_closure_s5t1_long.json",
+    "vocab": 127
+  },
+  "meta": {
+    "S5_c5_t1": {
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    }
+  },
+  "results": [
+    {
+      "arm": "S5_c5_t1",
+      "n_h": 4,
+      "token_acc": 0.47212890625,
+      "seq_acc": 0.0265,
+      "train_s": 3124.5261789379874,
+      "n_tokens": 25,
+      "group": "S5",
+      "group_size": 120,
+      "D_max": 4
+    }
+  ]
+}

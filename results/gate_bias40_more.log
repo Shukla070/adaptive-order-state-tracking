@@ -1,0 +1,253 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p100=128.csv   p = 0.1
+  demand      E[D] = 1.300   fixed order must provision 4
+  budget      20000 steps x batch 128, lr 0.001
+  gammas      0.03   (0 = gate present, never penalised)
+  schedule    penalty off for 4000 steps, then ramped over 4000
+  gate        init bias 4 (lambda = 0.9820 at init)   lr = model lr
+  seeds       4, 5, 6, 7, 8, 9, 10
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+oracle  seed 4
+------------------------------------------------------------------------------
+      step      1  task 4.8728
+      step   2000  task 0.0057
+      step   4000  task 0.0048
+      step   6000  task 0.0044
+      step   8000  task 0.0044
+      step  10000  task 0.0038
+      step  12000  task 0.0042
+      step  14000  task 0.0039
+      step  16000  task 0.0041
+      step  18000  task 0.0036
+      step  20000  task 0.0036
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 4
+------------------------------------------------------------------------------
+      step      1  task 4.8723  gamma_eff 0.0000  mean n_t 0.933  gate |W| 7.019e+00
+      step   2000  task 0.2181  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.923e+01
+      step   4000  task 0.2541  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.923e+01
+      step   6000  task 0.1110  gamma_eff 0.0150  mean n_t 4.000  gate |W| 1.923e+01
+      step   8000  task 0.1327  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  10000  task 0.0663  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  12000  task 0.0803  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  14000  task 0.0415  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  16000  task 0.0477  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  18000  task 0.0262  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+      step  20000  task 0.0444  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.923e+01
+------------------------------------------------------------------------------
+oracle  seed 5
+------------------------------------------------------------------------------
+      step      1  task 4.8678
+      step   2000  task 0.0047
+      step   4000  task 0.0045
+      step   6000  task 0.0031
+      step   8000  task 0.0032
+      step  10000  task 0.0028
+      step  12000  task 0.0028
+      step  14000  task 0.0030
+      step  16000  task 0.0029
+      step  18000  task 0.0025
+      step  20000  task 0.0025
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 5
+------------------------------------------------------------------------------
+      step      1  task 4.8675  gamma_eff 0.0000  mean n_t 0.936  gate |W| 6.714e+00
+      step   2000  task 0.0081  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.938e+01
+      step   4000  task 0.0089  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.938e+01
+      step   6000  task 0.0054  gamma_eff 0.0150  mean n_t 4.000  gate |W| 1.938e+01
+      step   8000  task 0.0031  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  10000  task 0.0035  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  12000  task 0.0033  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  14000  task 0.0044  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  16000  task 0.0032  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  18000  task 0.0032  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+      step  20000  task 0.0029  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.938e+01
+------------------------------------------------------------------------------
+oracle  seed 6
+------------------------------------------------------------------------------
+      step      1  task 4.8703
+      step   2000  task 0.0055
+      step   4000  task 0.0045
+      step   6000  task 0.0028
+      step   8000  task 0.0030
+      step  10000  task 0.0027
+      step  12000  task 0.0030
+      step  14000  task 0.0024
+      step  16000  task 0.0027
+      step  18000  task 0.0025
+      step  20000  task 0.0028
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 6
+------------------------------------------------------------------------------
+      step      1  task 4.8693  gamma_eff 0.0000  mean n_t 0.945  gate |W| 6.910e+00
+      step   2000  task 0.0083  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.880e+01
+      step   4000  task 0.0052  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.880e+01
+      step   6000  task 0.0026  gamma_eff 0.0150  mean n_t 4.000  gate |W| 1.880e+01
+      step   8000  task 0.0023  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  10000  task 0.0021  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  12000  task 0.0029  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  14000  task 0.0019  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  16000  task 0.0031  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  18000  task 0.0028  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+      step  20000  task 0.0026  gamma_eff 0.0300  mean n_t 4.000  gate |W| 1.880e+01
+------------------------------------------------------------------------------
+oracle  seed 7
+------------------------------------------------------------------------------
+      step      1  task 4.8725
+      step   2000  task 0.0117
+      step   4000  task 0.0064
+      step   6000  task 0.0059
+      step   8000  task 0.0043
+      step  10000  task 0.0057
+      step  12000  task 0.0040
+      step  14000  task 0.0033
+      step  16000  task 0.0029
+      step  18000  task 0.0033
+      step  20000  task 0.0039
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 7
+------------------------------------------------------------------------------
+      step      1  task 4.8734  gamma_eff 0.0000  mean n_t 0.939  gate |W| 6.859e+00
+      step   2000  task 0.0071  gamma_eff 0.0000  mean n_t 2.818  gate |W| 1.764e+01
+      step   4000  task 0.0056  gamma_eff 0.0000  mean n_t 2.807  gate |W| 1.763e+01
+      step   6000  task 0.0054  gamma_eff 0.0150  mean n_t 2.365  gate |W| 1.822e+01
+      step   8000  task 0.0060  gamma_eff 0.0300  mean n_t 2.254  gate |W| 1.847e+01
+      step  10000  task 0.0048  gamma_eff 0.0300  mean n_t 2.230  gate |W| 1.867e+01
+      step  12000  task 0.0036  gamma_eff 0.0300  mean n_t 2.217  gate |W| 1.874e+01
+      step  14000  task 0.0047  gamma_eff 0.0300  mean n_t 2.215  gate |W| 1.878e+01
+      step  16000  task 0.0044  gamma_eff 0.0300  mean n_t 2.218  gate |W| 1.879e+01
+      step  18000  task 0.0033  gamma_eff 0.0300  mean n_t 2.215  gate |W| 1.881e+01
+      step  20000  task 0.0036  gamma_eff 0.0300  mean n_t 2.213  gate |W| 1.881e+01
+------------------------------------------------------------------------------
+oracle  seed 8
+------------------------------------------------------------------------------
+      step      1  task 4.8660
+      step   2000  task 0.0052
+      step   4000  task 0.0043
+      step   6000  task 0.0022
+      step   8000  task 0.0021
+      step  10000  task 0.0021
+      step  12000  task 0.0024
+      step  14000  task 0.0018
+      step  16000  task 0.0019
+      step  18000  task 0.0017
+      step  20000  task 0.0017
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 8
+------------------------------------------------------------------------------
+      step      1  task 4.8678  gamma_eff 0.0000  mean n_t 0.935  gate |W| 6.982e+00
+      step   2000  task 0.0098  gamma_eff 0.0000  mean n_t 3.993  gate |W| 1.894e+01
+      step   4000  task 0.0066  gamma_eff 0.0000  mean n_t 3.997  gate |W| 1.893e+01
+      step   6000  task 0.0043  gamma_eff 0.0150  mean n_t 3.977  gate |W| 1.902e+01
+      step   8000  task 0.0049  gamma_eff 0.0300  mean n_t 3.958  gate |W| 1.905e+01
+      step  10000  task 0.0046  gamma_eff 0.0300  mean n_t 3.966  gate |W| 1.904e+01
+      step  12000  task 0.0045  gamma_eff 0.0300  mean n_t 3.955  gate |W| 1.912e+01
+      step  14000  task 0.0036  gamma_eff 0.0300  mean n_t 3.945  gate |W| 1.919e+01
+      step  16000  task 0.0036  gamma_eff 0.0300  mean n_t 3.944  gate |W| 1.923e+01
+      step  18000  task 0.0028  gamma_eff 0.0300  mean n_t 3.944  gate |W| 1.928e+01
+      step  20000  task 0.0038  gamma_eff 0.0300  mean n_t 3.952  gate |W| 1.931e+01
+------------------------------------------------------------------------------
+oracle  seed 9
+------------------------------------------------------------------------------
+      step      1  task 4.8691
+      step   2000  task 0.0135
+      step   4000  task 0.0075
+      step   6000  task 0.0074
+      step   8000  task 0.0050
+      step  10000  task 0.0059
+      step  12000  task 0.0043
+      step  14000  task 0.0045
+      step  16000  task 0.0040
+      step  18000  task 0.0036
+      step  20000  task 0.0033
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 9
+------------------------------------------------------------------------------
+      step      1  task 4.8694  gamma_eff 0.0000  mean n_t 0.940  gate |W| 6.797e+00
+      step   2000  task 0.0053  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.240e+01
+      step   4000  task 0.0041  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.240e+01
+      step   6000  task 0.0026  gamma_eff 0.0150  mean n_t 4.000  gate |W| 2.240e+01
+      step   8000  task 0.0024  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  10000  task 0.0022  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  12000  task 0.0018  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  14000  task 0.0018  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  16000  task 0.0017  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  18000  task 0.0017  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+      step  20000  task 0.0018  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.240e+01
+------------------------------------------------------------------------------
+oracle  seed 10
+------------------------------------------------------------------------------
+      step      1  task 4.8705
+      step   2000  task 0.0247
+      step   4000  task 0.0205
+      step   6000  task 0.0148
+      step   8000  task 0.0124
+      step  10000  task 0.0115
+      step  12000  task 0.0104
+      step  14000  task 0.0105
+      step  16000  task 0.0099
+      step  18000  task 0.0082
+      step  20000  task 0.0083
+------------------------------------------------------------------------------
+learned  gamma 0.03  seed 10
+------------------------------------------------------------------------------
+      step      1  task 4.8703  gamma_eff 0.0000  mean n_t 0.936  gate |W| 6.334e+00
+      step   2000  task 0.0487  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.062e+01
+      step   4000  task 0.0087  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.062e+01
+      step   6000  task 0.0082  gamma_eff 0.0150  mean n_t 4.000  gate |W| 2.062e+01
+      step   8000  task 0.0070  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  10000  task 0.0057  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  12000  task 0.0045  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  14000  task 0.0033  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  16000  task 0.0048  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  18000  task 0.0035  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+      step  20000  task 0.0043  gamma_eff 0.0300  mean n_t 4.000  gate |W| 2.062e+01
+==============================================================================
+arm               seed    token     seq    cost    mae   under   corr
+------------------------------------------------------------------------------
+oracle               4   1.0000  0.9970   1.298   0.00    0.00   1.00
+learned(g=0.03)      4   0.9913  0.7915   4.000   2.70    0.00   0.00
+oracle               5   1.0000  0.9985   1.298   0.00    0.00   1.00
+learned(g=0.03)      5   0.9997  0.9805   4.000   2.70    0.00   0.00
+oracle               6   0.9999  0.9940   1.298   0.00    0.00   1.00
+learned(g=0.03)      6   0.9996  0.9765   4.000   2.70    0.00   0.00
+oracle               7   0.9994  0.9675   1.298   0.00    0.00   1.00
+learned(g=0.03)      7   0.9996  0.9680   2.199   0.90    0.00   1.00
+oracle               8   0.9999  0.9945   1.298   0.00    0.00   1.00
+learned(g=0.03)      8   0.9995  0.9660   4.000   2.70    0.00   0.00
+oracle               9   0.9998  0.9860   1.298   0.00    0.00   1.00
+learned(g=0.03)      9   0.9999  0.9905   4.000   2.70    0.00   0.00
+oracle              10   0.9997  0.9740   1.298   0.00    0.00   1.00
+learned(g=0.03)     10   0.9995  0.9750   4.000   2.70    0.00   0.00
+==============================================================================
+  oracle reference: token 1.0000 at cost 1.298
+
+  gamma = 0.03   gate closed on 1 of 7 run(s)
+    per-seed cost — seed 4: 4.000 · seed 5: 4.000 · seed 6: 4.000 · seed 7: 2.199 · seed 8: 4.000 · seed 9: 4.000 · seed 10: 4.000
+    OUTCOME IS SPLIT across seeds. Report this as a fraction;
+    a mean over these runs describes no run that happened.
+    seed 4: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    seed 5: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    seed 6: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    seed 7: USEFUL ALLOCATION — oracle accuracy held at cost 2.199 against a fixed cost of 4
+      allocation by true demand — D=1: n_t 2.00 · D=4: n_t 4.00
+    seed 8: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    seed 9: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+    seed 10: GATE DID NOT CLOSE — cost is still ~K, so the budget penalty is too weak to bite
+      allocation by true demand — D=1: n_t 4.00 · D=4: n_t 4.00
+
+  Cost is required work per token. Path A computes all K factors and
+  multiplies the disabled ones by zero, so none of this is wall-clock.
+
+written: results/gate_bias40_more.json
