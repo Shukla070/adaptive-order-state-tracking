@@ -1,0 +1,146 @@
+# Exact versions of the environment in which every result in results/ was
+# produced. Captured 2026-09-18 12:10 UTC from the working installation.
+#
+# This file is self-sufficient: the --extra-index-url below is what makes
+# torch==2.6.0+cu126 resolvable. Installing torch from plain PyPI gives a
+# DIFFERENT build with the same version number and no +cu126 suffix, which
+# fails silently rather than loudly.
+#
+# Two dependencies are git URLs pinned to exact commits (abstract_algebra,
+# sfirah). They are required by state_tracking/src/generate_data.py, main.py
+# and work/check_data_histogram.py. Installing needs network access to
+# github.com. Upstream's requirements.txt does not pin them; this file does.
+#
+# flash-linear-attention is NOT here. It is the patched copy vendored in this
+# repository and is installed editable:
+#     pip install --no-build-isolation -e ./flash-linear-attention
+
+--extra-index-url https://download.pytorch.org/whl/cu126
+
+# The two git dependencies are installed SEPARATELY, with --no-deps:
+#
+#     pip install --no-deps \
+#       git+https://github.com/jopetty/abstract_algebra@94226a088037c1c8a68848bd2a0749d5bdfff2c2 \
+#       git+https://github.com/jopetty/sfirah@30b5a87342882f42dc3ed4136ee1ade3633c266e
+#
+# They cannot be resolved inline. sfirah declares a dependency on s4, which
+# declares gluonts, which caps pandas<3 and numpy<2.5 -- against the pandas
+# 3.0.5 and numpy 2.5.2 this project actually runs on. That is not a real
+# conflict: neither s4 nor gluonts was ever installed in the environment that
+# produced every result in results/, and nothing imports them. The incremental
+# install this lock was captured from never followed that branch; a clean
+# one-pass resolve does, and fails.
+#
+# --no-deps is safe here precisely because this file is a freeze of a working
+# environment: every dependency these two packages genuinely use at runtime is
+# already pinned below. work/check_env.py imports both to confirm it.
+
+accelerate==1.14.0
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.3
+aiosignal==1.4.0
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+attrs==26.1.0
+# causal-conv1d==1.7.0
+#   REQUIRED, but installed in its own step -- see work/setup_env.sh.
+#
+#   It is not optional. fla/modules/convolution.py raises
+#       RuntimeError: Please either install `causal-conv1d>=1.4.0` ...
+#   at construction time unless use_fast_conv1d is False, and
+#   GatedDeltaProduct builds a ShortConvolution with use_short_conv=True
+#   by default. Every result in results/ was produced on that path.
+#
+#   It cannot be resolved from this file because it compiles a CUDA
+#   extension and needs torch present at BUILD time, which pip's default
+#   build isolation hides from it. Hence:
+#       pip install --no-build-isolation causal-conv1d==1.7.0
+certifi==2026.7.22
+charset-normalizer==3.5.1
+click==8.5.0
+cloudpickle==3.1.2
+datasets==3.3.0
+dill==0.3.8
+einops==0.8.2
+filelock==3.32.3
+fire==0.7.1
+frozenlist==1.8.0
+fsspec==2024.12.0
+h11==0.16.0
+hf-xet==1.6.0
+httpcore==1.0.9
+httpx==0.28.1
+huggingface_hub==0.36.2
+humanize==4.16.0
+idna==3.19
+Jinja2==3.1.6
+joblib==1.6.0
+markdown-it-py==4.2.0
+MarkupSafe==3.0.3
+mdurl==0.1.2
+mpmath==1.3.0
+multidict==6.7.1
+multiprocess==0.70.16
+narwhals==2.25.0
+networkx==3.6.1
+ninja==1.13.2
+numpy==2.5.2
+nvidia-cublas-cu12==12.6.4.1
+nvidia-cuda-cupti-cu12==12.6.80
+nvidia-cuda-nvrtc-cu12==12.6.77
+nvidia-cuda-runtime-cu12==12.6.77
+nvidia-cudnn-cu12==9.5.1.17
+nvidia-cufft-cu12==11.3.0.4
+nvidia-curand-cu12==10.3.7.77
+nvidia-cusolver-cu12==11.7.1.2
+nvidia-cusparse-cu12==12.5.4.2
+nvidia-cusparselt-cu12==0.6.3
+nvidia-nccl-cu12==2.21.5
+nvidia-nvjitlink-cu12==12.6.85
+nvidia-nvtx-cu12==12.6.77
+opentelemetry-api==1.44.0
+ordered-set==4.1.0
+packaging==26.3
+pandas==3.0.5
+platformdirs==4.11.7
+polars==1.44.1
+polars-runtime-32==1.44.1
+propcache==0.5.2
+protobuf==7.36.1
+psutil==7.2.2
+pyarrow==25.0.1
+pydantic==2.13.5
+pydantic_core==2.46.5
+Pygments==2.21.0
+pyrootutils==1.0.4
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.3
+PyYAML==6.0.3
+regex==2026.9.3
+requests==2.34.2
+rich==15.0.0
+safetensors==0.8.0
+scikit-learn==1.9.0
+scipy==1.18.1
+sentry-sdk==2.68.1
+setuptools==78.1.0
+shellingham==1.5.4
+six==1.17.0
+sympy==1.13.1
+termcolor==3.3.0
+threadpoolctl==3.6.0
+tokenizers==0.21.4
+torch==2.6.0+cu126
+torcheval==0.0.7
+tqdm==4.70.0
+transformers==4.49.0
+triton==3.2.0
+typer==0.27.2
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+urllib3==2.7.0
+wandb==0.29.0
+wheel==0.48.0
+xxhash==4.0.1
+yarl==1.24.5
