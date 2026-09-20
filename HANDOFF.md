@@ -8,64 +8,113 @@ conversation.
 
 ## 0. How to work with me
 
-These are not generic preferences. Each one was learned from a specific mistake
-in the previous sessions, and repeating any of them costs real GPU hours.
+Every rule here was learned from a specific mistake in an earlier session. Each
+one states **when it fires**, because none of these failures came from disagreeing
+with the principle — they came from not noticing that the moment had arrived.
 
-**Verify before claiming.** Never describe intended work as completed. I once
-wrote "trained end-to-end with a compute-budget penalty" on a departmental form
-when the gate had never been trained. If something is planned, say planned. If a
-number came from an oracle rather than a learned model, say so every time.
+### Checklist A — before any claim goes into a document
 
-**When something fails, try to fix it — do not convert it into a finding.** My
-strongest instinct is to write up a failure as "an interesting negative result."
-That is paper posture, not building posture. Seven training failures got filed as
-seven pieces of evidence when they were one bug worth attacking. Push back on me
+Six questions. Any "no" or "not sure" means the claim is not ready.
+
+1. **Did I verify this, or am I relaying it?** Second-hand includes my own earlier
+   messages, a subagent's summary, and a search-result snippet.
+2. **Is it proved, measured, notional, or planned?** Every number carries exactly
+   one of those four labels. A cost that came from the oracle says "oracle" every
+   single time.
+3. **How many seeds?** Outcomes here are bistable, not Gaussian. Report the
+   fraction of seeds that escaped the plateau — never a mean over seeds, never the
+   best run.
+4. **Is the difference larger than the noise floor?** Roughly 0.005 token accuracy
+   and 0.05 sequence accuracy. Below that it is noise, whatever it looks like.
+5. **If the claim rests on a trend, did I plot or measure the trend?** Four logged
+   points are not a trend.
+6. **Could this be our setup rather than the architecture?** Answer that before
+   writing any sentence that blames something published.
+
+### Checklist B — before any GPU run
+
+- **Write the decision rule first.** What each possible outcome means, and what it
+  makes us do next, recorded before the numbers exist. A rule written afterwards
+  is a rationalisation wearing a rule's clothes.
+- **Name the failure condition.** A run that cannot fail cannot inform.
+- **Put a cheap test in front of the expensive one.** A CPU test that reproduces
+  the hypothesis in seconds has twice saved hours of GPU time on this project.
+- **The test must exercise the real code path.** A diagnostic that constructs the
+  object directly, instead of calling the function training actually calls, will
+  pass while the bug is live. This has happened twice: `check_gate_init.py`
+  bypassed `build()`, and `check_gate_precision.py` ran both arms through the
+  already-patched gate and so compared the fix against itself.
+
+### The rules, and what produced them
+
+**Verify before claiming.** *Fires whenever I am about to describe work as done.*
+Never present intended work as completed. I once wrote "trained end-to-end with a
+compute-budget penalty" on a departmental form when the gate had never been
+trained. If something is planned, it says planned.
+
+**When something fails, fix it — do not convert it into a finding.** *Fires the
+moment the phrase "interesting negative result" appears, in my words or yours.*
+Seven training failures were filed as seven pieces of evidence when they were one
+bug worth attacking. That is paper posture, not building posture. Push back on me
 when I do this.
 
-To be precise, because the rule is easy to over-apply: **record and analyse every
+Precisely, because the rule is easy to over-apply: **record and analyse every
 negative result — that part is good.** What is forbidden is the next step, "this
-has not been reported before, therefore it is a contribution." The novelty claim
-is what smuggles a bug into a paper. **Novelty in a negative result is weak
-evidence of a contribution and moderate evidence of a setup problem:** if a
-well-resourced field has not reported it, the likeliest explanations in order are
-(1) our setup, (2) nobody tried, (3) a real finding. On 13 September a sentence in
-`PLAN.md` claiming a training wall was "resource-independent, reproducible, and
-not reported anywhere in the literature" turned out to be (1) — every cell was a
-single draw from a bistable outcome. See `AUDIT.md`.
+has not been reported before, therefore it is a contribution." **Novelty in a
+negative result is weak evidence of a contribution and moderate evidence of a
+setup problem.** If a well-resourced field has not reported something, the
+likeliest explanations in order are (1) our setup, (2) nobody tried, (3) a real
+finding. On 13 September `PLAN.md` called a training wall "resource-independent,
+reproducible, and not reported anywhere in the literature". It was (1) — every
+cell was a single draw from a bistable outcome. See `AUDIT.md`.
 
-**Attribution before mechanism.** Before blaming a published architecture, rule
-out my own experimental setup. I built a theory about a flaw in DeltaProduct's
-β parametrisation while running at 1/10th the training steps of the only
-configuration confirmed to work. Ask "is this our fault?" early and take the
-answer seriously.
+**Attribution before mechanism.** *Fires before any sentence blaming a published
+architecture.* I built a theory about a flaw in DeltaProduct's β parametrisation
+while running at one tenth the training steps of the only configuration confirmed
+to work. Ask "is this ours?" early and take the answer seriously.
 
 **Do not read trends from a handful of noisy points.** I called a loss curve
 "still descending" from four logged values; 60 000 further steps showed it was
-flat oscillation. If a claim rests on a trend, plot or measure it.
+flat oscillation.
 
-**Separate notional from measured.** Our compute savings are *required work per
-token*, not wall-clock. The adaptive arm took 756s against 761s for the
-full-cost arm — essentially identical, because unused factors are still computed
-and multiplied by zero. Never state a speedup we have not measured.
+**Separate notional from measured.** Our saving is *required work per token*, not
+wall-clock. The adaptive arm took 756 s against 761 s for the full-cost arm —
+essentially identical, because unused factors are still computed and multiplied by
+zero. Never state a speedup we have not measured.
 
-**Write tests designed to fail.** Every experiment file should have a self-test
-that runs against synthetic data whose answer is known in advance. Two wrong
-results were caught this way before they reached a document; two others were not
-and had to be retracted.
+**Do not truncate your own evidence.** *Fires whenever a search is piped through
+`head`, or a file is read in part.* A grep for `causal_conv1d` piped through
+`head -12` returned only the Mamba files, so the package was called optional and
+removed from the lock file. It is required — the short convolution raises at
+construction without it. Treating a partial signal as the whole picture is the
+same error as reading a trend from four points, and the lock file is where it is
+most expensive.
 
-**Tell me what files you are changing, before or as you change them.** Do not
-edit silently.
+**Write tests designed to fail.** Every experiment file carries a self-test that
+runs against synthetic data whose answer is known in advance. Two wrong results
+were caught this way before reaching a document; two others were not, and had to
+be retracted.
 
-**Own errors plainly.** Acknowledge, correct, move on. No spiralling apology, no
-defending a position that the data has killed.
+**Tell me what files you are changing, before or as you change them.** No silent
+edits.
 
-**Git:** branches are wanted (a teammate will join). Commit messages must be
-understandable to someone outside this project — **no internal phase numbering
-or codenames.** GitHub account: `Shukla070`.
+**Own errors plainly.** Acknowledge, correct, move on. No spiralling apology, and
+no defending a position the data has killed.
 
-**Long runs are fine.** 10–12 hour GPU runs overnight are acceptable and
-expected. Do not design experiments so lean that the baseline itself fails —
-that was a real error and it wasted days.
+### Standing conventions
+
+**Git.** Branches are wanted — a teammate will join. Commit messages must be
+understandable to someone outside this project: **no internal phase numbering, no
+codenames, and no attribution trailers of any kind.** GitHub account: `Shukla070`.
+
+**Git writes happen in WSL, never from a cloud shell.** That shell cannot delete
+files, so a commit made there succeeds but leaves `.git/HEAD.lock` and
+`tmp_obj_*` behind, and the next ref update fails. Reads from it are fine with
+`GIT_OPTIONAL_LOCKS=0`.
+
+**Long runs are fine.** 10–12 hour overnight GPU runs are acceptable and expected.
+Do not design experiments so lean that the baseline itself fails — that was a real
+error and it wasted days.
 
 ---
 
