@@ -44,6 +44,20 @@ FIGDIR = REPO / "figures"
 # every figure and every table in the report uses the same cutoff.
 ESCAPE_TOKEN_ACC = 0.90
 
+# Plain-language names for the alphabet cells, used on every axis label so a
+# reader does not need the internal identifiers (A5_c5, S5_c5_t1, ...).
+ARM_NAMES = {
+    "A5_c5":    "5-cycles only",
+    "A5_c5_dt": "5-cycles + double transpositions",
+    "A5_c5_3c": "5-cycles + 3-cycles",
+    "S5_c5_t1": "5-cycles + one transposition",
+    "S5_c5_t":  "5-cycles + all transpositions",
+}
+
+
+def arm_name(arm):
+    return ARM_NAMES.get(arm, arm)
+
 # ----------------------------------------------------------------------------
 # palette - chosen once so every figure reads as one set
 # ----------------------------------------------------------------------------
@@ -275,7 +289,7 @@ def fig4():
         k = sum(1 for v in vals if v >= ESCAPE_TOKEN_ACC)
         lo, hi = _wilson(k, len(vals))
         bimodal = _is_bimodal(vals)
-        items.append((f"{arm}:n_h={nh}", k, len(vals), k / len(vals), lo, hi, bimodal))
+        items.append((f"{arm_name(arm)}, $n_h$={nh}", k, len(vals), k / len(vals), lo, hi, bimodal))
 
     fig, ax = plt.subplots(figsize=(7.6, 0.44 * len(items) + 2.0))
     y = np.arange(len(items))[::-1]
@@ -290,7 +304,7 @@ def fig4():
                     fontsize=13, color=C["clay"])
 
     ax.set_yticks(y)
-    ax.set_yticklabels([i[0] for i in items], fontsize=9, family="monospace")
+    ax.set_yticklabels([i[0] for i in items], fontsize=9)
     ax.set_xlim(-0.04, 1.14)
     ax.set_xlabel("fraction of runs that escape the failure plateau")
     ax.set_title("Every alphabet cell is bistable - none is reliably broken")
@@ -363,10 +377,10 @@ def fig6():
                         fontsize=9.5, family="monospace",
                         color="white" if grid[i, j] > 0.75 or grid[i, j] < 0.25 else C["ink"])
     ax.set_xticks(range(len(orders)))
-    ax.set_xticklabels([f"n_h = {o}" for o in orders])
+    ax.set_xticklabels([f"$n_h$ = {o}" for o in orders])
     ax.set_yticks(range(len(arms)))
-    ax.set_yticklabels([f"{a}\n{meta[a][0]}, {meta[a][1]} symbols, D_max={meta[a][2]}"
-                        for a in arms], fontsize=8.5, family="monospace")
+    ax.set_yticklabels([f"{arm_name(a)}\n(closure ${meta[a][0][0]}_{meta[a][0][1:]}$, {meta[a][1]} symbols)"
+                        for a in arms], fontsize=8.5)
     ax.grid(visible=False)
     ax.set_title("Alphabet x order grid - ONE RUN PER CELL")
     fig.colorbar(im, ax=ax, label="token accuracy", fraction=0.046, pad=0.04)

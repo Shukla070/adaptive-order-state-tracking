@@ -81,12 +81,20 @@
 \newcommand{\rank}{\operatorname{rank}}
 \newcommand{\gen}[1]{\langle #1 \rangle}
 \newcommand{\cell}[1]{\texttt{#1}}
+\usepackage{xspace}
+\setlength{\emergencystretch}{2em}
+\newcommand{\alA}{\textit{5-cycles only}\xspace}
+\newcommand{\alB}{\textit{5-cycles + double transpositions}\xspace}
+\newcommand{\alC}{\textit{5-cycles + 3-cycles}\xspace}
+\newcommand{\alD}{\textit{5-cycles + one transposition}\xspace}
+\newcommand{\alE}{\textit{5-cycles + all transpositions}\xspace}
 \SetKwInput{KwIn}{Input}
 \SetKwInput{KwOut}{Output}
 
 \begin{document}
 \counterwithin{table}{section}
 \counterwithin{figure}{section}
+\makeatletter\renewcommand*\l@figure{\@dottedtocline{1}{1.5em}{3.3em}}\renewcommand*\l@table{\@dottedtocline{1}{1.5em}{3.3em}}\makeatother
 
 % ---- front sheets: no page numbers ------------------------------------
 \pagenumbering{gobble}

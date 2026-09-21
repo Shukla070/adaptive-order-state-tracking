@@ -4,20 +4,18 @@
 \section{Experimental Setup and Metrics}
 \label{sec:setup}
 \label{sec:metrics}
-Table~\ref{tab:config} (Appendix~I) lists the configuration shared by all experiments on group word problems; deviations are stated where they occur. Every run on group word problems uses a single layer, so that the order of that layer is the only source of expressivity. These experiments ran on one NVIDIA RTX 4050 Laptop GPU with 6~GB of memory; the software environment is recorded in Table~\ref{tab:env} (Appendix~I), with package versions pinned so that results from different dates remain comparable. The natural-language experiment of Section~\ref{sec:res-nlp} uses its own configuration (Section~\ref{sec:nlp-method}) and ran on an NVIDIA T4 GPU.
+All group word-problem experiments use a single layer, so that its order is the only source of expressivity; their configuration is listed in Table~\ref{tab:config} (Appendix~I). The Boxes experiment uses the configuration of Section~\ref{sec:nlp-method}.
 
+\emph{Token accuracy} is the fraction of positions predicted correctly and \emph{sequence accuracy} the fraction of sequences correct at every position; the per-position sequence accuracy $\mathrm{Acc}_{\text{seq}}(\tau)$ is the fraction still entirely correct up to position $\tau$. The \emph{required order} $\bar n$ is the mean number of factors applied per token, compared with $\mathbb{E}[D]$, the order an exact allocation needs. A run \emph{recovers the demand structure} if its allocation correlates with $D$ at 0.99 or more at a token accuracy of at least 0.99; \emph{under-allocation} is the fraction of tokens given fewer factors than they require.
 
-Token accuracy is the fraction of positions predicted correctly; sequence accuracy is the fraction of sequences correct at every position. To describe length generalisation, the per-position sequence accuracy $\mathrm{Acc}_{\text{seq}}(\tau)$ records the fraction of sequences still entirely correct up to position $\tau$. The \emph{required order} $\bar n$ is the mean number of factors applied per token with hard gates, and is compared with $\mathbb{E}[D]$, the order an exact allocation requires. A run \emph{recovers the demand structure} if its allocation correlates with $D$ at $0.99$ or above while its token accuracy is at least $0.99$; \emph{under-allocation} is the fraction of tokens given fewer factors than they require.
-
-Training on these tasks is bistable: a run either converges close to perfect accuracy or remains on a plateau near chance. The bfloat16 kernels accumulate in a non-deterministic order, so runs with the same configuration and random seed can reach different outcomes. Where outcomes are bistable, results are therefore reported as the \emph{escape fraction} $k/n$, the number of runs out of $n$ whose token accuracy reaches $0.90$, with a 95\% Wilson score interval. For configurations whose outcomes spread continuously, all outcomes are reported instead.
-
+Training on these tasks is \emph{bistable}: a run either converges close to perfect accuracy or remains near chance, and because the recurrence kernels accumulate in a non-deterministic order, repeated runs of the same configuration and seed can end differently. Such configurations are therefore reported by their \emph{escape fraction} $k/n$, the number of runs out of $n$ reaching a token accuracy of 0.90, with a 95\% Wilson score interval; where outcomes spread continuously, every outcome is reported.
 
 \section{Reproduction of the Base Method}
 \label{sec:res-repro}
-DeltaProduct was first reproduced with the authors' training code, before any modification (Table~\ref{tab:repro}). On $S_3$ the reproduction matches the published pattern: two factors reach sequence accuracy 1.000 within one epoch, while one factor stays at zero, as the rank bound predicts for the 3-cycles of $S_3$. On $S_5$, a single four-factor layer (12 heads of dimension 32, 500\,000 sequences, 100 epochs, 7 h 45 min) was trained at length 128 and evaluated at length 512.
+DeltaProduct was first reproduced with the authors' training code, before any modification (Table~\ref{tab:repro}). On $S_3$ the reproduction matches the published pattern: two factors reach sequence accuracy 1.000 within one epoch, while one factor stays at zero, as the rank bound predicts for the 3-cycles of $S_3$. On $S_5$, a single four-factor layer (12 heads of dimension 32, 500\,000 sequences, 100 epochs) was trained at length 128 and evaluated at length 512.
 
 \begin{table}[ht]
-	\caption{Reproduction of DeltaProduct on the $S_3$ and $S_5$ word problems (the $S_5$ result at length 128 is measured on the first 128 positions of the length-512 evaluation)}
+	\caption[Reproduction of DeltaProduct on the $S_3$ and $S_5$ word problems]{Reproduction of DeltaProduct on the $S_3$ and $S_5$ word problems. The $S_5$ result at length 128 is measured on the first 128 positions of the length-512 evaluation; sequence accuracy at length 512 counts a sequence only if all 512 positions are correct. (--: not recorded)}
 	\centering
 	\begin{tabular}{l c c c c c}
 		\toprule
@@ -39,7 +37,7 @@ DeltaProduct was first reproduced with the authors' training code, before any mo
 \label{fig:repro}
 \end{figure}
 
-Figure~\ref{fig:repro} shows the per-position sequence accuracy. The model is exact on every sequence through position 100 and on 99.8\% at the training length of 128. Beyond it, accuracy decays gradually rather than collapsing: 50.5\% of sequences are still entirely correct at position 250, 16.0\% at 300, and none by position 443. Token accuracy over all 512 positions is 0.8644. The full-length sequence accuracy is zero only because every sequence eventually accumulates an error, which is why the curve is a more informative summary than a single number. This graceful degradation matches the behaviour reported for DeltaProduct. Preliminary runs with a smaller dataset and budget remained at chance for every order, confirming that the published training budget is necessary.
+Figure~\ref{fig:repro} shows the per-position sequence accuracy. The model is exact on every sequence through position 100 and on 99.8\% at the training length of 128. Beyond it, accuracy decays gradually rather than collapsing: 50.5\% of sequences are still entirely correct at position 250, 16.0\% at 300, and none by position 443. Token accuracy over all 512 positions is 0.8644. The full-length sequence accuracy is zero only because every sequence eventually accumulates an error, which is why the curve is a more informative summary than a single number. This gradual degradation matches the behaviour reported for DeltaProduct.
 
 \section{Verification of the Order-Requirement Analysis}
 \label{sec:res-verify}
@@ -81,14 +79,14 @@ Figure~\ref{fig:walltime} (Appendix~I) relates required order to measured traini
 
 \section{Alphabet Closure and Training Dynamics}
 \label{sec:res-closure}
-This experiment tests H2 by holding the task format fixed and changing only the alphabet. A single run per cell (Figure~\ref{fig:grid}, Table~\ref{tab:grid}, Appendix~I) gives a sharp contrast at three factors: the $A_5$ alphabets reach 0.9991, 0.9994 and 0.9952 and the $S_5$ alphabets 0.1094 and 0.0307, and \cell{A5\_c5\_3c} reaches 0.9510 with only two factors, which is impossible if the requirement were the transposition length.
+This experiment tests H2 by holding the task format fixed and changing only the alphabet. A single run per cell (Figure~\ref{fig:grid}, Table~\ref{tab:grid}, Appendix~I) gives a sharp contrast at three factors: the $A_5$ alphabets reach 0.9991, 0.9994 and 0.9952 and the $S_5$ alphabets 0.1094 and 0.0307, and the \alC alphabet reaches 0.9510 with only two factors, which is impossible if the requirement were the transposition length.
 
-Single runs are not reliable here, however. With identical configuration, seed and data, two runs of \cell{A5\_c5} at two factors reached 0.9598 and 0.1177: the non-deterministic accumulation of the bfloat16 kernels decided the outcome, already visible after 5\,000 steps. Each cell was therefore repeated ten times (Figure~\ref{fig:census}, Table~\ref{tab:census}).
+Single runs are not reliable here, however. With identical configuration, seed and data, two runs of the \alA alphabet at two factors reached 0.9598 and 0.1177, the outcome being decided by the non-deterministic accumulation order of the kernels and visible after 5\,000 steps. Each cell was therefore repeated ten times (Figure~\ref{fig:census}, Table~\ref{tab:census}).
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.66\linewidth]{fig4_escape_census.pdf}
-\caption[Escape fraction over ten runs per configuration]{Escape fraction over ten runs for each alphabet and order, with 95\% Wilson intervals. The marked configuration (\cell{S5\_c5\_t1}) is not bimodal, so its fraction is shown only for completeness and is analysed separately in Figure~\ref{fig:s5t1}.}
+\caption[Escape fraction over ten runs per configuration]{Escape fraction over ten runs for each alphabet and order, with 95\% Wilson intervals. The marked configuration (\alD) does not separate into two outcomes, so its fraction is shown only for completeness and is analysed separately in Figure~\ref{fig:s5t1}.}
 \label{fig:census}
 \end{figure}
 
@@ -96,22 +94,22 @@ Single runs are not reliable here, however. With identical configuration, seed a
 	\caption{Outcomes over ten runs per configuration (escape: token accuracy $\ge 0.90$)}
 	\centering
 	\footnotesize
-	\setlength{\tabcolsep}{4pt}
-	\begin{tabular}{l c c c c c}
+	\setlength{\tabcolsep}{3pt}
+	\begin{tabular}{l c c c c c c}
 		\toprule
-		\textbf{Configuration} & \textbf{Escapes} & \textbf{95\% interval} & \textbf{Median} & \textbf{Best token} & \textbf{Best seq.} \\
+		\textbf{Alphabet} & $\nh$ & \textbf{Escapes} & \textbf{95\% int.} & \textbf{Median} & \textbf{Best tok.} & \textbf{Best seq.} \\
 		\midrule
-		\cell{A5\_c5}, $\nh=2$     & 3/10 & [0.11, 0.60] & 0.1199 & 0.9728 & 0.2945 \\
-		\cell{A5\_c5\_dt}, $\nh=2$ & 2/10 & [0.06, 0.51] & 0.0435 & 0.9985 & 0.8695 \\
-		\cell{A5\_c5\_dt}, $\nh=4$ & 1/10 & [0.02, 0.40] & 0.0400 & 0.9891 & 0.6090 \\
-		\cell{S5\_c5\_t}, $\nh=4$  & 3/10 & [0.11, 0.60] & 0.0622 & 0.9994 & 0.9415 \\
-		\cell{S5\_c5\_t1}, $\nh=4$ & \multicolumn{2}{c}{not bimodal} & 0.4845 & 0.7631 & 0.0790 \\
+		\alA & 2 & 3/10 & [0.11, 0.60] & 0.1199 & 0.9728 & 0.2945 \\
+		\alB & 2 & 2/10 & [0.06, 0.51] & 0.0435 & 0.9985 & 0.8695 \\
+		\alB & 4 & 1/10 & [0.02, 0.40] & 0.0400 & 0.9891 & 0.6090 \\
+		\alE & 4 & 3/10 & [0.11, 0.60] & 0.0622 & 0.9994 & 0.9415 \\
+		\alD & 4 & \multicolumn{2}{c}{not bimodal} & 0.4845 & 0.7631 & 0.0790 \\
 		\bottomrule
 	\end{tabular}
 	\label{tab:census}
 \end{table}
 
-Four conclusions follow. \textbf{First, the $A_5$ alphabets train at two factors:} \cell{A5\_c5} escapes in 3 of 10 runs and \cell{A5\_c5\_dt} in 2 of 10, reaching 0.9728 and 0.9985, although the transposition length of their 5-cycles is four. Escape frequency is a matter of optimisation, but the existence of these runs, together with the construction of Section~\ref{sec:res-verify}, confirms that two factors suffice when the alphabet generates $A_5$, supporting H2. \textbf{Second, the single-run contrast between $A_5$ and $S_5$ does not hold:} \cell{S5\_c5\_t} at four factors, 0.0706 in its single run, escapes in 3 of 10 runs, reaching 0.9994 with both even and odd targets resolved. An $S_5$ alphabet with 71\% maximum-requirement tokens is therefore learnable at its required order. \textbf{Third, extra capacity does not make training reliable:} \cell{A5\_c5\_dt} escapes in 2 of 10 runs at two factors and 1 of 10 at four. \textbf{Fourth, \cell{S5\_c5\_t1} behaves differently:} its ten runs spread continuously from 0.2453 to 0.7631 without forming two basins (Figure~\ref{fig:s5t1}, Appendix~I), and a run with 12.5 times the steps and three times the data reached only 0.5661 (Table~\ref{tab:s5t1long}). This configuration, with 96\% maximum-requirement tokens, remains unresolved; it lies in the regime where per-token allocation has least to offer.
+Four conclusions follow. \textbf{First, the $A_5$ alphabets train at two factors:} the \alA alphabet escapes in 3 of 10 runs and the \alB alphabet in 2 of 10, reaching 0.9728 and 0.9985, although the transposition length of their 5-cycles is four. Escape frequency is a matter of optimisation, but the existence of these runs, together with the construction of Section~\ref{sec:res-verify}, confirms that two factors suffice when the alphabet generates $A_5$, supporting H2. \textbf{Second, the single-run contrast between $A_5$ and $S_5$ does not hold:} the \alE alphabet at four factors, 0.0706 in its single run, escapes in 3 of 10 runs, reaching 0.9994 with both even and odd targets resolved. An $S_5$ alphabet with 71\% maximum-requirement tokens is therefore learnable at its required order. \textbf{Third, extra capacity does not make training reliable:} the \alB alphabet escapes in 2 of 10 runs at two factors and 1 of 10 at four. \textbf{Fourth, the \alD alphabet behaves differently:} its ten runs spread continuously from 0.2453 to 0.7631 without forming two basins (Figure~\ref{fig:s5t1}, Appendix~I), and a run with 12.5 times the steps and three times the data reached only 0.5661 (Table~\ref{tab:s5t1long}). This configuration, with 96\% maximum-requirement tokens, remains unresolved; it lies in the regime where per-token allocation has least to offer.
 
 \section{End-to-End Training of the Halting Gate}
 \label{sec:res-gate}
@@ -142,7 +140,7 @@ The halting gate was trained end to end on the mixture alphabet at $p = 0.10$, w
 \end{table}
 
 
-\textbf{The gate never harms the task:} token accuracy is at least 0.998 in all ten runs, no token is ever under-allocated, and 5-cycles receive all four factors in every run. \textbf{Three runs recover the demand structure:} two assign exactly two factors to every transposition and four to every 5-cycle (a mean of 2.1990 factors per token at token accuracies of 0.99985 and 0.99980), and a third assigns three and four (3.0995). \textbf{The remaining runs do not close:} five keep all four factors for every token and two close only partially (3.91 and 3.82). The escape fraction is thus 2/5 at $\gamma=0.1$ and 3/5 at $\gamma=0.3$ by the criterion of a mean order below four with accuracy above 0.99, and 3/10 overall by the stricter criterion of recovering the structure. The best runs are both cheaper and more accurate than the three-factor model (3 factors, 0.9696) and approach the four-factor model (4 factors, 0.9999); the remaining gap to the exact allocation lies entirely in the low-requirement tokens, which receive two factors instead of one. Because only two requirement values occur, the correlation shows that the classes are separated, not that a multi-valued requirement would be matched level by level.
+\textbf{The gate never harms the task:} token accuracy is at least 0.998 in all ten runs, no token is ever under-allocated, and 5-cycles receive all four factors in every run. \textbf{Three runs recover the demand structure:} two assign exactly two factors to every transposition and four to every 5-cycle (a mean of 2.1990 factors per token at token accuracies of 0.99985 and 0.99980), and a third assigns three and four (3.0995). \textbf{The remaining seven runs retain all or nearly all factors:} five apply all four factors to every token, and two reduce the mean order only slightly, to 3.91 and 3.82. The escape fraction is thus 2/5 at $\gamma=0.1$ and 3/5 at $\gamma=0.3$ by the criterion of a mean order below four with accuracy above 0.99, and 3/10 overall by the stricter criterion of recovering the structure. The best runs are both cheaper and more accurate than the three-factor model (3 factors, 0.9696) and approach the four-factor model (4 factors, 0.9999); the remaining gap to the exact allocation lies entirely in the low-requirement tokens, which receive two factors instead of one. Because only two requirement values occur, the correlation shows that the classes are separated, not that a multi-valued requirement would be matched level by level.
 
 
 Table~\ref{tab:gatehistory} and Figure~\ref{fig:gatehistory} (Appendix~I) place the sweep among all configurations in which the gate was trained. Across 49 learned runs, 7 recovered the demand structure. In the initial configuration, two runs, at $\gamma = 0.03$ and $\gamma = 0.1$, allocated exactly one factor to every transposition and four to every 5-cycle, reaching the exact allocation of 1.2985 factors per token with token accuracies of 0.99990 and 0.99998. The gate can therefore recover the requirement exactly, including the single factor needed by low-requirement tokens. Later configurations have not reproduced this, and identifying which change raised the floor to two factors is the first priority for future work.
@@ -210,6 +208,6 @@ Figure~\ref{fig:boxes} and Table~\ref{tab:boxes} report exact-match accuracy on 
 	\label{tab:hypotheses}
 \end{table}
 
-Table~\ref{tab:hypotheses} relates the results to the hypotheses. On the capability side, the central finding is that a token's requirement is a property of the alphabet it belongs to: the same 5-cycle requires two factors when the closure is $A_5$ and four when it is $S_5$. The requirement therefore cannot be read off a token in isolation, and neither can the correct fixed order be chosen by inspecting the inputs one at a time, which is precisely the situation in which a learned allocation is useful. The analysis also predicts where allocation cannot help, namely alphabets whose closure is $A_4$ or $A_5$. The Boxes experiment carries the capability side beyond groups: in text, the recurrent layer applies the updates that an attention layer of the same size does not, and the number of operations gives a natural axis along which the required computation may vary. Whether it does, that is, whether more than one factor is needed and for which tokens, is not yet measured, because only $\nh = 2$ was tested.
+Table~\ref{tab:hypotheses} relates the results to the hypotheses. The central finding is that a token's requirement is a property of its alphabet: the same 5-cycle requires two factors when the closure is $A_5$ and four when it is $S_5$. The requirement therefore cannot be read off a token in isolation, which is the situation in which a learned allocation is useful; the analysis also predicts where allocation cannot help, namely closures $A_4$ and $A_5$. The Boxes experiment extends the capability result to text, with the number of operations as a natural axis along which the required computation may vary; whether it does is not yet measured, since only $\nh = 2$ was tested.
 
-On the learning side, the dominant factor in every experiment is the bistability of training: both the base layer and the halting gate either reach a clean solution or remain on a plateau, with the outcome decided early and not fixed by the random seed. Conclusions have therefore been drawn from repeated runs or from the existence of successful runs, not from single outcomes. When the gate succeeds, it succeeds cleanly, separating the requirement classes exactly with no under-allocation and no loss of accuracy. The practical usefulness of the mechanism now depends on raising the fraction of runs that succeed and on executing only the allocated factors, so that the reduction in required order becomes a reduction in time.
+The dominant factor in every training experiment is bistability: the base layer and the halting gate either reach a clean solution or remain on a plateau, so conclusions are drawn from repeated runs rather than single outcomes. When the gate succeeds, it separates the requirement classes with no under-allocation and no loss of accuracy. Its practical value now depends on raising the fraction of successful runs and on executing only the allocated factors.

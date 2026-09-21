@@ -13,16 +13,16 @@ Table~\ref{tab:alphabets} lists the alphabets of Section~\ref{sec:task}, their c
 	\centering
 	\footnotesize
 	\setlength{\tabcolsep}{4pt}
-	\begin{tabular}{p{2.5cm} p{4.4cm} c c c}
+	\begin{tabular}{p{3.6cm} p{3.9cm} c c c}
 		\toprule
 		\textbf{Alphabet} & \textbf{Contents} & \textbf{Symbols} & $\gen{\Sigma}$ & \textbf{Share at $D_{\max}$} \\
 		\midrule
 		Mixture, rate $p$ & 10 transpositions, 24 five-cycles; five-cycle with probability $p$ & 34 & $S_5$ ($p<1$) & $p$ \\
-		\cell{A5\_c5}     & 24 five-cycles                     & 24 & $A_5$ & 1.00 \\
-		\cell{A5\_c5\_dt} & five-cycles, double transpositions & 39 & $A_5$ & 1.00 \\
-		\cell{A5\_c5\_3c} & five-cycles, 3-cycles              & 44 & $A_5$ & 1.00 \\
-		\cell{S5\_c5\_t1} & five-cycles, \emph{one} transposition & 25 & $S_5$ & 0.96 \\
-		\cell{S5\_c5\_t}  & five-cycles, all 10 transpositions & 34 & $S_5$ & 0.71 \\
+		\alA & 24 five-cycles & 24 & $A_5$ & 1.00 \\
+		\alB & 24 five-cycles, 15 double transpositions & 39 & $A_5$ & 1.00 \\
+		\alC & 24 five-cycles, 20 3-cycles & 44 & $A_5$ & 1.00 \\
+		\alD & 24 five-cycles, 1 transposition & 25 & $S_5$ & 0.96 \\
+		\alE & 24 five-cycles, 10 transpositions & 34 & $S_5$ & 0.71 \\
 		\bottomrule
 	\end{tabular}
 	\label{tab:alphabets}
@@ -162,11 +162,11 @@ Figure~\ref{fig:grid} and Table~\ref{tab:grid} show the single-run grid of alpha
 		\toprule
 		\textbf{Alphabet} & $\gen{\Sigma}$ & $D_{\max}$ & $\nh = 2$ & $\nh = 3$ & $\nh = 4$ \\
 		\midrule
-		\cell{A5\_c5}     & $A_5$ & 2 & --              & 0.9991 (0.936) & -- \\
-		\cell{A5\_c5\_dt} & $A_5$ & 2 & --              & 0.9994 (0.953) & -- \\
-		\cell{A5\_c5\_3c} & $A_5$ & 2 & 0.9510 (0.135) & 0.9952 (0.751) & 0.9993 (0.953) \\
-		\cell{S5\_c5\_t1} & $S_5$ & 4 & 0.0904 (0.000) & 0.1094 (0.000) & 0.4851 (0.025) \\
-		\cell{S5\_c5\_t}  & $S_5$ & 4 & 0.0422 (0.000) & 0.0307 (0.000) & 0.0706 (0.000) \\
+		\alA     & $A_5$ & 2 & --              & 0.9991 (0.936) & -- \\
+		\alB & $A_5$ & 2 & --              & 0.9994 (0.953) & -- \\
+		\alC & $A_5$ & 2 & 0.9510 (0.135) & 0.9952 (0.751) & 0.9993 (0.953) \\
+		\alD & $S_5$ & 4 & 0.0904 (0.000) & 0.1094 (0.000) & 0.4851 (0.025) \\
+		\alE  & $S_5$ & 4 & 0.0422 (0.000) & 0.0307 (0.000) & 0.0706 (0.000) \\
 		\bottomrule
 	\end{tabular}
 	\label{tab:grid}
@@ -175,19 +175,19 @@ Figure~\ref{fig:grid} and Table~\ref{tab:grid} show the single-run grid of alpha
 \begin{figure}[ht]
 \centering
 \includegraphics[width=0.72\linewidth]{fig5_s5c5t1_not_bimodal.pdf}
-\caption[Outcomes of ten runs of \cell{S5\_c5\_t1} at four factors]{Token accuracy of ten runs of \cell{S5\_c5\_t1} at four factors. The outcomes spread continuously without separating into a low and a high basin.}
+\caption[Outcomes of ten runs of the \alD alphabet at four factors]{Token accuracy of ten runs of the \alD alphabet at four factors. The outcomes spread continuously without separating into a low and a high basin.}
 \label{fig:s5t1}
 \end{figure}
 
 \begin{table}[ht]
-	\caption{\cell{S5\_c5\_t1}: token accuracy under extended training (one run per cell)}
+	\caption{The \alD alphabet: token accuracy under extended training (one run per cell)}
 	\centering
 	\small
 	\begin{tabular}{p{5.2cm} c c c c}
 		\toprule
 		\textbf{Training} & \textbf{Sequences} & $\nh = 2$ & $\nh = 3$ & $\nh = 4$ \\
 		\midrule
-		20\,000 steps, constant LR            & 100\,000 & 0.0904 & 0.1094 & 0.4851 \\
+		20\,000 steps, constant learning rate            & 100\,000 & 0.0904 & 0.1094 & 0.4851 \\
 		40\,000 steps, cosine schedule        & 100\,000 & --     & 0.4749 & 0.4843 \\
 		80\,000 steps                         & 100\,000 & --     & --     & 0.4721 \\
 		250\,000 steps, warm-up and cosine    & 300\,000 & 0.3617 & 0.4828 & 0.5661 \\
@@ -339,7 +339,7 @@ Evaluate with hard gates on the held-out sequences\;
 		\toprule
 		\textbf{Component} & \textbf{Version} \\
 		\midrule
-		GPU & NVIDIA GeForce RTX 4050 Laptop, 6 GB VRAM \\
+		GPU & NVIDIA GeForce RTX 4050 Laptop, 6 GB memory \\
 		Operating system & Ubuntu 26.04 on WSL2, Windows host \\
 		Python & 3.12.7 \\
 		PyTorch; CUDA; cuDNN & 2.6.0; 12.6; 9.5.1 \\

@@ -86,21 +86,21 @@ which interpolates between DeltaNet ($\nh=1$) and a dense transition. The author
 Table~\ref{tab:related} summarises the methods reviewed along the dimensions relevant to this project.
 
 \begin{table}[ht]
-	\caption{Comparison of related methods}
+	\caption{Comparison of related methods (N/A: not applicable)}
 	\centering
 	\small
 	\begin{tabular}{p{3.6cm} p{4.4cm} p{2.2cm} p{2.6cm}}
 		\toprule
 		\textbf{Method} & \textbf{Transition per token} & \textbf{Order per token} & \textbf{Allocation} \\
 		\midrule
-		Linear attention \cite{lineartransformers} & Identity (additive only) & -- & -- \\
-		Mamba \cite{mamba} & Diagonal, input-dependent & -- & -- \\
-		DeltaNet \cite{deltanet} & One Householder factor & Fixed, 1 & -- \\
-		Gated DeltaNet \cite{gateddeltanet} & Gated Householder factor & Fixed, 1 & -- \\
-		Negative eigenvalues \cite{negeig} & Householder, $\beta\in[0,2]$ & Fixed & -- \\
+		Linear attention \cite{lineartransformers} & Identity (additive only) & N/A & N/A \\
+		Mamba \cite{mamba} & Diagonal, input-dependent & N/A & N/A \\
+		DeltaNet \cite{deltanet} & One Householder factor & Fixed, 1 & N/A \\
+		Gated DeltaNet \cite{gateddeltanet} & Gated Householder factor & Fixed, 1 & N/A \\
+		Negative eigenvalues \cite{negeig} & Householder, $\beta\in[0,2]$ & Fixed & N/A \\
 		DeltaProduct \cite{deltaproduct} & $\nh$ Householder factors & Fixed, global & Hand-chosen \\
-		ACT / PonderNet \cite{act,pondernet} & -- (network depth) & Variable & Learned halting \\
-		Mixture-of-Depths \cite{mod} & -- (block skipping) & Variable & Top-$k$ router \\
+		ACT / PonderNet \cite{act,pondernet} & N/A (network depth) & Variable & Learned halting \\
+		Mixture-of-Depths \cite{mod} & N/A (block skipping) & Variable & Top-$k$ router \\
 		\midrule
 		\textbf{This work} & $\le \nh$ Householder factors & \textbf{Variable} & \textbf{Learned halting} \\
 		\bottomrule
@@ -108,7 +108,15 @@ Table~\ref{tab:related} summarises the methods reviewed along the dimensions rel
 	\label{tab:related}
 \end{table}
 
-Three observations follow. First, the expressivity of a linear RNN is governed by the structure of its state transition, and products of generalized Householder factors with strengths in $[0,2]$ are currently the most expressive structure that remains efficient to train \cite{negeig, deltaproduct}. Second, in every such architecture the number of factors is a global constant, so the computation spent on a token does not depend on what the token does. Third, adaptive computation is well established for network depth, where learned halting and routing are both mature, but it has not been applied to the order of the state transition. The theoretical work also indicates that the number of factors required depends on algebraic properties of the task \cite{deltaproduct, howe, larson}, which suggests that the requirement varies across tokens in a way that can be characterised. Finally, benchmarks for state tracking in natural language exist \cite{scone, entitytracking, propara, npncooking}, but the models evaluated on them spend a fixed amount of computation on every sentence, however much state it changes. Together these observations identify the gap addressed here: a DeltaProduct-family layer in which the number of factors is chosen per token by a learned mechanism, together with an account of how many factors each token requires.
+The survey leads to the following observations:
+\begin{enumerate}[label={(\arabic*)}, itemsep=2pt, topsep=4pt]
+	\item \textbf{Expressivity is set by the transition.} Products of generalized Householder factors with strengths in $[0,2]$ are the most expressive transitions that remain efficient to train \cite{negeig, deltaproduct}.
+	\item \textbf{The number of factors is always a global constant.} The computation spent on a token therefore does not depend on what the token does.
+	\item \textbf{Adaptive computation has not reached the transition.} Learned halting and routing are established for network depth \cite{act, pondernet, mod}, but not for the order of a linear RNN's state transition.
+	\item \textbf{The requirement is algebraic.} The number of factors needed depends on algebraic properties of the task \cite{deltaproduct, howe, larson}, which suggests that it varies across tokens in a way that can be characterised.
+	\item \textbf{Language benchmarks exist but use fixed computation.} State-tracking benchmarks in natural language \cite{scone, entitytracking, propara, npncooking} are evaluated with models that spend the same computation on every sentence.
+\end{enumerate}
+Together these identify the gap addressed here: a DeltaProduct-family layer whose number of factors is chosen per token by a learned mechanism, with an account of how many factors each token requires.
 
 \section{Problem Statement and Objectives}
 \label{sec:problem}
