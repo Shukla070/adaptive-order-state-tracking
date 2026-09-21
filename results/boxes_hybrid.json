@@ -1,0 +1,340 @@
+{
+ "source": {
+  "branch": "nlp_experiment",
+  "commit": "abd1349",
+  "author": "Shashwat Chaturvedi",
+  "notebook": "experiments/hybrid_delta_attn.ipynb",
+  "note": "values transcribed from the notebook's saved cell outputs; the run's own hybrid_results.json was not committed"
+ },
+ "config": {
+  "layers": 2,
+  "d": 128,
+  "heads": 4,
+  "head_dim": 32,
+  "n_h": 2,
+  "lr": 0.001,
+  "warmup": 200,
+  "lr_schedule": "constant",
+  "batch_size": {
+   "boxes": 64,
+   "recall": 128
+  },
+  "steps": {
+   "boxes": 8000,
+   "recall": 6000
+  },
+  "precision": "float32",
+  "device": "Tesla T4 (Kaggle)",
+  "boxes": {
+   "split": "t5_boxes_nso_exp2_max3",
+   "train_max_ops": 2,
+   "train_examples": 78402,
+   "eval_per_bucket": [
+    2000,
+    2000,
+    2000,
+    2000,
+    2000,
+    1020
+   ],
+   "vocab": 123,
+   "metric": "exact match of the answer"
+  },
+  "recall": {
+   "train_pairs": 16,
+   "eval_pairs": [
+    16,
+    32,
+    64
+   ],
+   "metric": "token accuracy at query positions"
+  }
+ },
+ "params": {
+  "recall": {
+   "delta": {
+    "d_ff": 455,
+    "params": 503168
+   },
+   "attn": {
+    "d_ff": 591,
+    "params": 503168
+   },
+   "hybrid:scalar": {
+    "d_ff": 256,
+    "params": 502914
+   }
+  },
+  "boxes": {
+   "delta": {
+    "d_ff": 455,
+    "params": 469120
+   },
+   "attn": {
+    "d_ff": 591,
+    "params": 469120
+   },
+   "hybrid:scalar": {
+    "d_ff": 256,
+    "params": 468866
+   }
+  }
+ },
+ "learned_alpha_delta_weight": {
+  "boxes": {
+   "seed0": [
+    0.527,
+    0.507
+   ],
+   "seed1": [
+    0.59,
+    0.548
+   ],
+   "seed2": [
+    0.59,
+    0.519
+   ]
+  },
+  "recall": {
+   "seed0": [
+    0.396,
+    0.452
+   ],
+   "seed1": [
+    0.352,
+    0.486
+   ],
+   "seed2": [
+    0.282,
+    0.482
+   ]
+  }
+ },
+ "runs": [
+  {
+   "task": "recall",
+   "model": "delta",
+   "seed": 0,
+   "minutes": 3.6,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.992,
+    "N=64": 0.839
+   }
+  },
+  {
+   "task": "recall",
+   "model": "delta",
+   "seed": 1,
+   "minutes": 3.7,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.994,
+    "N=64": 0.862
+   }
+  },
+  {
+   "task": "recall",
+   "model": "delta",
+   "seed": 2,
+   "minutes": 3.8,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.992,
+    "N=64": 0.824
+   }
+  },
+  {
+   "task": "recall",
+   "model": "attn",
+   "seed": 0,
+   "minutes": 1.8,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.99,
+    "N=64": 0.878
+   }
+  },
+  {
+   "task": "recall",
+   "model": "attn",
+   "seed": 1,
+   "minutes": 1.8,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.993,
+    "N=64": 0.849
+   }
+  },
+  {
+   "task": "recall",
+   "model": "attn",
+   "seed": 2,
+   "minutes": 1.8,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.979,
+    "N=64": 0.795
+   }
+  },
+  {
+   "task": "recall",
+   "model": "hybrid:scalar",
+   "seed": 0,
+   "minutes": 4.6,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.986,
+    "N=64": 0.819
+   }
+  },
+  {
+   "task": "recall",
+   "model": "hybrid:scalar",
+   "seed": 1,
+   "minutes": 4.6,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.994,
+    "N=64": 0.825
+   }
+  },
+  {
+   "task": "recall",
+   "model": "hybrid:scalar",
+   "seed": 2,
+   "minutes": 4.6,
+   "final": {
+    "N=16": 1.0,
+    "N=32": 0.999,
+    "N=64": 0.891
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "delta",
+   "seed": 0,
+   "minutes": 12.2,
+   "final": {
+    "ops=0": 0.993,
+    "ops=1": 0.975,
+    "ops=2": 0.936,
+    "ops=3": 0.905,
+    "ops=4": 0.887,
+    "ops>=5": 0.839
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "delta",
+   "seed": 1,
+   "minutes": 12.2,
+   "final": {
+    "ops=0": 0.988,
+    "ops=1": 0.968,
+    "ops=2": 0.929,
+    "ops=3": 0.886,
+    "ops=4": 0.863,
+    "ops>=5": 0.818
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "delta",
+   "seed": 2,
+   "minutes": 12.2,
+   "final": {
+    "ops=0": 0.981,
+    "ops=1": 0.948,
+    "ops=2": 0.872,
+    "ops=3": 0.781,
+    "ops=4": 0.742,
+    "ops>=5": 0.712
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "attn",
+   "seed": 0,
+   "minutes": 5.2,
+   "final": {
+    "ops=0": 0.979,
+    "ops=1": 0.312,
+    "ops=2": 0.267,
+    "ops=3": 0.238,
+    "ops=4": 0.244,
+    "ops>=5": 0.225
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "attn",
+   "seed": 1,
+   "minutes": 5.2,
+   "final": {
+    "ops=0": 0.947,
+    "ops=1": 0.243,
+    "ops=2": 0.215,
+    "ops=3": 0.156,
+    "ops=4": 0.147,
+    "ops>=5": 0.111
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "attn",
+   "seed": 2,
+   "minutes": 5.2,
+   "final": {
+    "ops=0": 0.984,
+    "ops=1": 0.387,
+    "ops=2": 0.24,
+    "ops=3": 0.193,
+    "ops=4": 0.243,
+    "ops>=5": 0.196
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "hybrid:scalar",
+   "seed": 0,
+   "minutes": 15.0,
+   "final": {
+    "ops=0": 0.995,
+    "ops=1": 0.91,
+    "ops=2": 0.818,
+    "ops=3": 0.774,
+    "ops=4": 0.758,
+    "ops>=5": 0.703
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "hybrid:scalar",
+   "seed": 1,
+   "minutes": 15.0,
+   "final": {
+    "ops=0": 0.998,
+    "ops=1": 0.942,
+    "ops=2": 0.861,
+    "ops=3": 0.652,
+    "ops=4": 0.692,
+    "ops>=5": 0.569
+   }
+  },
+  {
+   "task": "boxes",
+   "model": "hybrid:scalar",
+   "seed": 2,
+   "minutes": 14.9,
+   "final": {
+    "ops=0": 0.993,
+    "ops=1": 0.933,
+    "ops=2": 0.863,
+    "ops=3": 0.803,
+    "ops=4": 0.749,
+    "ops>=5": 0.649
+   }
+  }
+ ]
+}

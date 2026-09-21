@@ -5,6 +5,30 @@
 \renewcommand{\thesection}{A.\arabic{section}}
 This appendix collects supplementary results referred to in the main chapters.
 
+\section{Alphabets Used in the Experiments}
+Table~\ref{tab:alphabets} lists the alphabets of Section~\ref{sec:task}, their closures and their share of maximum-requirement tokens.
+
+\begin{table}[ht]
+	\caption{Alphabets used in the experiments}
+	\centering
+	\footnotesize
+	\setlength{\tabcolsep}{4pt}
+	\begin{tabular}{p{2.5cm} p{4.4cm} c c c}
+		\toprule
+		\textbf{Alphabet} & \textbf{Contents} & \textbf{Symbols} & $\gen{\Sigma}$ & \textbf{Share at $D_{\max}$} \\
+		\midrule
+		Mixture, rate $p$ & 10 transpositions, 24 five-cycles; five-cycle with probability $p$ & 34 & $S_5$ ($p<1$) & $p$ \\
+		\cell{A5\_c5}     & 24 five-cycles                     & 24 & $A_5$ & 1.00 \\
+		\cell{A5\_c5\_dt} & five-cycles, double transpositions & 39 & $A_5$ & 1.00 \\
+		\cell{A5\_c5\_3c} & five-cycles, 3-cycles              & 44 & $A_5$ & 1.00 \\
+		\cell{S5\_c5\_t1} & five-cycles, \emph{one} transposition & 25 & $S_5$ & 0.96 \\
+		\cell{S5\_c5\_t}  & five-cycles, all 10 transpositions & 34 & $S_5$ & 0.71 \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:alphabets}
+\end{table}
+
+\FloatBarrier
 \section{Theoretical Results}
 Table~\ref{tab:groups} applies Definition~\ref{def:demand} to the groups used in state-tracking benchmarks. Per-token allocation can help only where the requirement varies across non-identity elements, which excludes $A_4$ and $A_5$. Table~\ref{tab:reach} gives the exact reachability pattern behind Proposition~\ref{prop:parity}, verified on all 120 elements of $S_5$.
 
@@ -44,6 +68,50 @@ Table~\ref{tab:groups} applies Definition~\ref{def:demand} to the groups used in
 \end{table}
 
 \FloatBarrier
+Table~\ref{tab:a5classes} lists, for each element class of $A_5$, the transposition length and the rank of its image in the three-dimensional rotation representation.
+
+\begin{table}[ht]
+	\caption{Order requirement of the element classes of $A_5$}
+	\centering
+	\begin{tabular}{l c c c}
+		\toprule
+		\textbf{Element class} & \textbf{Count} & \textbf{$\ell$ (perm.\ rep.)} & \textbf{Rank in 3-D rep.} \\
+		\midrule
+		Identity             & 1  & 0 & 0 \\
+		Double transposition & 15 & 2 & 2 \\
+		3-cycle              & 20 & 2 & 2 \\
+		5-cycle              & 24 & 4 & \textbf{2} \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:a5classes}
+\end{table}
+
+Table~\ref{tab:verify} lists the checks by which the order-requirement analysis was verified (Section~\ref{sec:res-verify}).
+
+\begin{table}[ht]
+	\caption{Verification of the analysis by explicit construction (float64)}
+	\centering
+	\small
+	\begin{tabular}{p{7.4cm} p{5.2cm}}
+		\toprule
+		\textbf{Check} & \textbf{Result} \\
+		\midrule
+		$\rank(A - I) \le K$ for products of $K$ factors, all $\beta$ & Holds in every case tested \\
+		$\rank(P_g - I) = \ell(g)$ for every $g \in S_5$ & Holds for all 120 elements \\
+		Free $\beta$: $P_g$ reachable with $K$ factors iff $K \ge \ell(g)$ & Holds; worst error $1.17\times10^{-15}$ \\
+		Pinned $\beta = 2$: reachable iff $K \ge \ell(g)$ and $K \equiv \ell(g)\ (\mathrm{mod}\ 2)$ & Holds for all 120 elements \\
+		Faithful representations of $S_5$: $\rank(\rho(c)-I)$ for a 5-cycle $c$ & Always a multiple of 4; minimum 4; regular rep.\ 96 \\
+		Best 3-factor approximation of a 5-cycle in $S_5$ & 68\% relative error \\
+		Icosahedral rotations: count; orthogonality error & 60 distinct; $1.39\times10^{-16}$ \\
+		Element-order profile of the rotations & $\{1{:}1,\ 2{:}15,\ 3{:}20,\ 5{:}24\}$, that of $A_5$ \\
+		Isomorphism onto $A_5$ via the five inscribed octahedra & Faithful, all images even, onto $A_5$, homomorphic \\
+		Every non-identity rotation as two reflections & Holds for all 59; worst error $1.31\times10^{-15}$ \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:verify}
+\end{table}
+
+\FloatBarrier
 \section{Matched-Compute Sequence Accuracy}
 Table~\ref{tab:matchedseq} complements Table~\ref{tab:matched} with sequence accuracy, which counts a sequence as correct only if all 128 positions are correct.
 
@@ -63,6 +131,16 @@ Table~\ref{tab:matchedseq} complements Table~\ref{tab:matched} with sequence acc
 	\end{tabular}
 	\label{tab:matchedseq}
 \end{table}
+
+\FloatBarrier
+Figure~\ref{fig:walltime} compares the required order per token with the measured training time of each arm at $p=0.10$ (Section~\ref{sec:res-matched}).
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.78\linewidth]{fig3_notional_vs_measured.pdf}
+\caption[Required order and measured training time at $p = 0.10$]{Required order per token (left) and measured training time (right) for the arms at $p = 0.10$. Training time grows with the order of the fixed-order arms, but the reference allocation takes as long as the four-factor model because unused factors are still executed with zero strength.}
+\label{fig:walltime}
+\end{figure}
 
 \FloatBarrier
 \section{Alphabet-Closure Details}
@@ -123,7 +201,35 @@ Figure~\ref{fig:grid} and Table~\ref{tab:grid} show the single-run grid of alpha
 
 \FloatBarrier
 \section{Learned-Gate Details}
-Figure~\ref{fig:gatedemand} shows, for every run of the penalty sweep, the factors given to each requirement class. Figure~\ref{fig:gatehistory} summarises all learned-gate configurations of Table~\ref{tab:gatehistory}.
+Figure~\ref{fig:gatealloc} shows the mean factors allocated per token in each run of the penalty sweep, and Figure~\ref{fig:gatedemand} shows, for every run of the penalty sweep, the factors given to each requirement class. Table~\ref{tab:gatehistory} and Figure~\ref{fig:gatehistory} summarise all configurations in which the gate was trained.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.72\linewidth]{fig7_gate_allocation.pdf}
+\caption[Mean factors allocated per token by the learned gate]{Mean factors allocated per token by each run of the learned gate. Filled markers are runs whose allocation separates the two requirement classes; the dashed lines mark the exact allocation (1.2985) and the fixed maximum (4).}
+\label{fig:gatealloc}
+\end{figure}
+
+\begin{table}[ht]
+	\caption{All learned-gate runs by training configuration}
+	\centering
+	\small
+	\setlength{\tabcolsep}{4pt}
+	\begin{tabular}{l c c c c}
+		\toprule
+		\textbf{Configuration} & $\gamma$ & \textbf{Runs} & \textbf{Recovered} & \textbf{Lowest $\bar n$ (token)} \\
+		\midrule
+		Initial configuration  & 0, 0.01, 0.03, 0.1 & 12 & 2 & \textbf{1.2985} (0.99990) \\
+		Gate re-initialised    & 0.03 & 10 & 0 & -- \\
+		Initial-bias sweep     & 0.03 & 7  & 1 & 2.1990 (0.99961) \\
+		Float32 halting        & 0.03 & 10 & 1 & 2.1990 (0.99984) \\
+		Penalty-weight sweep   & 0.1, 0.3 & 10 & 3 & 2.1990 (0.99985) \\
+		\midrule
+		\textbf{Total}         & & \textbf{49} & \textbf{7} & \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:gatehistory}
+\end{table}
 
 \begin{figure}[ht]
 \centering
@@ -141,7 +247,33 @@ Figure~\ref{fig:gatedemand} shows, for every run of the penalty sweep, the facto
 
 \FloatBarrier
 \section{Implementation Details}
-Table~\ref{tab:precision} verifies the choice of float32 for the halting nonlinearity. A gate whose logits were set to 10, beyond the bfloat16 threshold, was optimised for 300 steps on the budget penalty alone. In bfloat16 it receives a gradient of exactly zero and never moves; in float32 it closes from 3.9995 to 0.0625 factors. With small logits both precisions behave identically, so the effect is specific to saturation. The gate initialisation was verified in the same code path used for training: with the model class's default initialisation the initial effective order was 0.9376, whereas with explicit initialisation it was 3.8233 for every token, and every run in Table~\ref{tab:sweep} logged 3.823 at its first step. Algorithm~\ref{alg:forward} gives the forward pass of the adaptive-order layer and Algorithm~\ref{alg:train} the training procedure, and Table~\ref{tab:env} records the environment.
+Table~\ref{tab:config} lists the training configuration of the group word-problem experiments (Section~\ref{sec:setup}). Table~\ref{tab:precision} verifies the choice of float32 for the halting nonlinearity. A gate whose logits were set to 10, beyond the bfloat16 threshold, was optimised for 300 steps on the budget penalty alone. In bfloat16 it receives a gradient of exactly zero and never moves; in float32 it closes from 3.9995 to 0.0625 factors. With small logits both precisions behave identically, so the effect is specific to saturation. The gate initialisation was verified in the same code path used for training: with the model class's default initialisation the initial effective order was 0.9376, whereas with explicit initialisation it was 3.8233 for every token, and every run in Table~\ref{tab:sweep} logged 3.823 at its first step. Algorithm~\ref{alg:forward} gives the forward pass of the adaptive-order layer and Algorithm~\ref{alg:train} the training procedure, and Table~\ref{tab:env} records the environment.
+
+\begin{table}[ht]
+	\caption{Training configuration}
+	\centering
+	\begin{tabular}{p{5.6cm} p{7.6cm}}
+		\toprule
+		\textbf{Setting} & \textbf{Value} \\
+		\midrule
+		Layers; hidden size & 1; 128 \\
+		Heads $\times$ head dimension & $12 \times 32$ \\
+		Maximum order $K$ (fixed-order arms) & 4 \ (1, 2, 3, 4) \\
+		Output classes & 127 (120 group elements, 7 special tokens) \\
+		Sequence length & 128 \\
+		Training / test sequences & 100\,000 / 2\,000 \\
+		Batch size; training steps & 128; 20\,000 \\
+		Optimiser; learning rate & AdamW; $10^{-3}$, constant \\
+		Recurrence precision & bfloat16 \\
+		Gate hidden width; precision & 64; float32 \\
+		Gate initial bias $b_0$ & 4.0 \\
+		Budget warm-up $s_w$; ramp $s_r$ & 4\,000; 4\,000 steps \\
+		Penalty weight $\gamma$ & 0, 0.01, 0.03, 0.1, 0.3 \\
+		Extended runs & 250\,000 steps, 300\,000 sequences, 5\,000-step warm-up, cosine decay \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:config}
+\end{table}
 
 \begin{table}[ht]
 	\caption{Effect of the precision of the halting nonlinearity}

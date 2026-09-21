@@ -517,6 +517,53 @@ def fig9():
 # ============================================================================
 # self-test - known answers, written to fail against a wrong implementation
 # ============================================================================
+# ============================================================================
+# 10 - entity tracking in text (Boxes): DeltaProduct vs attention vs hybrid
+# ============================================================================
+BOXES_BUCKETS = ["ops=0", "ops=1", "ops=2", "ops=3", "ops=4", "ops>=5"]
+
+
+def _boxes():
+    """{model: [[acc per bucket] per seed]} from the hybrid experiment."""
+    D = load("boxes_hybrid.json")
+    out = {}
+    for r in D["runs"]:
+        if r["task"] == "boxes":
+            out.setdefault(r["model"], []).append([r["final"][b] for b in BOXES_BUCKETS])
+    return out
+
+
+def fig10():
+    import matplotlib.pyplot as plt
+    B = _boxes()
+    fig, ax = plt.subplots(figsize=(7.0, 4.2))
+    x = list(range(len(BOXES_BUCKETS)))
+    names = {"delta": "DeltaProduct ($n_h$=2)", "attn": "causal attention",
+             "hybrid:scalar": "hybrid (learned mix)"}
+    for i, m in enumerate(["delta", "hybrid:scalar", "attn"]):
+        runs = B[m]
+        med = [sorted(col)[len(col) // 2] for col in zip(*runs)]
+        lo = [min(col) for col in zip(*runs)]
+        hi = [max(col) for col in zip(*runs)]
+        col = [C["teal"], C["gold"], C["clay"]][i]
+        ax.fill_between(x, lo, hi, color=col, alpha=0.15, lw=0)
+        ax.plot(x, med, marker="o", ms=4.5, lw=1.8, color=col, label=names[m])
+    ax.axvspan(2.5, len(x) - 0.5, color=C["grid"], alpha=0.45, lw=0, zorder=0)
+    ax.text(2.6, 0.04, "more operations than\nseen in training", fontsize=8.5,
+            color=C["muted"], va="bottom")
+    ax.set_xticks(x)
+    ax.set_xticklabels(["0", "1", "2", "3", "4", "5+"])
+    ax.set_xlim(-0.2, len(x) - 0.8)
+    ax.set_ylim(0, 1.03)
+    ax.set_xlabel("number of operations applied to the boxes")
+    ax.set_ylabel("exact-match accuracy of the answer")
+    ax.set_title("Only the recurrent branch tracks state updates in text")
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
+    note(ax, "Boxes (Kim & Schuster 2023). Line = median of 3 seeds, band = min-max. "
+             "Trained on at most 2 operations. Parameter-matched models (~469k).")
+    save(fig, "fig10_boxes_entity_tracking")
+
+
 def selftest() -> int:
     ok = True
 
@@ -576,6 +623,15 @@ def selftest() -> int:
     check("T8  extrapolation curve starts at 1.0 and reaches 0.0",
           pp[0] >= 0.999 and pp[-1] <= 0.001, f"{pp[0]:.3f} -> {pp[-1]:.3f}")
 
+    # T9 - Boxes: the transcription must reproduce the notebook's printed medians
+    B = _boxes()
+    med = {m: [sorted(c)[1] for c in zip(*B[m])] for m in B}
+    check("T9  Boxes has 3 models x 3 seeds",
+          sorted(B) == ["attn", "delta", "hybrid:scalar"] and all(len(v) == 3 for v in B.values()))
+    check("T10 Boxes medians match the notebook summary (delta ops=1 0.968, attn ops=1 0.312, hybrid ops>=5 0.649)",
+          abs(med["delta"][1] - 0.968) < 1e-9 and abs(med["attn"][1] - 0.312) < 1e-9
+          and abs(med["hybrid:scalar"][5] - 0.649) < 1e-9)
+
     print("\n" + "=" * 74)
     print("ALL CHECKS PASS" if ok else "FAILURES ABOVE - do not use these figures")
     print("=" * 74)
@@ -583,7 +639,7 @@ def selftest() -> int:
 
 
 FIGURES = {1: fig1, 2: fig2, 3: fig3, 4: fig4, 5: fig5,
-           6: fig6, 7: fig7, 8: fig8, 9: fig9}
+           6: fig6, 7: fig7, 8: fig8, 9: fig9, 10: fig10}
 
 
 def main() -> int:

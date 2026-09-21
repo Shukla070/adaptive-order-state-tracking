@@ -2,7 +2,7 @@
 \label{chap:lit}
 \section{Review of Research Papers}
 \label{sec:review}
-The papers reviewed below fall into four groups: linear recurrences built on the delta rule, the architectures that extend it to track groups, the theory of what such recurrences can track, and methods for allocating computation adaptively. Each group is discussed paper by paper and closes with a short discussion of what it implies for this project.
+The papers reviewed below fall into five groups: linear recurrences built on the delta rule, the architectures that extend it to track groups, the theory of what such recurrences can track, methods for allocating computation adaptively, and hybrid models and benchmarks for state tracking in natural language. Each group is discussed paper by paper and closes with a short discussion of what it implies for this project.
 
 \subsection{Linear Attention and the Delta Rule}
 \textbf{Katharopoulos et al.\ \cite{lineartransformers}} observed that if the softmax in attention is replaced by a kernel feature map, attention can be computed as a running sum over a matrix-valued state, $S_t = S_{t-1} + v_t k_t^\top$. The resulting model, the linear Transformer, is equivalent to a recurrent network during autoregressive generation, with constant cost and memory per token. Its weakness is that the state can only accumulate: nothing is ever removed, so old associations interfere with new ones as the sequence grows.
@@ -69,6 +69,18 @@ which interpolates between DeltaNet ($\nh=1$) and a dense transition. The author
 
 \textit{Discussion.} Later work has favoured allocation mechanisms whose cost is known in advance, because a variable amount of computation per token is otherwise difficult to execute efficiently. The same consideration governs how the savings of this project can be realised (Chapter~\ref{chap:conclusion}).
 
+\subsection{Hybrid Recurrent and Attention Models}
+\textbf{De et al.\ \cite{griffin}} proposed Griffin, which interleaves gated linear recurrences with local attention and matches Transformer language models at lower inference cost. \textbf{Yang, Kautz and Hatamizadeh \cite{gateddeltanet}} similarly report that hybrids of Gated DeltaNet with sliding-window attention improve on either component alone in language modelling.
+
+\textit{Discussion.} Hybrids are motivated by the view that recurrence and attention have complementary strengths, recurrence for updating state and attention for exact retrieval. Whether a DeltaProduct layer benefits from such a combination on a state-tracking task is tested in Section~\ref{sec:res-nlp}.
+
+\subsection{State Tracking in Natural Language}
+\textbf{Long, Pasupat and Liang \cite{scone}} introduced SCONE, in which a sequence of natural-language instructions modifies a simple world, such as beakers of coloured liquid or people standing in a line, and a model must track the resulting world state. \textbf{Kim and Schuster \cite{entitytracking}} introduced the Boxes dataset: a description assigns objects to seven boxes, a sequence of operations moves, removes or adds objects, and the model must state the final contents of a queried box. They found that most pretrained language models fail to track the effect of even a few operations, and they separate test examples by the number of operations applied.
+
+\textbf{Dalvi et al.\ \cite{propara}} introduced ProPara, a dataset of procedural paragraphs describing scientific processes, annotated with how the existence and location of each participating entity change after every sentence. \textbf{Bosselut et al.\ \cite{npncooking}} introduced the NPN-Cooking dataset of recipes annotated with the state changes each step causes in each ingredient, together with Neural Process Networks, which model each action explicitly as a transformation of entity states.
+
+\textit{Discussion.} These benchmarks pose state tracking in natural language, where each sentence or instruction plays the role of a token of the group word problem. The amount of state an instruction changes varies, from none to several entities, which makes them the natural setting in which to test whether per-token allocation of Householder factors carries over from groups to language.
+
 \section{Outcome of Literature Survey}
 \label{sec:outcome}
 Table~\ref{tab:related} summarises the methods reviewed along the dimensions relevant to this project.
@@ -96,12 +108,12 @@ Table~\ref{tab:related} summarises the methods reviewed along the dimensions rel
 	\label{tab:related}
 \end{table}
 
-Three observations follow. First, the expressivity of a linear RNN is governed by the structure of its state transition, and products of generalized Householder factors with strengths in $[0,2]$ are currently the most expressive structure that remains efficient to train \cite{negeig, deltaproduct}. Second, in every such architecture the number of factors is a global constant, so the computation spent on a token does not depend on what the token does. Third, adaptive computation is well established for network depth, where learned halting and routing are both mature, but it has not been applied to the order of the state transition. The theoretical work also indicates that the number of factors required depends on algebraic properties of the task \cite{deltaproduct, howe, larson}, which suggests that the requirement varies across tokens in a way that can be characterised. Together these observations identify the gap addressed here: a DeltaProduct-family layer in which the number of factors is chosen per token by a learned mechanism, together with an account of how many factors each token requires.
+Three observations follow. First, the expressivity of a linear RNN is governed by the structure of its state transition, and products of generalized Householder factors with strengths in $[0,2]$ are currently the most expressive structure that remains efficient to train \cite{negeig, deltaproduct}. Second, in every such architecture the number of factors is a global constant, so the computation spent on a token does not depend on what the token does. Third, adaptive computation is well established for network depth, where learned halting and routing are both mature, but it has not been applied to the order of the state transition. The theoretical work also indicates that the number of factors required depends on algebraic properties of the task \cite{deltaproduct, howe, larson}, which suggests that the requirement varies across tokens in a way that can be characterised. Finally, benchmarks for state tracking in natural language exist \cite{scone, entitytracking, propara, npncooking}, but the models evaluated on them spend a fixed amount of computation on every sentence, however much state it changes. Together these observations identify the gap addressed here: a DeltaProduct-family layer in which the number of factors is chosen per token by a learned mechanism, together with an account of how many factors each token requires.
 
 \section{Problem Statement and Objectives}
 \label{sec:problem}
 \subsection{Problem Statement}
-DeltaProduct applies a fixed number of Householder factors to every token, although tokens differ in the expressivity they require. The number each token requires has not been characterised, and no mechanism exists for allocating it per token. This project characterises the minimal number of factors a token requires and develops a learned, per-token halting mechanism that allocates factors accordingly, evaluated on group state-tracking tasks.
+DeltaProduct applies a fixed number of Householder factors to every token, although tokens differ in the expressivity they require. The number each token requires has not been characterised, and no mechanism exists for allocating it per token. This project characterises the minimal number of factors a token requires and develops a learned, per-token halting mechanism that allocates factors accordingly, evaluated on group state-tracking tasks and extended to state tracking in natural language.
 
 \subsection{Objectives}
 \begin{enumerate}[label={(\arabic*)}]
@@ -110,4 +122,5 @@ DeltaProduct applies a fixed number of Householder factors to every token, altho
 	\item To measure the capability of per-token order allocation at matched compute, using a reference allocation derived from the characterisation.
 	\item To design and implement a monotone, per-token halting gate for the number of factors, trained end to end with a compute-budget penalty and without supervision on the allocation.
 	\item To evaluate the trainability and reliability of the base layer and of the learned gate across repeated runs.
+	\item To evaluate DeltaProduct layers on natural-language entity tracking, beginning with the Boxes dataset \cite{entitytracking} and extending to SCONE, ProPara and NPN-Cooking, and to test whether the learned allocation follows how much state each instruction changes.
 \end{enumerate}
