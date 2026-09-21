@@ -2,6 +2,8 @@
 # state_tracking/data is ~246 MB of CSVs; regenerate with src/generate_data.py
 state_tracking/data/
 state_tracking/checkpoints/
+# Boxes dataset: its authors ask that the extracted files not be placed in any repository
+hybrid_runs/
 wandb/
 results/*.png
 results/*.csv
