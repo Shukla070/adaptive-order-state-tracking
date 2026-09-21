@@ -1,0 +1,222 @@
+\chapter*{APPENDIX I}
+\addcontentsline{toc}{chapter}{APPENDIX I}
+\label{app:one}
+\setcounter{section}{0}
+\renewcommand{\thesection}{A.\arabic{section}}
+This appendix collects supplementary results referred to in the main chapters.
+
+\section{Theoretical Results}
+Table~\ref{tab:groups} applies Definition~\ref{def:demand} to the groups used in state-tracking benchmarks. Per-token allocation can help only where the requirement varies across non-identity elements, which excludes $A_4$ and $A_5$. Table~\ref{tab:reach} gives the exact reachability pattern behind Proposition~\ref{prop:parity}, verified on all 120 elements of $S_5$.
+
+\begin{table}[ht]
+	\caption{Order requirement across groups}
+	\centering
+	\begin{tabular}{l c c c c c}
+		\toprule
+		\textbf{Group} & $|G|$ & \textbf{Min.\ faithful dim.} & \textbf{$D$ (non-identity)} & \textbf{$\ell$ range} & \textbf{$D$ varies?} \\
+		\midrule
+		$S_3$ & 6   & 2 & 1, 2       & 1--2 & yes \\
+		$S_4$ & 24  & 3 & 1, 2, 3    & 1--3 & yes \\
+		$A_4$ & 12  & 3 & 2          & 2    & no \\
+		$A_5$ & 60  & 3 & 2          & 2--4 & no \\
+		$S_5$ & 120 & 4 & 1, 2, 3, 4 & 1--4 & yes \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:groups}
+\end{table}
+
+\begin{table}[ht]
+	\caption{Exact reachability of $P_g$ with $K$ factors, by transposition length $\ell$ (\checkmark\ reachable)}
+	\centering
+	\begin{tabular}{c | c c c c c | c c c c c}
+		\toprule
+		 & \multicolumn{5}{c|}{\textbf{Free $\beta \in [0,2]$}} & \multicolumn{5}{c}{\textbf{Pinned $\beta = 2$}} \\
+		$\ell$ & $K{=}0$ & 1 & 2 & 3 & 4 & $K{=}0$ & 1 & 2 & 3 & 4 \\
+		\midrule
+		0 & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & -- & \checkmark & -- & \checkmark \\
+		1 & -- & \checkmark & \checkmark & \checkmark & \checkmark & -- & \checkmark & -- & \checkmark & -- \\
+		2 & -- & -- & \checkmark & \checkmark & \checkmark & -- & -- & \checkmark & -- & \checkmark \\
+		3 & -- & -- & -- & \checkmark & \checkmark & -- & -- & -- & \checkmark & -- \\
+		4 & -- & -- & -- & -- & \checkmark & -- & -- & -- & -- & \checkmark \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:reach}
+\end{table}
+
+\FloatBarrier
+\section{Matched-Compute Sequence Accuracy}
+Table~\ref{tab:matchedseq} complements Table~\ref{tab:matched} with sequence accuracy, which counts a sequence as correct only if all 128 positions are correct.
+
+\begin{table}[ht]
+	\caption{Sequence accuracy at matched compute (one run per cell)}
+	\centering
+	\begin{tabular}{c c c c c c}
+		\toprule
+		$p$ & $\nh=1$ & $\nh=2$ & $\nh=3$ & $\nh=4$ & \textbf{Reference} \\
+		\midrule
+		0.05 & 0.0005 & 0.0220 & 0.4020 & 0.9945 & \textbf{0.9960} \\
+		0.10 & 0.0000 & 0.0005 & 0.6645 & 0.9915 & \textbf{0.9970} \\
+		0.25 & 0.0000 & 0.0000 & 0.0020 & 0.9775 & \textbf{0.9960} \\
+		0.50 & 0.0000 & 0.0000 & 0.0000 & 0.0025 & \textbf{0.4095} \\
+		1.00 & 0.0000 & 0.0000 & 0.9535 & 0.9600 & \textbf{0.9825} \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:matchedseq}
+\end{table}
+
+\FloatBarrier
+\section{Alphabet-Closure Details}
+Figure~\ref{fig:grid} and Table~\ref{tab:grid} show the single-run grid of alphabets and orders discussed in Section~\ref{sec:res-closure}. Figure~\ref{fig:s5t1} and Table~\ref{tab:s5t1long} document the configuration whose outcomes do not separate into two basins, and the effect of extended training on it.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.62\linewidth]{fig6_alphabet_grid_single_draw.pdf}
+\caption[Token accuracy by alphabet and order, one run per cell]{Token accuracy for three closure alphabets at orders 2, 3 and 4, one run per cell. The $A_5$ alphabet trains at two factors, below the transposition length of its five-cycles.}
+\label{fig:grid}
+\end{figure}
+
+\begin{table}[ht]
+	\caption{Token accuracy by alphabet and order (one run per cell; sequence accuracy in parentheses)}
+	\centering
+	\footnotesize
+	\setlength{\tabcolsep}{4pt}
+	\begin{tabular}{l c c c c c}
+		\toprule
+		\textbf{Alphabet} & $\gen{\Sigma}$ & $D_{\max}$ & $\nh = 2$ & $\nh = 3$ & $\nh = 4$ \\
+		\midrule
+		\cell{A5\_c5}     & $A_5$ & 2 & --              & 0.9991 (0.936) & -- \\
+		\cell{A5\_c5\_dt} & $A_5$ & 2 & --              & 0.9994 (0.953) & -- \\
+		\cell{A5\_c5\_3c} & $A_5$ & 2 & 0.9510 (0.135) & 0.9952 (0.751) & 0.9993 (0.953) \\
+		\cell{S5\_c5\_t1} & $S_5$ & 4 & 0.0904 (0.000) & 0.1094 (0.000) & 0.4851 (0.025) \\
+		\cell{S5\_c5\_t}  & $S_5$ & 4 & 0.0422 (0.000) & 0.0307 (0.000) & 0.0706 (0.000) \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:grid}
+\end{table}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.72\linewidth]{fig5_s5c5t1_not_bimodal.pdf}
+\caption[Outcomes of ten runs of \cell{S5\_c5\_t1} at four factors]{Token accuracy of ten runs of \cell{S5\_c5\_t1} at four factors. The outcomes spread continuously without separating into a low and a high basin.}
+\label{fig:s5t1}
+\end{figure}
+
+\begin{table}[ht]
+	\caption{\cell{S5\_c5\_t1}: token accuracy under extended training (one run per cell)}
+	\centering
+	\small
+	\begin{tabular}{p{5.2cm} c c c c}
+		\toprule
+		\textbf{Training} & \textbf{Sequences} & $\nh = 2$ & $\nh = 3$ & $\nh = 4$ \\
+		\midrule
+		20\,000 steps, constant LR            & 100\,000 & 0.0904 & 0.1094 & 0.4851 \\
+		40\,000 steps, cosine schedule        & 100\,000 & --     & 0.4749 & 0.4843 \\
+		80\,000 steps                         & 100\,000 & --     & --     & 0.4721 \\
+		250\,000 steps, warm-up and cosine    & 300\,000 & 0.3617 & 0.4828 & 0.5661 \\
+		\midrule
+		Ten runs, 20\,000 steps: median (range) & 100\,000 & --     & --     & 0.4845 \\
+		 & & & & (0.245--0.763) \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:s5t1long}
+\end{table}
+
+\FloatBarrier
+\section{Learned-Gate Details}
+Figure~\ref{fig:gatedemand} shows, for every run of the penalty sweep, the factors given to each requirement class. Figure~\ref{fig:gatehistory} summarises all learned-gate configurations of Table~\ref{tab:gatehistory}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.8\linewidth]{fig8_gate_allocation_by_demand.pdf}
+\caption[Factors allocated to each requirement class by the learned gate]{Factors allocated to low-requirement tokens ($D=1$) and high-requirement tokens ($D=4$) in each run. Dotted lines mark the exact allocation for each class; high-requirement tokens receive all four factors in every run.}
+\label{fig:gatedemand}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.7\linewidth]{fig9_gate_history.pdf}
+\caption[Learned-gate runs across training configurations]{Learned-gate runs across training configurations: the number of runs and the number that recovered the demand structure (top), and the lowest mean order among recovered runs (bottom), against the exact allocation of 1.2985.}
+\label{fig:gatehistory}
+\end{figure}
+
+\FloatBarrier
+\section{Implementation Details}
+Table~\ref{tab:precision} verifies the choice of float32 for the halting nonlinearity. A gate whose logits were set to 10, beyond the bfloat16 threshold, was optimised for 300 steps on the budget penalty alone. In bfloat16 it receives a gradient of exactly zero and never moves; in float32 it closes from 3.9995 to 0.0625 factors. With small logits both precisions behave identically, so the effect is specific to saturation. The gate initialisation was verified in the same code path used for training: with the model class's default initialisation the initial effective order was 0.9376, whereas with explicit initialisation it was 3.8233 for every token, and every run in Table~\ref{tab:sweep} logged 3.823 at its first step. Algorithm~\ref{alg:forward} gives the forward pass of the adaptive-order layer and Algorithm~\ref{alg:train} the training procedure, and Table~\ref{tab:env} records the environment.
+
+\begin{table}[ht]
+	\caption{Effect of the precision of the halting nonlinearity}
+	\centering
+	\small
+	\begin{tabular}{l c c}
+		\toprule
+		\textbf{Quantity} & \textbf{bfloat16} & \textbf{float32} \\
+		\midrule
+		Largest representable value below 1.0 & 0.99609375 & 0.99999994 \\
+		Logit above which $\sigma(z)$ rounds to 1.0 & 6.2364 & 17.3287 \\
+		\midrule
+		Gradient norm, saturated gate (logit 10) & $0$ exactly & $3.818\times10^{-3}$ \\
+		Effective order after 300 penalty-only steps & $4.0000 \to 4.0000$ & $3.9995 \to 0.0625$ \\
+		\midrule
+		Gradient norm, responsive gate (logit 1) & 9.359 & 9.304 \\
+		Effective order after 300 penalty-only steps & $1.9375 \to 0.0000$ & $1.9419 \to 0.0000$ \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:precision}
+\end{table}
+
+\begin{algorithm}[ht]
+\caption{Forward pass of the adaptive-order layer for one token}
+\label{alg:forward}
+\KwIn{token representation $h_t$; previous state $S_{t-1}$; maximum order $K$; mode (training or evaluation)}
+\KwOut{new state $S_t$; effective order $n_t$}
+$z_t \leftarrow W_2\,\mathrm{GELU}(W_1 h_t + b_1) + b_2$ \tcp*{$K$ gate logits}
+$\lambda_{t,i} \leftarrow \sigma(z_{t,i})$ for $i = 1,\dots,K$ \tcp*{evaluated in float32}
+$g_{t,i} \leftarrow \prod_{j=1}^{i}\lambda_{t,j}$ \tcp*{monotone gates}
+\If{mode = evaluation}{
+  $g_{t,i} \leftarrow \mathbf{1}\left[g_{t,i} > 0.5\right]$ \tcp*{hard gates, integer order}
+}
+$n_t \leftarrow \sum_{i=1}^{K} g_{t,i}$\;
+$S \leftarrow S_{t-1}$\;
+\For{$i \leftarrow 1$ \KwTo $K$}{
+  $\tilde\beta_{t,i} \leftarrow g_{t,i}\cdot 2\,\sigma(w_i^\top h_t)$\;
+  $S \leftarrow S\,(I - \tilde\beta_{t,i}\,k_{t,i}k_{t,i}^\top) + \tilde\beta_{t,i}\, v_{t,i}k_{t,i}^\top$\;
+}
+\Return{$S_t \leftarrow S$, \ $n_t$}\;
+\end{algorithm}
+
+\begin{algorithm}[ht]
+\caption{Training the adaptive-order layer with a compute budget}
+\label{alg:train}
+\KwIn{training sequences; penalty weight $\gamma$; warm-up $s_w$; ramp $s_r$; number of steps $N$}
+\KwOut{trained model}
+Initialise the gate output layer with zero weights and bias $b_0$\;
+\For{$s \leftarrow 1$ \KwTo $N$}{
+  Sample a batch of $B$ sequences of length $T$\;
+  Run Algorithm~\ref{alg:forward} in training mode over every position\;
+  $\mathcal{L}_{\text{task}} \leftarrow$ cross-entropy of the readout against $y_{b,t}$\;
+  $\mathcal{L} \leftarrow \mathcal{L}_{\text{task}} + \gamma(s)\cdot\frac{1}{BT}\sum_{b,t} n_{b,t}$ \tcp*{Equation \ref{eq:loss}}
+  Update all parameters with AdamW\;
+}
+Evaluate with hard gates on the held-out sequences\;
+\end{algorithm}
+
+\begin{table}[ht]
+	\caption{Hardware and software environment}
+	\centering
+	\begin{tabular}{p{5.0cm} p{8.2cm}}
+		\toprule
+		\textbf{Component} & \textbf{Version} \\
+		\midrule
+		GPU & NVIDIA GeForce RTX 4050 Laptop, 6 GB VRAM \\
+		Operating system & Ubuntu 26.04 on WSL2, Windows host \\
+		Python & 3.12.7 \\
+		PyTorch; CUDA; cuDNN & 2.6.0; 12.6; 9.5.1 \\
+		Triton & 3.2.0 \\
+		Transformers & 4.49.0 \\
+		\texttt{flash-linear-attention} & repository copy with the modifications of Section~\ref{sec:layer} \\
+		\texttt{causal-conv1d} & 1.7.0 \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:env}
+\end{table}
+\FloatBarrier

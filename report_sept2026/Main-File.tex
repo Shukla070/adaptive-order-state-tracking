@@ -1,0 +1,151 @@
+\documentclass[12pt]{report}
+\usepackage{pdfpages}
+\usepackage{lscape}
+\usepackage[nottoc,notlof,notlot]{tocbibind}
+\usepackage{framed}
+\usepackage{rotfloat}
+\usepackage{subfig}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage[utf8]{inputenc}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage[english]{babel}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.16}
+\usepackage{pbox}
+\usepackage{url}
+\usepackage{tkz-graph}
+\usetikzlibrary{arrows}
+\usepackage{array}
+\usepackage{amssymb}
+\usepackage{fancyvrb}
+\usepackage{listings}
+\usepackage{ragged2e}
+\usepackage{slashbox}
+\usepackage{sectsty}
+\usepackage{comment}
+\usepackage{soul}
+\usepackage{enumitem}
+\usepackage{chngcntr}
+\usepackage{cancel}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage[toc,page]{appendix}
+\usepackage{setspace}
+\usepackage{afterpage}
+\usetikzlibrary{shapes,arrows,arrows.meta,positioning,calc,fit,backgrounds}
+\usepackage{placeins}
+\graphicspath{ {images/} }
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords---}} #1}
+\textwidth 161mm
+\textheight 210mm
+\linespread{1}
+\usepackage{titlesec}
+\chapterfont{\centering}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+\renewcommand{\baselinestretch}{1.3}
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries\centering}{\chaptertitlename\ \thechapter}{10pt}{\Huge\centering}
+\titlespacing*{\chapter}{0pt}{-50pt}{5pt}
+\usepackage[linesnumbered,ruled]{algorithm2e}
+\usepackage[
+  top    = 1.5in,
+  bottom = 1in,
+  left   = 1.5in,
+  right  = 1in,
+  ]{geometry}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=green!50!black,
+    urlcolor=blue,
+    breaklinks=true,
+}
+
+% ---- theorem-like environments -----------------------------------------
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}[chapter]
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[chapter]
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[chapter]
+
+% ---- notation ----------------------------------------------------------
+\newcommand{\nh}{n_h}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\gen}[1]{\langle #1 \rangle}
+\newcommand{\cell}[1]{\texttt{#1}}
+\SetKwInput{KwIn}{Input}
+\SetKwInput{KwOut}{Output}
+
+\begin{document}
+\counterwithin{table}{section}
+\counterwithin{figure}{section}
+
+% ---- front sheets: no page numbers ------------------------------------
+\pagenumbering{gobble}
+\input{./Coverpage.tex}
+\clearpage
+\input{./Declaration.tex}
+\clearpage
+\input{./Certificate.tex}
+\clearpage
+\input{./Acknowledgement.tex}
+\clearpage
+
+% ---- preliminary pages: roman numerals ---------------------------------
+\pagenumbering{roman}
+\pagestyle{plain}
+\input{./Abstract.tex}
+\clearpage
+\renewcommand*{\contentsname}{\MakeUppercase{Contents}}
+\renewcommand*{\listfigurename}{\MakeUppercase{List of Figures}}
+\renewcommand*{\listtablename}{\MakeUppercase{List of Tables}}
+\renewcommand{\bibname}{KEY REFERENCES}
+\tableofcontents
+\clearpage
+
+\begingroup
+\addcontentsline{toc}{chapter}{LIST OF FIGURES}
+\listoffigures
+\clearpage
+\endgroup
+
+\begingroup
+\addcontentsline{toc}{chapter}{LIST OF TABLES}
+\listoftables
+\clearpage
+\endgroup
+
+\input{./Abbreviations.tex}
+
+% ---- main text: arabic numerals from Chapter 1 to the end ---------------
+\clearpage
+\pagenumbering{arabic}
+\renewcommand{\chaptername}{CHAPTER}
+\input{./Chapter-1.tex}
+\input{./Chapter-2.tex}
+\input{./Chapter-3.tex}
+\input{./Chapter-4.tex}
+\input{./Chapter-5.tex}
+
+% ---- Appendix I ---------------------------------------------------------
+\input{./Appendix.tex}
+
+% ---- key references: single-spaced to stay within two pages --------------
+\begingroup
+\renewcommand{\baselinestretch}{1.0}\small
+\bibliographystyle{unsrt}
+\bibliography{ref.bib}
+\endgroup
+
+% ---- timeline -------------------------------------------------------------
+\input{./Timeline.tex}
+
+\end{document}
