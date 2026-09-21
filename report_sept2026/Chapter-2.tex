@@ -1,0 +1,113 @@
+\chapter{LITERATURE SURVEY}
+\label{chap:lit}
+\section{Review of Research Papers}
+\label{sec:review}
+The papers reviewed below fall into four groups: linear recurrences built on the delta rule, the architectures that extend it to track groups, the theory of what such recurrences can track, and methods for allocating computation adaptively. Each group is discussed paper by paper and closes with a short discussion of what it implies for this project.
+
+\subsection{Linear Attention and the Delta Rule}
+\textbf{Katharopoulos et al.\ \cite{lineartransformers}} observed that if the softmax in attention is replaced by a kernel feature map, attention can be computed as a running sum over a matrix-valued state, $S_t = S_{t-1} + v_t k_t^\top$. The resulting model, the linear Transformer, is equivalent to a recurrent network during autoregressive generation, with constant cost and memory per token. Its weakness is that the state can only accumulate: nothing is ever removed, so old associations interfere with new ones as the sequence grows.
+
+\textbf{Schlag et al.\ \cite{fastweight}} reinterpreted this state as a set of \emph{fast weights} that the network writes and reads at every step, and identified the purely additive update as the cause of the capacity problem. They proposed the \emph{delta rule}, which first removes the value currently stored under a key and then writes the new one:
+\begin{equation}
+S_t = S_{t-1}\left(I - \beta_t k_t k_t^\top\right) + \beta_t v_t k_t^\top, \qquad \lVert k_t\rVert = 1 .
+\label{eq:deltarule}
+\end{equation}
+The transition $I - \beta_t k_t k_t^\top$ is a \emph{generalized Householder matrix} \cite{householder}: it leaves every direction orthogonal to $k_t$ unchanged and scales the component along $k_t$ by $1-\beta_t$.
+
+\textit{Discussion.} These two papers establish the matrix-valued recurrent state that every model in this project uses, and the delta rule's Householder transition, which is the building block whose count per token this project makes adaptive.
+
+\subsection{Scaling Delta-Rule and Selective Recurrences}
+\textbf{Yang et al.\ \cite{deltanet}} made the delta rule practical at scale. The recurrence in Equation~\ref{eq:deltarule} is sequential, so the authors derived a chunk-wise parallel form based on a compact representation of products of Householder matrices, allowing the model, DeltaNet, to be trained efficiently on GPUs and to compete with Transformers as a language model.
+
+\textbf{Gu and Dao \cite{mamba}} proposed Mamba, a state-space model whose parameters depend on the input, so that the model can selectively retain or discard information. Its transitions are diagonal, which keeps them cheap and allows a hardware-efficient parallel scan, and it established linear-time recurrences as serious language models.
+
+\textbf{Yang, Kautz and Hatamizadeh \cite{gateddeltanet}} combined the two ideas in Gated DeltaNet. A data-dependent decay gate, as in Mamba, erases memory quickly, while the delta rule performs targeted updates; the authors show the mechanisms are complementary.
+
+\textit{Discussion.} This line of work shows that the structure of the transition is the central design choice: diagonal transitions are fast but limited, and Householder transitions are more expressive while remaining efficient to train. The implementation used in this project builds on the chunk-wise kernels introduced here.
+
+\subsection{Negative Eigenvalues and Householder Products}
+\textbf{Grazzi et al.\ \cite{negeig}} showed that restricting the eigenvalues of the transition to $[0,1]$, as most linear RNNs do, prevents them from solving even parity. Allowing the strength $\beta$ in Equation~\ref{eq:deltarule} to range over $[0,2]$ gives the Householder factor an eigenvalue in $[-1,1]$; at $\beta=2$ the factor is a reflection. With this change, linear RNNs solve parity, and products of generalized Householder matrices can implement general finite automata.
+
+\textbf{Siems et al.\ \cite{deltaproduct}} built on this result in DeltaProduct. Each token applies $\nh$ delta-rule updates, each with its own key, value and strength, so the state-transition matrix becomes
+\begin{equation}
+A_t = \prod_{i=1}^{\nh}\left(I - \beta_{t,i}\, k_{t,i} k_{t,i}^\top\right),
+\label{eq:deltaproduct}
+\end{equation}
+which interpolates between DeltaNet ($\nh=1$) and a dense transition. The authors evaluate the word problems of $S_3$, $S_4$, $A_5$ and $S_5$, show that increasing $\nh$ lets a single layer track progressively harder groups, and report that the trained models extrapolate to sequences longer than those seen during training. The order $\nh$ is fixed for the whole model and applied to every token; the paper's discussion of future work names per-token adaptive selection of the number of factors, in the spirit of Adaptive Computation Time, as an open direction.
+
+\textit{Discussion.} DeltaProduct is the base method of this project. Its central parameter, $\nh$, sets both the expressivity and the cost of every token, and the paper itself identifies adapting it per token as open.
+
+\subsection{Theory of State Tracking in Linear Recurrences}
+\textbf{Merrill, Petty and Sabharwal \cite{illusionofstate}} showed that commonly used state-space models, like Transformers, belong to a restricted circuit complexity class. Under standard complexity-theoretic assumptions they therefore cannot solve the word problem of $S_5$, which is complete for a larger class. The word problem of a finite group has since become the standard benchmark for state tracking.
+
+\textbf{Sarrof, Veitsman and Hahn \cite{sarrof}} characterised the formal languages that state-space models can recognise and identified non-negative transition values as a key source of their limitations, consistent with the parity result above.
+
+\textbf{Shakerinava et al.\ \cite{diagonalssm}} characterised exactly which groups diagonal state-space models can track, relating the number of layers to the length of a solvable series of the group. They also report that multi-layer models often fail to \emph{learn} state-tracking solutions they can \emph{represent}, a gap between expressivity and learnability.
+
+\textit{Discussion.} These results explain why Householder transitions matter and why group word problems are the right test bed. The gap between what a model can represent and what it learns is also observed in this project.
+
+\subsection{Rank and Representation}
+\textbf{Larson \cite{larson}} trains matrix-valued memories on group composition under a single-state bottleneck and reports that the rank the memory recruits equals the dimension of the group's smallest faithful real representation, across five groups on both sides of the solvable/non-solvable divide.
+
+\textbf{Howe \cite{howe}} studies Householder-product linear RNNs and states that the minimal number of factors per token equals the largest reflection length among the task's generators in a representation fixed by the task format. The paper notes that this requirement is relative to the representation, and separately reports that removing the additive input pathway of the recurrence improves length generalisation.
+
+\textit{Discussion.} Both papers relate the resources a model needs to the representation theory of the task. The analysis in Chapter~\ref{chap:method} is related but differs in two respects that matter for adaptive computation: the representation is determined by the group generated by the input alphabet rather than by the output format, and the requirement is defined per token as a minimum over faithful representations, so that it can vary between tokens and be allocated individually.
+
+\subsection{Learned Halting}
+\textbf{Graves \cite{act}} introduced Adaptive Computation Time (ACT), which lets a recurrent network perform a variable number of internal steps per input. A sigmoid halting unit emits a halting probability at each step, computation stops once the accumulated probability approaches one, and a ponder cost proportional to the number of steps is added to the loss. Graves notes that behaviour is sensitive to the weight of this cost.
+
+\textbf{Dehghani et al.\ \cite{universaltransformer}} applied ACT per position in the Universal Transformer, a Transformer whose layers share weights and are applied recurrently, so that each position decides how many times the shared block is applied to it.
+
+\textbf{Banino, Balaguer and Blundell \cite{pondernet}} reformulated halting probabilistically in PonderNet. Every step receives gradient, avoiding the biased gradient of ACT, and the halting distribution is regularised towards a geometric prior that keeps all step counts in play.
+
+\textit{Discussion.} These papers supply the monotone halting mechanism and the compute penalty that the adaptive-order layer adapts, and they document its sensitivity to the penalty weight, which is also studied in this project.
+
+\subsection{Allocation with Predictable Cost}
+\textbf{Schuster et al.\ \cite{calm}} proposed Confident Adaptive Language Modeling (CALM), which exits early from the decoder once a confidence measure exceeds a threshold calibrated to guarantee output quality.
+
+\textbf{Raposo et al.\ \cite{mod}} proposed Mixture-of-Depths, which routes only the top-$k$ tokens of each block through the computation and lets the rest skip it. The fixed capacity $k$ is chosen explicitly so that tensor shapes stay static and the computation graph is known in advance, which makes the savings realisable on GPUs.
+
+\textit{Discussion.} Later work has favoured allocation mechanisms whose cost is known in advance, because a variable amount of computation per token is otherwise difficult to execute efficiently. The same consideration governs how the savings of this project can be realised (Chapter~\ref{chap:conclusion}).
+
+\section{Outcome of Literature Survey}
+\label{sec:outcome}
+Table~\ref{tab:related} summarises the methods reviewed along the dimensions relevant to this project.
+
+\begin{table}[ht]
+	\caption{Comparison of related methods}
+	\centering
+	\small
+	\begin{tabular}{p{3.6cm} p{4.4cm} p{2.2cm} p{2.6cm}}
+		\toprule
+		\textbf{Method} & \textbf{Transition per token} & \textbf{Order per token} & \textbf{Allocation} \\
+		\midrule
+		Linear attention \cite{lineartransformers} & Identity (additive only) & -- & -- \\
+		Mamba \cite{mamba} & Diagonal, input-dependent & -- & -- \\
+		DeltaNet \cite{deltanet} & One Householder factor & Fixed, 1 & -- \\
+		Gated DeltaNet \cite{gateddeltanet} & Gated Householder factor & Fixed, 1 & -- \\
+		Negative eigenvalues \cite{negeig} & Householder, $\beta\in[0,2]$ & Fixed & -- \\
+		DeltaProduct \cite{deltaproduct} & $\nh$ Householder factors & Fixed, global & Hand-chosen \\
+		ACT / PonderNet \cite{act,pondernet} & -- (network depth) & Variable & Learned halting \\
+		Mixture-of-Depths \cite{mod} & -- (block skipping) & Variable & Top-$k$ router \\
+		\midrule
+		\textbf{This work} & $\le \nh$ Householder factors & \textbf{Variable} & \textbf{Learned halting} \\
+		\bottomrule
+	\end{tabular}
+	\label{tab:related}
+\end{table}
+
+Three observations follow. First, the expressivity of a linear RNN is governed by the structure of its state transition, and products of generalized Householder factors with strengths in $[0,2]$ are currently the most expressive structure that remains efficient to train \cite{negeig, deltaproduct}. Second, in every such architecture the number of factors is a global constant, so the computation spent on a token does not depend on what the token does. Third, adaptive computation is well established for network depth, where learned halting and routing are both mature, but it has not been applied to the order of the state transition. The theoretical work also indicates that the number of factors required depends on algebraic properties of the task \cite{deltaproduct, howe, larson}, which suggests that the requirement varies across tokens in a way that can be characterised. Together these observations identify the gap addressed here: a DeltaProduct-family layer in which the number of factors is chosen per token by a learned mechanism, together with an account of how many factors each token requires.
+
+\section{Problem Statement and Objectives}
+\label{sec:problem}
+\subsection{Problem Statement}
+DeltaProduct applies a fixed number of Householder factors to every token, although tokens differ in the expressivity they require. The number each token requires has not been characterised, and no mechanism exists for allocating it per token. This project characterises the minimal number of factors a token requires and develops a learned, per-token halting mechanism that allocates factors accordingly, evaluated on group state-tracking tasks.
+
+\subsection{Objectives}
+\begin{enumerate}[label={(\arabic*)}]
+	\item To reproduce DeltaProduct on group word problems in the available computing environment, as the baseline for every later result.
+	\item To characterise theoretically the minimal number of generalized Householder factors a token requires, and to verify the characterisation by explicit construction.
+	\item To measure the capability of per-token order allocation at matched compute, using a reference allocation derived from the characterisation.
+	\item To design and implement a monotone, per-token halting gate for the number of factors, trained end to end with a compute-budget penalty and without supervision on the allocation.
+	\item To evaluate the trainability and reliability of the base layer and of the learned gate across repeated runs.
+\end{enumerate}
