@@ -1,6 +1,6 @@
 # Adaptive-Order State Transitions in Linear RNNs
 
-BTech Major Project — **Utkarsh**, NITK Surathkal
+BTech Major Project — **Shashwat Chaturvedi and Utkarsh Shukla**, NITK Surathkal
 Guide: Anand Kumar M · Sept 2026 – Apr 2027
 
 **→ [`PLAN.md`](PLAN.md) is the master document**: the idea in plain language, the
