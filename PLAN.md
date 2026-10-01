@@ -1,6 +1,6 @@
 # Adaptive-Order DeltaProduct — Master Plan and Record
 
-**Version 7** · 1 October 2026 · supersedes v1–v6 entirely
+**Version 7.1** · 1 October 2026 · supersedes v1–v6 entirely (7.1: Part 3e corrections)
 Utkarsh Shukla · B.Tech AI, NITK Surathkal · Guide: Anand Kumar M
 
 This is the single living document for the project. It carries the full record
@@ -56,7 +56,7 @@ thing we have and it is ours.
 | Where it closes, the gate recovers the oracle allocation | **measured** on that one seed — cost 1.298 vs oracle 1.298, mae 0.00, corr 1.00 over 256 000 tokens, at both γ = 0.03 and γ = 0.1 | Part 3d |
 | Gate closure is itself bistable, independently of accuracy | **measured** — accuracy 0.98–1.00 on every arm including the ones where cost stayed at exactly 4.000 | Part 3d |
 | Learned gate, penalty-weight sweep (10 runs) | **measured** — 3 of 10 runs recover the demand structure at 2.199 factors/token, token 0.9998; no run under-allocates | `results/gate_gamma_sweep.json`; Part 3e |
-| Learned gate across all configurations | **measured** — 7 of 49 runs recover the structure; best allocation 1.2985 (exact) in the earliest configuration only | Part 3e |
+| Learned gate across all configurations | **measured** — 7 of 49 runs recover the structure, from 4 distinct seeds; best allocation 1.2985 (exact) on one seed of the earliest configuration only | Part 3e |
 | Gate must be evaluated in float32 | **measured** — bf16 sigmoid saturates above logit 6.2364 with exactly zero gradient; fp32 threshold 17.33 | `results/gate_fp32gate.json`; Part 3e |
 | State tracking in natural language (Boxes) | **measured**, fixed order only — DeltaProduct n_h=2 reaches 0.968 exact match after one operation vs 0.312 for equal-size attention; hybrid does not help | `results/boxes_hybrid.json`; Part 3f |
 | Real wall-clock saving (ragged expansion) | **not done** | all costs are notional |
@@ -541,8 +541,11 @@ require 1, 10% require 4).
 **What holds.** Three of ten runs separate the two requirement classes exactly,
 with no supervision on the allocation. **No token is ever under-allocated in any
 run**, and 5-cycles receive all four factors in every run. Token accuracy is
-≥ 0.998 everywhere, including the runs where the gate never closes, so adding
-the gate is accuracy-neutral. The best runs are both cheaper and more accurate
+≥ 0.998 everywhere in this sweep, including the runs where the gate never
+closes, so here adding the gate is accuracy-neutral. (Not across all 49 runs:
+five fall below 0.998, the lowest `gate_fp32gate` seed 7 at 0.7944 — a run that
+separated the classes at 3.0995 while losing the task, and is correctly not
+counted as recovered.) The best runs are both cheaper and more accurate
 than `fixed3` on the same cell (3 factors, 0.9696).
 
 **What does not hold.** 3/10 is not a reliable mechanism, and the best runs stop
@@ -552,9 +555,9 @@ at 2.199 rather than the exact 1.2985 — swaps get two factors instead of one.
 
 | configuration | γ | runs | recovered | lowest n̄ (token) |
 |---|---|---|---|---|
-| initial (`gate_train_p10`) | 0, 0.01, 0.03, 0.1 | 12 | 2 | **1.2985** (0.99990) |
+| pre-repair init, seeds 1–3 (`gate_train_p10`) | 0, 0.01, 0.03, 0.1 | 12 | 2 | **1.2985** (0.99990) |
+| pre-repair init, seeds 4–10 (`gate_bias40_more`) | 0.03 | 7 | 1 | 2.1990 (0.99961) |
 | gate re-initialised (`gate_fixedinit`) | 0.03 | 10 | 0 | — |
-| initial-bias sweep (`gate_bias40_more`) | 0.03 | 7 | 1 | 2.1990 (0.99961) |
 | float32 halting (`gate_fp32gate`) | 0.03 | 10 | 1 | 2.1990 (0.99984) |
 | penalty-weight sweep (`gate_gamma_sweep`) | 0.1, 0.3 | 10 | 3 | 2.1990 (0.99985) |
 | **total** | | **49** | **7** | |
@@ -564,6 +567,42 @@ every 5-cycle — was reached only in the earliest configuration, twice. Nothing
 since has gone below 2.199. Either one of the later "fixes" is a regression, or
 those two cells were lucky draws. Settling this is the first item in the queue,
 and it gates the value of everything built on top.
+
+**Corrections to the table above (1 October, from the result files).**
+
+- **Order and label.** The rows are now chronological. `gate_bias40_more` ran
+  *before* the initialisation repair, not after it, and was not a bias sweep in
+  effect: its log header printed "init bias 4", but its measured mean order at
+  step 1 is **0.933–0.945** on all seven runs — the 0.9375 that HuggingFace
+  `post_init` leaves (bias 0, weights N(0, 0.02)). Every repaired run starts at
+  3.81 (bf16) or 3.82 (fp32).
+- **`gate_train_p10` did not start open either.** That script logged n̄ as 0.000
+  during warmup, so this was first inferred: its step-1 losses for seeds 1–3
+  (4.8671 / 4.8718 / 4.8681) differ from the open-gate runs on the same seeds
+  (4.8658 / 4.8721 / 4.8686). **Confirmed 1 October by fingerprint:** rebuilding
+  with `--gate_init hf_default` reproduces all six `gate_train_p10` step-1 losses
+  (oracle and learned, seeds 1–3) to the stored 4 decimals, with the gate
+  starting at n̄ 0.935–0.946. The same rebuild reproduces all seven
+  `gate_bias40_more` seeds exactly on step-1 loss, n̄ and gate |W| (20 of 20
+  lines MATCH). The pre-repair model is therefore rebuilt exactly at step 1.
+- **Runs are not independent outcomes.** The 7 recovered runs come from 4 seeds:
+  `gate_train_p10` seed 1 (twice), `gate_bias40_more` seed 7, seed 2 under the
+  float32 code (three times, at γ = 0.03, 0.1, 0.3, with near-identical
+  trajectories), and seed 3 at γ = 0.3 (the same seed stayed at 4.000 at
+  γ = 0.1). Outcome is strongly seed-correlated but not seed-determined, and no
+  configuration has yet been run twice identically.
+- **The seed that reached 1.2985 has never been re-run with the initialisation
+  it was trained from.** Seeds 1–3 were re-run only with the repaired, open gate.
+- **Saturation before the penalty.** In 36 of the 37 runs that logged it, the
+  gate is fully open (n̄ ≥ 3.99, output |W| 15–23) by step 2000, inside the
+  penalty-free warmup — including the pre-repair runs that started at 0.94. The
+  exception is `gate_bias40_more` seed 7 (2.82 at step 2000), which is also that
+  configuration's only success. In bf16 (`gate_fixedinit`, and 5 of 7
+  `gate_bias40_more` runs) |W| is then bit-identical from step 2000 to 20 000.
+- **Gate weight norm at the pre-repair start.** `gate_bias40_more`'s step-1
+  output |W| is 6.3–7.0. A back-of-envelope estimate of 4.1 suggested a
+  mismatch; it was wrong. The default construction measured directly
+  (`check_gate_init.py` sections A and D) gives 6.66, in the same range.
 
 ### Precision: why the gate is evaluated in float32
 
@@ -583,7 +622,51 @@ The gate's output layer starts with zero weights and bias 4.0, giving
 λ = σ(4) = 0.982 and an initial effective order of 3.8233 for every token: the
 gate starts open and input-independent, and must learn to close. Verified in the
 training code path — the model class's default initialisation gave 0.9376
-instead, which would start the gate almost shut.
+instead, which would start the gate almost shut. **Both runs made before this
+repair (`gate_train_p10`, `gate_bias40_more`) started from that default**, so
+the only exact allocation in the project came from a gate that started almost
+shut, not open. `exp_gate_train.py --gate_init hf_default` rebuilds that start.
+
+### Rebuilding the earliest configuration (1–2 October)
+
+`results/gate_hfinit_p10.json`. The pre-repair start (`--gate_init hf_default`),
+p = 0.10, 20 000 steps, seeds 1, 2, 3 at γ ∈ {0.03, 0.1}, then seed 1 again at
+both γ. All 8 runs match `gate_train_p10` at step 1. Warmup logged every 250 steps.
+
+| seed | γ | n̄ (original) | n̄ (this run) | n̄ \| D=1 | token |
+|---|---|---|---|---|---|
+| 1 | 0.03 | 1.2985 | **2.1990**, repeat **1.4778** | 2.0, repeat 1.199 | 0.99996, repeat **0.8937** |
+| 1 | 0.1 | 1.2985 | **1.2985**, repeat **2.1990** | 1.0, repeat 2.0 | 0.99996, 0.99993 |
+| 2 | 0.03, 0.1 | 4.0, 4.0 | 4.0, 4.0 | 4.0 | ≥ 0.9995 |
+| 3 | 0.03, 0.1 | 4.0, 4.0 | 4.0, 4.0 | 4.0 | ≥ 0.9996 |
+
+**What it settles.**
+
+1. **There is no regression.** The exact allocation is reproduced (seed 1,
+   γ = 0.1), and the *identical* configuration repeated gives 2.199. So 1.2985
+   and 2.199 both come from one configuration; the later changes did not raise a
+   floor. Item 1 of Part 7 closes on its failure condition, in the form "the
+   earlier cells were partly draws".
+2. **Whether the gate closes is set by the seed; where it closes is not.** Seed 1
+   separated the classes in 4 of 4 runs; seeds 2 and 3 in 0 of 8 across both
+   configurations. Among seed 1's runs the closure level varied between identical
+   repeats (1.2985 / 2.199; 2.199 / 1.4778). So the seed fixes the outcome's
+   class and run-to-run noise picks the level.
+3. **The class is decided in the first ~1 000 steps, before any penalty.** Seeds
+   2 and 3 reach n̄ = 4.00 by step 500–1 000 and their gate |W| is then
+   bit-identical to step 20 000 (bf16 saturation, Part 3e). Seed 1 never fully
+   opens: n̄ sits at 2.7–3.3 through the warmup, and drops to its final level
+   within 2 000 steps of the penalty switching on. Across all 45 runs that logged
+   their warmup, no bf16 run that was fully open by step 2 000 ever closed.
+4. **One run lost accuracy late.** Seed 1, γ = 0.03, repeat: task loss rose from
+   0.004 to 0.012 and n̄ from 1.43 to 1.88 at the final logged step; evaluation
+   token accuracy 0.8937. One logged point, so no trend is claimed; it fails the
+   ≥ 0.99 rule and is not counted as recovered.
+
+**Consequence.** The lever is not the penalty weight or the precision but the
+gate saturating open during the penalty-free warmup. That is a property of our
+gate (an unbounded sigmoid in bf16 with nothing opposing it for 4 000 steps),
+not of DeltaProduct.
 
 ---
 
@@ -837,12 +920,17 @@ it.)
 **Immediate (October)**
 
 1. **Find what raised the gate's floor from 1 to 2 factors.** The earliest
-   configuration reached the exact 1.2985 twice in 12 runs; nothing since has
-   gone below 2.199 (Part 3e). Walk from that configuration to the current one
-   **one change at a time** — gate re-initialisation, initial bias, float32
-   halting — with enough runs per step to tell a regression from a lucky draw.
-   *Failure condition:* if every step recovers 1.2985 at a comparable rate, the
-   earlier cells were draws and the floor is not a regression.
+   configuration reached the exact 1.2985 on one seed (two runs); nothing since
+   has gone below 2.199 (Part 3e). First step: re-run that seed with the
+   initialisation it actually had (`--gate_init hf_default`, seeds 1–3,
+   γ ∈ {0.03, 0.1}, plus one identical repeat), after a 1-step fingerprint run
+   confirms the step-1 losses match `gate_train_p10`. If seed 1 reaches 1.2985
+   again, the script edits since are not the cause and the walk continues one
+   change at a time (float32 gate, then zero output weight, then bias 4) on the
+   same seeds. *Failure condition:* if the fingerprint matches and seed 1 does
+   not reach 1.2985, the original was either a draw under bf16 non-determinism
+   (the repeat run bounds that) or the result of a script change that was not
+   recorded — the script that produced it was not kept.
 2. **Measure the gate's escape rate over runs, not seeds**, with ≥20 runs on the
    chosen configuration, reported as k/n with an interval. 3/10 cannot go in a
    document.

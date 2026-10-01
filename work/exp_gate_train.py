@@ -65,8 +65,29 @@ The gate's output weight is initialised to exactly zero and its bias to
 same order regardless of content. It can only start allocating once that weight
 moves off zero, and the gradient reaching it is scaled by the sigmoid slope at
 the init bias -- 0.018 at 4.0 against 0.105 at 2.0. Both flags target that
-single bottleneck; both default to the previous behaviour, so passing neither
-reproduces earlier runs exactly.
+single bottleneck. Passing neither reproduces the runs from gate_fixedinit
+onwards -- NOT the runs before them, which started from a different gate.
+
+RE-RUNNING THE RUNS MADE BEFORE THE INIT REPAIR
+-----------------------------------------------
+gate_train_p10 and gate_bias40_more were run before build() re-initialised the
+gate, so HuggingFace post_init had left it at bias 0 and small random weights:
+mean n_t 0.93-0.95 at step 1 (measured in gate_bias40_more, whose header
+nevertheless printed "init bias 4"). `--gate_init hf_default` rebuilds that
+starting point. Two guards make a mismatch visible instead of silent:
+
+  * the learned arm checks its step-1 mean n_t against the value --gate_init
+    implies and aborts if they disagree -- the check that would have caught the
+    gate_bias40_more header;
+  * `--fingerprint <old results json>` compares step-1 task loss (and, where the
+    old run logged them, step-1 n_t and gate |W|) with the run being
+    reconstructed, per seed. A MISMATCH means the model being trained is not
+    the model that produced the old number.
+
+    # cheap: does the reconstruction start where the old runs started? (~1 min)
+    python work/exp_gate_train.py --gate_init hf_default --arms oracle,learned \
+        --gammas 0.03 --seeds 1,2,3 --steps 1 \
+        --fingerprint results/gate_train_p10.json --out /tmp/fp_p10.json
 """
 
 from __future__ import annotations
@@ -301,6 +322,52 @@ def gate_weight_norm(model):
     return tot if found else None
 
 
+def expected_start_order(gate_init: str, bias: float, K: int):
+    """(expected mean n_t at step 1, tolerance) for a soft gate.
+
+    repaired    zero output weight, bias `bias`, float32: every token gets
+                sum_{i=1..K} sigmoid(bias)^i exactly (3.8233 at bias 4, K 4).
+    hf_default  bias 0 and N(0, 0.02) output weights: sigmoid ~ 0.5, so n_t is
+                0.9375 up to the small input-dependence of those weights. The
+                runs made this way logged 0.933-0.945, hence the wider band.
+    """
+    if gate_init == "repaired":
+        lam = 1.0 / (1.0 + math.exp(-bias))
+        return sum(lam ** i for i in range(1, K + 1)), 5e-3
+    if gate_init == "hf_default":
+        return sum(0.5 ** i for i in range(1, K + 1)), 0.02
+    raise ValueError(f"unknown gate_init {gate_init!r}")
+
+
+def fingerprint_check(ref_rows, mode, seed, task, n_t=None, w=None,
+                      tol_task=1.5e-4, tol_nt=2e-3, tol_w_rel=0.02):
+    """Compare a run's step-1 values with the run it is meant to reproduce.
+
+    Step-1 loss is fixed by the initial weights and the first batch, both
+    seeded, so a faithful reconstruction matches it to the 4 decimals stored.
+    Identical configurations in this project agree at step 1 to <= 1e-4; the
+    open-gate and pre-repair models differ by 3e-4 to 1.3e-3 on seeds 1-3.
+    n_t and |W| are compared only where the old run logged them (gate_train_p10
+    printed n_t as 0.000 during warmup, so it is skipped there).
+    """
+    cand = [r for r in ref_rows if r.get("mode") == mode and r.get("seed") == seed
+            and r.get("loss_trace") and r["loss_trace"][0][0] == 1]
+    if not cand:
+        return dict(verdict="NO REFERENCE", detail=f"no {mode} seed {seed} in reference")
+    ref = cand[0]["loss_trace"][0]
+    checks = [("task", task, ref[1], abs(task - ref[1]) <= tol_task)]
+    if mode == "learned" and n_t is not None and len(ref) > 2 and ref[2]:
+        checks.append(("n_t", n_t, ref[2], abs(n_t - ref[2]) <= tol_nt))
+    if (mode == "learned" and w is not None and len(ref) > 3
+            and ref[3] is not None):
+        checks.append(("|W|", w, ref[3],
+                       abs(w - ref[3]) <= tol_w_rel * max(abs(ref[3]), 1e-12)))
+    ok = all(c[3] for c in checks)
+    detail = "  ".join(f"{n} {got:.4f} vs {want:.4f}{'' if good else ' <<'}"
+                       for n, got, want, good in checks)
+    return dict(verdict="MATCH" if ok else "MISMATCH", detail=detail)
+
+
 # ===========================================================================
 # Self-test -- every check is verified to FAIL against a wrong implementation
 # ===========================================================================
@@ -482,6 +549,58 @@ def selftest() -> bool:
     check("T11 lower init bias gives a lower starting order",
           n_lo < n_hi - 0.5, f"bias 0.0 -> n_t {n_lo:.3f}, bias 4.0 -> {n_hi:.3f}")
 
+    # ---- start-order guard ------------------------------------------------
+    w_rep, _ = expected_start_order("repaired", 4.0, 4)
+    w_hf, t_hf = expected_start_order("hf_default", 4.0, 4)
+    check("T14 repaired gate at bias 4 starts at 3.8233",
+          abs(w_rep - 3.8233) < 1e-4, f"{w_rep:.4f}")
+    check("T14b hf_default ignores the bias and starts at 0.9375",
+          abs(w_hf - 0.9375) < 1e-9
+          and expected_start_order("hf_default", 2.0, 4)[0] == w_hf)
+    # the logged starts of gate_bias40_more must sit inside the hf band and
+    # the open-gate starts must not: the guard has to tell the two apart
+    check("T14c guard accepts every logged pre-repair start (0.9333-0.9445)",
+          all(abs(v - w_hf) <= t_hf for v in (0.9333, 0.9361, 0.9445, 0.9392,
+                                              0.9348, 0.9398, 0.9357)))
+    check("T14d guard rejects an open gate when hf_default was asked for",
+          abs(3.8233 - w_hf) > t_hf and abs(3.8125 - w_hf) > t_hf)
+    check("T14e guard rejects a clobbered gate when repaired was asked for",
+          abs(0.9375 - w_rep) > expected_start_order("repaired", 4.0, 4)[1])
+    try:
+        expected_start_order("legacy", 4.0, 4)
+        raised = False
+    except ValueError:
+        raised = True
+    check("T14f an unknown --gate_init raises instead of guessing", raised)
+
+    # ---- fingerprint ------------------------------------------------------
+    # real step-1 rows: gate_train_p10 seed 1 (n_t not logged) and
+    # gate_bias40_more seed 4 (n_t and |W| logged)
+    ref = [dict(mode="learned", seed=1, loss_trace=[[1, 4.8671, 0.0]]),
+           dict(mode="oracle", seed=1, loss_trace=[[1, 4.8661, 0.0]]),
+           dict(mode="learned", seed=4, loss_trace=[[1, 4.8723, 0.9333, 7.019031]])]
+    fp = lambda *a, **k: fingerprint_check(ref, *a, **k)["verdict"]
+    check("T15 p10 seed 1 reproduced exactly -> MATCH",
+          fp("learned", 1, 4.8671, n_t=0.9375) == "MATCH")
+    check("T15b the open-gate model's step-1 loss (4.8658) -> MISMATCH",
+          fp("learned", 1, 4.8658) == "MISMATCH")
+    check("T15c seed 2's smaller gap (4.8721 vs 4.8718) is still caught",
+          fingerprint_check([dict(mode="learned", seed=2,
+                                  loss_trace=[[1, 4.8718, 0.0]])],
+                            "learned", 2, 4.8721)["verdict"] == "MISMATCH")
+    check("T15d bias40 seed 4 with matching n_t and |W| -> MATCH",
+          fp("learned", 4, 4.8723, n_t=0.9335, w=7.05) == "MATCH")
+    check("T15e right loss but an open gate's n_t and |W| -> MISMATCH",
+          fp("learned", 4, 4.8723, n_t=3.8233, w=0.248) == "MISMATCH")
+    check("T15h n_t alone wrong (|W| right) -> MISMATCH",
+          fp("learned", 4, 4.8723, n_t=3.8233, w=7.05) == "MISMATCH")
+    check("T15i |W| alone wrong (n_t right) -> MISMATCH",
+          fp("learned", 4, 4.8723, n_t=0.9335, w=0.248) == "MISMATCH")
+    check("T15f oracle arm compared on loss only",
+          fp("oracle", 1, 4.8661, n_t=9.9, w=99.0) == "MATCH")
+    check("T15g a seed absent from the reference says so",
+          fp("learned", 9, 4.87) == "NO REFERENCE")
+
     print("\n  " + ("all self-tests passed" if ok else "SELF-TEST FAILED"))
     return ok
 
@@ -499,7 +618,8 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
     adaptive = mode in ("oracle", "learned")
     model = build(n_h, adaptive, args.n_heads, args.head_dim, args.hidden,
                   args.n_layers, args.vocab, seed,
-                  gate_init_bias=args.gate_init_bias)
+                  gate_init_bias=args.gate_init_bias,
+                  gate_init=args.gate_init)
     if mode == "learned":
         set_gate_hard(model, False)          # soft while training
     # Only the learned arm has a gate to give its own learning rate. The oracle
@@ -531,12 +651,22 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
             if gw > 0.0:
                 loss = task + gw * bud_t
             bud = float(bud_t.detach().item())
+            if step == 1:
+                want, tol = expected_start_order(args.gate_init,
+                                                 args.gate_init_bias, n_h)
+                if abs(bud - want) > tol:
+                    raise SystemExit(
+                        f"gate did not start where --gate_init {args.gate_init} "
+                        f"says it should: mean n_t {bud:.4f} at step 1, expected "
+                        f"{want:.4f} +/- {tol:g}. The model being trained is not "
+                        f"the one the log header describes.")
 
         opt.zero_grad(set_to_none=True)
         loss.backward()
         opt.step()
 
-        if step % args.log_every == 0 or step == 1:
+        dense = step <= args.log_dense_until and step % 250 == 0
+        if step % args.log_every == 0 or step == 1 or dense:
             extra = ""
             wn = None
             if mode == "learned":
@@ -546,9 +676,17 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
             trace.append((step, round(task.item(), 4), round(bud, 4),
                           None if wn is None else round(wn, 6)))
             print(f"      step {step:>6}  task {task.item():.4f}{extra}")
+            if step == 1 and args.ref_rows is not None:
+                fp = fingerprint_check(args.ref_rows, mode, seed,
+                                       round(task.item(), 4),
+                                       round(bud, 4) if mode == "learned" else None,
+                                       wn)
+                print(f"      fingerprint vs {Path(args.fingerprint).name}: "
+                      f"{fp['verdict']}   {fp['detail']}")
     dt = time.perf_counter() - t0
     if mode == "oracle":
         set_external_gates(model, None)
+    fingerprint = fp if (args.ref_rows is not None) else None
 
     # ---- evaluation: hard gates, so the cost is an integer factor count ----
     if mode == "learned":
@@ -600,7 +738,10 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
 
     row = dict(arm=name, mode=mode, n_h=n_h, gamma=gamma, seed=seed,
                token_acc=tc / tt, seq_acc=sc / max(1, ns), train_s=dt,
-               gate_lr=gate_lr, gate_init_bias=args.gate_init_bias,
+               gate_lr=gate_lr, gate_init=args.gate_init,
+               gate_init_bias=(None if args.gate_init == "hf_default"
+                               else args.gate_init_bias),
+               fingerprint=fingerprint,
                gate_w_final=(gate_weight_norm(model) if mode == "learned" else None),
                loss_trace=trace, alloc=alloc)
     del model
@@ -689,8 +830,21 @@ def main():
                     help="halting-gate output bias at init. 4.0 (the previous "
                          "default) gives sigmoid 0.982, derivative 0.018; 2.0 "
                          "gives 0.881 and derivative 0.105")
+    ap.add_argument("--gate_init", choices=("repaired", "hf_default"),
+                    default="repaired",
+                    help="'repaired' (default): zero output weight, bias "
+                         "--gate_init_bias, float32 gate -- every run from "
+                         "gate_fixedinit on. 'hf_default': the pre-repair start "
+                         "(bias 0, small random weights, bf16), to re-run "
+                         "gate_train_p10 / gate_bias40_more")
+    ap.add_argument("--fingerprint", default=None,
+                    help="results json of the run being reproduced; step-1 "
+                         "values are compared per seed and MATCH/MISMATCH logged")
     ap.add_argument("--arms", default="fixed,oracle,learned")
     ap.add_argument("--log_every", type=int, default=2000)
+    ap.add_argument("--log_dense_until", type=int, default=0,
+                    help="also log every 250 steps up to this step, to see "
+                         "what the gate does during the penalty-free warmup")
     ap.add_argument("--out", default="results/gate_train.json")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
@@ -702,6 +856,9 @@ def main():
         raise SystemExit(0 if selftest() else 1)
 
     args.vocab = N_GROUP + N_SPECIAL
+    args.ref_rows = None
+    if args.fingerprint:
+        args.ref_rows = json.loads(Path(args.fingerprint).read_text())["results"]
     if not torch.cuda.is_available():
         raise SystemExit("needs CUDA")
 
@@ -736,9 +893,17 @@ def main():
           f"   (0 = gate present, never penalised)")
     print(f"  schedule    penalty off for {args.budget_warmup} steps, then "
           f"ramped over {args.budget_ramp}")
-    print(f"  gate        init bias {args.gate_init_bias:g} "
-          f"(lambda = {1 / (1 + math.exp(-args.gate_init_bias)):.4f} at init)"
-          f"   lr {'= model lr' if args.gate_lr is None else f'{args.gate_lr:g}'}")
+    lr_txt = '= model lr' if args.gate_lr is None else f'{args.gate_lr:g}'
+    if args.gate_init == "hf_default":
+        print(f"  gate        init hf_default: bias 0 and N(0, 0.02) weights left by"
+              f" post_init (n_t ~0.94 at init), bf16;")
+        print(f"              --gate_init_bias IGNORED.   lr {lr_txt}")
+    else:
+        print(f"  gate        init repaired, bias {args.gate_init_bias:g} "
+              f"(lambda = {1 / (1 + math.exp(-args.gate_init_bias)):.4f} at init)"
+              f"   lr {lr_txt}")
+    if args.fingerprint:
+        print(f"  fingerprint step 1 compared against {args.fingerprint}")
     print(f"  seeds       {', '.join(str(s) for s in seeds)}")
     if len(seeds) < 3:
         print("  WARNING: fewer than 3 seeds. Outcomes on these cells are")
@@ -752,7 +917,8 @@ def main():
 
     def emit(row):
         rows.append(row)
-        out.write_text(json.dumps({"config": vars(args), "results": rows},
+        cfg = {k: v for k, v in vars(args).items() if k != "ref_rows"}
+        out.write_text(json.dumps({"config": cfg, "results": rows},
                                   indent=2, default=str))
 
     for seed in seeds:

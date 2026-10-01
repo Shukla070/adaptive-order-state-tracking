@@ -18,11 +18,14 @@ derived from that analysis).** At p = 0.05 / 0.10 / 0.25 it matches the accuracy
 of fixed `n_h = 4` at 1.150 / 1.300 / 1.752 factors per token. Single runs; the
 mid-range entries of that sweep are not capability measurements.
 
-**Measured with the learned gate.** 7 of 49 runs recover the demand structure;
-3 of 10 in the penalty-weight sweep, at 2.199 factors per token and token
-accuracy 0.9998. No run ever under-allocates, and accuracy is ≥0.998 in every
-run including the failures. The exact allocation (1.2985) was reached only in
-the earliest configuration.
+**Measured with the learned gate.** 7 of 49 runs recover the demand structure,
+from 4 distinct seeds; 3 of 10 in the penalty-weight sweep (2 of 5 seeds), at
+2.199 factors per token and token accuracy 0.9998. No run ever under-allocates.
+Accuracy is ≥0.998 in every run of the penalty-weight sweep, but not across all
+49: five runs fall below, the lowest at 0.7944. The exact allocation (1.2985)
+was reached only in the earliest configuration, on one seed, from a gate that
+started almost shut (the pre-repair initialisation) — see PLAN Part 3e,
+corrections of 1 October.
 
 **Measured outside groups.** On Boxes, fixed `n_h = 2` DeltaProduct reaches
 0.968 exact match after one operation against 0.312 for equal-size attention,
@@ -53,16 +56,34 @@ anything about adaptive order in natural language.
 ## Next, in order
 
 **1. Find what raised the gate's floor from 1 to 2 factors.** The earliest
-configuration (`gate_train_p10.json`) reached the exact 1.2985 twice in 12 runs.
-Nothing since has gone below 2.199, across four later configurations and 37
-further runs. Walk from the first configuration to the current one **one change
-at a time** — gate re-initialisation, initial bias, float32 halting — with
-enough runs per step to tell a regression from a lucky draw. *Failure
-condition:* if every step recovers 1.2985 at a comparable rate, those two cells
-were draws and there is no regression to find.
+configuration (`gate_train_p10.json`) reached the exact 1.2985 on seed 1 (two
+runs). Nothing since has gone below 2.199, across four later configurations and
+37 further runs — but no later run used seed 1 with the initialisation it had.
+
+  a. **Done 1 October — 20/20 MATCH.** Fingerprint (1 step, ~1 min): `--gate_init hf_default --steps 1
+     --fingerprint results/gate_train_p10.json`, seeds 1–3, and the same against
+     `gate_bias40_more.json`, seeds 4–10. Every line must read MATCH before
+     anything long is run.
+  b. Reconstruction (7 runs, ~2 h): `hf_default`, seeds 1–3, γ ∈ {0.03, 0.1},
+     plus seed 1 at γ=0.03 a second time, dense warmup logging.
+  c. If seed 1 recovers 1.2985: walk forward one change at a time on the same
+     seeds — float32 gate, then zero output weight, then bias 4.
+
+*Failure condition:* fingerprint MATCH and seed 1 does not recover 1.2985 — the
+original was a draw or an unrecorded script change, and there is no regression
+to find.
+
+**Result (2 October) — closed, no regression.** `gate_hfinit_p10.json`: the
+identical earliest configuration gives 1.2985 once and 2.199 once on seed 1 at
+γ = 0.1, and 2.199 / 1.4778 at γ = 0.03. Seed 1 closes 4/4, seeds 2–3 0/8. Which
+seeds close is decided in the first ~1 000 warmup steps by whether the gate
+saturates fully open (PLAN Part 3e, "Rebuilding the earliest configuration").
 
 **2. Establish the gate's success rate over runs.** ≥20 runs on the chosen
 configuration, reported as `k/n` with an interval. 3/10 cannot go in a document.
+Since the seed decides closure, replicate over **distinct seeds**, not repeats.
+First lever to test, given item 1: stop the gate saturating open during the
+penalty-free warmup.
 Candidate levers once the baseline is known: when the penalty switches on and
 how it ramps, the gate's initial bias, PonderNet-style halting (every step
 receives gradient), and a curriculum on the demand mixture.

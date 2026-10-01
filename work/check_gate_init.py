@@ -46,6 +46,9 @@ WHAT THIS FILE CHECKS
                                   wired into the path training uses. Needs CUDA,
                                   because build() moves the model to the device;
                                   skipped with a warning if CUDA is absent.
+    D  build(gate_init=           must look CLOBBERED -- the reconstruction of
+         'hf_default')            the runs made before the repair. If it comes
+                                  out clean, it reconstructs nothing. Needs CUDA.
 
 Section C is the one that matters. A and B can both pass while training still
 runs on an unrepaired model, if build() forgets the call.
@@ -211,13 +214,50 @@ def main() -> int:
         del m
         torch.cuda.empty_cache()
 
+    # -- D. the deliberate reconstruction of the pre-repair start ----------
+    print("\n  D. via build(gate_init='hf_default'), the pre-repair start")
+    if not torch.cuda.is_available():
+        d_ok = None
+        print("    SKIPPED -- needs CUDA, as C does.")
+    else:
+        m = build(args.max_order, True, args.n_heads, args.head_dim, args.hidden,
+                  args.n_layers, N_GROUP + N_SPECIAL, seed=0,
+                  gate_init_bias=args.bias, gate_init="hf_default")
+        gs = gate_modules(m)
+        d_ok = bool(gs)
+        for g in gs:
+            p = g.mlp[-1]
+            b_abs = p.bias.detach().float().abs().max().item()
+            w_abs = p.weight.detach().float().abs().sum().item()
+            x = torch.randn(2, 16, args.hidden, device=p.weight.device,
+                            dtype=p.weight.dtype)
+            with torch.no_grad():
+                _, n_t = g(x)
+            got = n_t.float().mean().item()
+            want = expected_n_t(0.0, args.max_order)
+            checks = [
+                ("output bias is 0 (post_init)", b_abs < 1e-6, f"max|b| {b_abs:.2e}"),
+                ("output weight is NOT zero", w_abs > 1e-3, f"sum|W| {w_abs:.4f}"),
+                ("gate held in bfloat16", p.weight.dtype == torch.bfloat16,
+                 str(p.weight.dtype)),
+                ("fp32 halting switched off", g.fp32_halting is False,
+                 f"fp32_halting={g.fp32_halting}"),
+                ("mean n_t near 0.9375", abs(got - want) < 0.02,
+                 f"{got:.4f} (want {want:.4f} +/- 0.02)"),
+            ]
+            for name, good, det in checks:
+                d_ok = d_ok and good
+                print(f"    {name:<32} {det:<34} [{'PASS' if good else 'FAIL'}]")
+        del m
+        torch.cuda.empty_cache()
+
     print("\n" + "=" * 74)
-    passed = b_ok and (c_ok is not False)
+    passed = b_ok and (c_ok is not False) and (d_ok is not False)
     if passed and c_ok:
         print("PASS — the gate initialises open and input-independent in the path")
-        print("       training uses. A run's first log line should read")
-        print(f"       'mean n_t {expected_n_t(args.bias, args.max_order, torch.bfloat16):.3f}'"
-              f" (bf16; {expected_n_t(args.bias, args.max_order):.3f} in float32).")
+        print("       training uses. A repaired run's first log line should read")
+        print(f"       'mean n_t {expected_n_t(args.bias, args.max_order):.3f}' (the gate"
+              f" is float32); an hf_default run ~0.94.")
     elif passed:
         print("INCOMPLETE — the repair works, but section C did not run, so it is")
         print("       unproven that build() applies it. Re-run where CUDA is visible.")
