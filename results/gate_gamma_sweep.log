@@ -1,0 +1,171 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p100=128.csv   p = 0.1
+  demand      E[D] = 1.300   fixed order must provision 4
+  budget      20000 steps x batch 128, lr 0.001
+  gammas      0.1, 0.3   (0 = gate present, never penalised)
+  schedule    penalty off for 4000 steps, then ramped over 4000
+  gate        init bias 4 (lambda = 0.9820 at init)   lr = model lr
+  seeds       1, 2, 3, 4, 5
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8658  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.484e-01
+      step   2000  task 0.1965  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.770e+01
+      step   4000  task 0.0456  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01
+      step   6000  task 0.0309  gamma_eff 0.0500  mean n_t 4.000  gate |W| 1.725e+01
+      step   8000  task 0.0199  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.711e+01
+      step  10000  task 0.0124  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.718e+01
+      step  12000  task 0.0134  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.727e+01
+      step  14000  task 0.0134  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.738e+01
+      step  16000  task 0.0124  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.746e+01
+      step  18000  task 0.0071  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.757e+01
+      step  20000  task 0.0088  gamma_eff 0.1000  mean n_t 3.915  gate |W| 2.826e+01
+------------------------------------------------------------------------------
+learned  gamma 0.3  seed 1
+------------------------------------------------------------------------------
+      step      1  task 4.8658  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.484e-01
+      step   2000  task 0.0050  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.684e+01
+      step   4000  task 0.0034  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.658e+01
+      step   6000  task 0.0061  gamma_eff 0.1500  mean n_t 3.972  gate |W| 2.331e+01
+      step   8000  task 0.0046  gamma_eff 0.3000  mean n_t 3.857  gate |W| 4.228e+01
+      step  10000  task 0.0053  gamma_eff 0.3000  mean n_t 3.835  gate |W| 6.079e+01
+      step  12000  task 0.0050  gamma_eff 0.3000  mean n_t 3.822  gate |W| 7.549e+01
+      step  14000  task 0.0060  gamma_eff 0.3000  mean n_t 3.745  gate |W| 9.286e+01
+      step  16000  task 0.0042  gamma_eff 0.3000  mean n_t 3.730  gate |W| 1.050e+02
+      step  18000  task 0.0043  gamma_eff 0.3000  mean n_t 3.733  gate |W| 1.161e+02
+      step  20000  task 0.0051  gamma_eff 0.3000  mean n_t 3.732  gate |W| 1.258e+02
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8721  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.485e-01
+      step   2000  task 0.0104  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.523e+01
+      step   4000  task 0.0055  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.513e+01
+      step   6000  task 0.0187  gamma_eff 0.0500  mean n_t 2.204  gate |W| 2.002e+01
+      step   8000  task 0.0112  gamma_eff 0.1000  mean n_t 2.197  gate |W| 2.029e+01
+      step  10000  task 0.0093  gamma_eff 0.1000  mean n_t 2.201  gate |W| 2.007e+01
+      step  12000  task 0.0092  gamma_eff 0.1000  mean n_t 2.197  gate |W| 1.981e+01
+      step  14000  task 0.0078  gamma_eff 0.1000  mean n_t 2.198  gate |W| 1.958e+01
+      step  16000  task 0.0082  gamma_eff 0.1000  mean n_t 2.197  gate |W| 1.930e+01
+      step  18000  task 0.0087  gamma_eff 0.1000  mean n_t 2.203  gate |W| 1.921e+01
+      step  20000  task 0.0075  gamma_eff 0.1000  mean n_t 2.203  gate |W| 1.910e+01
+------------------------------------------------------------------------------
+learned  gamma 0.3  seed 2
+------------------------------------------------------------------------------
+      step      1  task 4.8721  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.485e-01
+      step   2000  task 0.0118  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.517e+01
+      step   4000  task 0.0179  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.558e+01
+      step   6000  task 0.0157  gamma_eff 0.1500  mean n_t 2.201  gate |W| 2.474e+01
+      step   8000  task 0.0129  gamma_eff 0.3000  mean n_t 2.197  gate |W| 2.463e+01
+      step  10000  task 0.0108  gamma_eff 0.3000  mean n_t 2.201  gate |W| 2.443e+01
+      step  12000  task 0.0098  gamma_eff 0.3000  mean n_t 2.197  gate |W| 2.420e+01
+      step  14000  task 0.0087  gamma_eff 0.3000  mean n_t 2.198  gate |W| 2.398e+01
+      step  16000  task 0.0080  gamma_eff 0.3000  mean n_t 2.197  gate |W| 2.377e+01
+      step  18000  task 0.0081  gamma_eff 0.3000  mean n_t 2.203  gate |W| 2.359e+01
+      step  20000  task 0.0071  gamma_eff 0.3000  mean n_t 2.203  gate |W| 2.342e+01
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8686  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.504e-01
+      step   2000  task 0.0303  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.479e+01
+      step   4000  task 0.0117  gamma_eff 0.0000  mean n_t 3.997  gate |W| 2.355e+01
+      step   6000  task 0.0118  gamma_eff 0.0500  mean n_t 3.958  gate |W| 3.550e+01
+      step   8000  task 0.0132  gamma_eff 0.1000  mean n_t 3.925  gate |W| 3.519e+01
+      step  10000  task 0.0101  gamma_eff 0.1000  mean n_t 3.916  gate |W| 3.523e+01
+      step  12000  task 0.0108  gamma_eff 0.1000  mean n_t 3.907  gate |W| 3.520e+01
+      step  14000  task 0.0072  gamma_eff 0.1000  mean n_t 3.905  gate |W| 3.480e+01
+      step  16000  task 0.0068  gamma_eff 0.1000  mean n_t 3.898  gate |W| 3.445e+01
+      step  18000  task 0.0100  gamma_eff 0.1000  mean n_t 3.898  gate |W| 3.420e+01
+      step  20000  task 0.0099  gamma_eff 0.1000  mean n_t 3.891  gate |W| 3.425e+01
+------------------------------------------------------------------------------
+learned  gamma 0.3  seed 3
+------------------------------------------------------------------------------
+      step      1  task 4.8686  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.504e-01
+      step   2000  task 0.0161  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.494e+01
+      step   4000  task 0.0078  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.478e+01
+      step   6000  task 0.0089  gamma_eff 0.1500  mean n_t 3.915  gate |W| 2.197e+01
+      step   8000  task 0.0334  gamma_eff 0.3000  mean n_t 3.794  gate |W| 2.762e+01
+      step  10000  task 0.0099  gamma_eff 0.3000  mean n_t 3.102  gate |W| 3.854e+01
+      step  12000  task 0.0043  gamma_eff 0.3000  mean n_t 3.098  gate |W| 4.129e+01
+      step  14000  task 0.0030  gamma_eff 0.3000  mean n_t 3.102  gate |W| 4.290e+01
+      step  16000  task 0.0021  gamma_eff 0.3000  mean n_t 3.096  gate |W| 4.413e+01
+      step  18000  task 0.0031  gamma_eff 0.3000  mean n_t 3.100  gate |W| 4.510e+01
+      step  20000  task 0.0030  gamma_eff 0.3000  mean n_t 3.100  gate |W| 4.578e+01
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 4
+------------------------------------------------------------------------------
+      step      1  task 4.8731  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.511e-01
+      step   2000  task 0.0204  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.208e+01
+      step   4000  task 0.0147  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.174e+01
+      step   6000  task 0.0104  gamma_eff 0.0500  mean n_t 3.992  gate |W| 2.603e+01
+      step   8000  task 0.0102  gamma_eff 0.1000  mean n_t 3.985  gate |W| 3.130e+01
+      step  10000  task 0.0080  gamma_eff 0.1000  mean n_t 3.982  gate |W| 3.722e+01
+      step  12000  task 0.0084  gamma_eff 0.1000  mean n_t 3.979  gate |W| 4.163e+01
+      step  14000  task 0.0069  gamma_eff 0.1000  mean n_t 3.980  gate |W| 4.446e+01
+      step  16000  task 0.0071  gamma_eff 0.1000  mean n_t 3.978  gate |W| 4.768e+01
+      step  18000  task 0.0067  gamma_eff 0.1000  mean n_t 3.978  gate |W| 4.944e+01
+      step  20000  task 0.0049  gamma_eff 0.1000  mean n_t 3.979  gate |W| 4.998e+01
+------------------------------------------------------------------------------
+learned  gamma 0.3  seed 4
+------------------------------------------------------------------------------
+      step      1  task 4.8731  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.511e-01
+      step   2000  task 0.0178  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.001e+01
+      step   4000  task 0.0144  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.981e+01
+      step   6000  task 0.0121  gamma_eff 0.1500  mean n_t 3.979  gate |W| 2.360e+01
+      step   8000  task 0.0175  gamma_eff 0.3000  mean n_t 3.961  gate |W| 2.454e+01
+      step  10000  task 0.0139  gamma_eff 0.3000  mean n_t 3.962  gate |W| 2.394e+01
+      step  12000  task 0.0134  gamma_eff 0.3000  mean n_t 3.955  gate |W| 2.426e+01
+      step  14000  task 0.0117  gamma_eff 0.3000  mean n_t 3.951  gate |W| 2.482e+01
+      step  16000  task 0.0126  gamma_eff 0.3000  mean n_t 3.952  gate |W| 2.516e+01
+      step  18000  task 0.0153  gamma_eff 0.3000  mean n_t 3.952  gate |W| 2.619e+01
+      step  20000  task 0.0172  gamma_eff 0.3000  mean n_t 3.951  gate |W| 2.749e+01
+------------------------------------------------------------------------------
+learned  gamma 0.1  seed 5
+------------------------------------------------------------------------------
+      step      1  task 4.8686  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.480e-01
+      step   2000  task 0.0040  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.753e+01
+      step   4000  task 0.0029  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.718e+01
+      step   6000  task 0.0018  gamma_eff 0.0500  mean n_t 4.000  gate |W| 1.689e+01
+      step   8000  task 0.0026  gamma_eff 0.1000  mean n_t 3.983  gate |W| 2.011e+01
+      step  10000  task 0.0033  gamma_eff 0.1000  mean n_t 3.973  gate |W| 2.467e+01
+      step  12000  task 0.0025  gamma_eff 0.1000  mean n_t 3.965  gate |W| 2.637e+01
+      step  14000  task 0.0031  gamma_eff 0.1000  mean n_t 3.963  gate |W| 2.765e+01
+      step  16000  task 0.0017  gamma_eff 0.1000  mean n_t 3.964  gate |W| 2.824e+01
+      step  18000  task 0.0023  gamma_eff 0.1000  mean n_t 3.957  gate |W| 2.860e+01
+      step  20000  task 0.0030  gamma_eff 0.1000  mean n_t 3.955  gate |W| 2.890e+01
+------------------------------------------------------------------------------
+learned  gamma 0.3  seed 5
+------------------------------------------------------------------------------
+      step      1  task 4.8686  gamma_eff 0.0000  mean n_t 3.823  gate |W| 2.480e-01
+      step   2000  task 0.0038  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.649e+01
+      step   4000  task 0.0029  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.616e+01
+      step   6000  task 0.0022  gamma_eff 0.1500  mean n_t 3.995  gate |W| 1.823e+01
+      step   8000  task 0.0034  gamma_eff 0.3000  mean n_t 3.925  gate |W| 1.820e+01
+      step  10000  task 0.0056  gamma_eff 0.3000  mean n_t 3.918  gate |W| 1.890e+01
+      step  12000  task 0.0038  gamma_eff 0.3000  mean n_t 3.900  gate |W| 1.915e+01
+      step  14000  task 0.0047  gamma_eff 0.3000  mean n_t 3.894  gate |W| 1.952e+01
+      step  16000  task 0.0037  gamma_eff 0.3000  mean n_t 3.892  gate |W| 2.103e+01
+      step  18000  task 0.0040  gamma_eff 0.3000  mean n_t 3.887  gate |W| 2.298e+01
+      step  20000  task 0.0051  gamma_eff 0.3000  mean n_t 3.880  gate |W| 2.451e+01
+==============================================================================
+arm               seed    token     seq    cost    mae   under   corr
+------------------------------------------------------------------------------
+learned(g=0.1)       1   0.9984  0.9405   3.910   2.61    0.00   0.10
+learned(g=0.3)       1   1.0000  0.9995   3.821   2.52    0.00   0.16
+learned(g=0.1)       2   0.9999  0.9870   2.199   0.90    0.00   1.00
+learned(g=0.3)       2   0.9998  0.9805   2.199   0.90    0.00   1.00
+learned(g=0.1)       3   0.9990  0.9260   4.000   2.70    0.00   0.00
+learned(g=0.3)       3   0.9996  0.9640   3.099   1.80    0.00   1.00
+learned(g=0.1)       4   0.9996  0.9610   4.000   2.70    0.00   0.00
+learned(g=0.3)       4   0.9998  0.9830   4.000   2.70    0.00   0.00
+learned(g=0.1)       5   0.9999  0.9935   4.000   2.70    0.00   0.00
+learned(g=0.3)       5   1.0000  0.9995   4.000   2.70    0.00   0.00
+==============================================================================
+  NO VERDICT: no oracle arm in this run to compare against.
+
+written: results/gate_gamma_sweep.json

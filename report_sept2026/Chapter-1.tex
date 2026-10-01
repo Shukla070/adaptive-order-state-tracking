@@ -1,0 +1,16 @@
+\chapter{INTRODUCTION}
+\label{chap:intro}
+\section{Overview}
+Many sequence tasks require a model to maintain a running summary of what it has read, such as the value of a variable in a program, the location of an object after a series of moves, or the state of an automaton after a string of inputs. This capability is called \emph{state tracking}. Transformers attend over the full history at every step, at a cost that grows quadratically with sequence length. Linear recurrent neural networks (RNNs), such as linear attention \cite{lineartransformers} and selective state-space models \cite{mamba}, instead compress the history into a fixed-size state updated once per token, giving linear cost and constant memory during generation.
+
+Whether a linear RNN can track state depends on its \emph{state-transition matrix}, which maps the state at one step to the next. Diagonal transitions with non-negative entries are provably limited \cite{illusionofstate, sarrof, diagonalssm}. The delta rule \cite{fastweight, deltanet} replaces them with a generalized Householder matrix, and allowing this matrix to become a reflection lets the model represent operations such as parity \cite{negeig}. DeltaProduct \cite{deltaproduct} builds each transition as a product of $\nh$ such factors and shows that a larger $\nh$ lets a single layer track harder groups, up to the symmetric group $S_5$.
+
+In DeltaProduct, $\nh$ is a single hyperparameter applied to every token, and each factor adds computation to every token. Tokens, however, differ in how much expressivity they need: swapping two items is simpler than cycling five. This project replaces the fixed order with a per-token order chosen by a learned halting gate under a compute-budget penalty, and first establishes how many factors each token actually requires.
+
+\section{Motivation}
+The first motivation is efficiency. When most tokens need few factors and only some need many, a fixed order spends most of its computation where it is not needed; an allocation that follows each token's requirement pays the average rather than the worst case.
+
+The second is that the correct $\nh$ cannot be chosen in advance. Chapter~\ref{chap:method} shows that a token's requirement depends on the algebraic structure of the whole input alphabet, so adding a single cheap symbol can double the requirement of others. Too small an order fails on the hardest tokens and too large an order wastes computation; a layer that learns its own order removes this choice.
+
+\section{Organization of the Report}
+Chapter~\ref{chap:lit} reviews the literature and states the problem and objectives. Chapter~\ref{chap:method} derives the order a token requires and describes the adaptive-order layer. Chapter~\ref{chap:results} presents the experiments, from the reproduction of the base method to the learned gate and an entity-tracking experiment in natural language. Chapter~\ref{chap:conclusion} concludes and outlines future work.

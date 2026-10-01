@@ -1,6 +1,6 @@
 # Adaptive-Order DeltaProduct — Master Plan and Record
 
-**Version 6** · 11 September 2026 · supersedes v1–v5 entirely
+**Version 7** · 1 October 2026 · supersedes v1–v6 entirely
 Utkarsh Shukla · B.Tech AI, NITK Surathkal · Guide: Anand Kumar M
 
 This is the single living document for the project. It carries the full record
@@ -55,6 +55,10 @@ thing we have and it is ours.
 | Learned gate (trained end-to-end) | **first evidence**, not established — the gate closed on **1 of 3 seeds**, at every γ | `results/gate_train_p10.json`; Part 3d |
 | Where it closes, the gate recovers the oracle allocation | **measured** on that one seed — cost 1.298 vs oracle 1.298, mae 0.00, corr 1.00 over 256 000 tokens, at both γ = 0.03 and γ = 0.1 | Part 3d |
 | Gate closure is itself bistable, independently of accuracy | **measured** — accuracy 0.98–1.00 on every arm including the ones where cost stayed at exactly 4.000 | Part 3d |
+| Learned gate, penalty-weight sweep (10 runs) | **measured** — 3 of 10 runs recover the demand structure at 2.199 factors/token, token 0.9998; no run under-allocates | `results/gate_gamma_sweep.json`; Part 3e |
+| Learned gate across all configurations | **measured** — 7 of 49 runs recover the structure; best allocation 1.2985 (exact) in the earliest configuration only | Part 3e |
+| Gate must be evaluated in float32 | **measured** — bf16 sigmoid saturates above logit 6.2364 with exactly zero gradient; fp32 threshold 17.33 | `results/gate_fp32gate.json`; Part 3e |
+| State tracking in natural language (Boxes) | **measured**, fixed order only — DeltaProduct n_h=2 reaches 0.968 exact match after one operation vs 0.312 for equal-size attention; hybrid does not help | `results/boxes_hybrid.json`; Part 3f |
 | Real wall-clock saving (ragged expansion) | **not done** | all costs are notional |
 
 ---
@@ -515,6 +519,126 @@ finding; the next run tests it directly and it can fail.
 
 ---
 
+## Part 3e — The learned gate, penalty-weight sweep and reliability history (18–19 September)
+
+Part 3d was three seeds in one configuration. This is the follow-up: the gate
+trained end to end at p = 0.10 under two penalty weights, five runs each, data
+held fixed and only the run varied (`results/gate_gamma_sweep.json`).
+
+Ideal allocation on this cell is **1.2985** factors per token (90% of tokens
+require 1, 10% require 4).
+
+| γ | run | token | seq | n̄ | n̄ \| D=1 | n̄ \| D=4 | corr | under-alloc |
+|---|---|---|---|---|---|---|---|---|
+| 0.1 | 1 | 0.99840 | 0.9405 | 3.9103 | 3.900 | 4.000 | 0.104 | 0.000 |
+| 0.1 | 2 | 0.99985 | 0.9870 | **2.1990** | **2.000** | 4.000 | **1.000** | 0.000 |
+| 0.1 | 3,4,5 | ≥0.99896 | — | 4.0000 | 4.000 | 4.000 | 0.000 | 0.000 |
+| 0.3 | 1 | 1.00000 | 0.9995 | 3.8206 | 3.801 | 4.000 | 0.155 | 0.000 |
+| 0.3 | 2 | 0.99980 | 0.9805 | **2.1990** | **2.000** | 4.000 | **1.000** | 0.000 |
+| 0.3 | 3 | 0.99956 | 0.9640 | **3.0995** | **3.000** | 4.000 | **1.000** | 0.000 |
+| 0.3 | 4,5 | ≥0.99978 | — | 4.0000 | 4.000 | 4.000 | 0.000 | 0.000 |
+
+**What holds.** Three of ten runs separate the two requirement classes exactly,
+with no supervision on the allocation. **No token is ever under-allocated in any
+run**, and 5-cycles receive all four factors in every run. Token accuracy is
+≥ 0.998 everywhere, including the runs where the gate never closes, so adding
+the gate is accuracy-neutral. The best runs are both cheaper and more accurate
+than `fixed3` on the same cell (3 factors, 0.9696).
+
+**What does not hold.** 3/10 is not a reliable mechanism, and the best runs stop
+at 2.199 rather than the exact 1.2985 — swaps get two factors instead of one.
+
+### The reliability history, across every configuration tried
+
+| configuration | γ | runs | recovered | lowest n̄ (token) |
+|---|---|---|---|---|
+| initial (`gate_train_p10`) | 0, 0.01, 0.03, 0.1 | 12 | 2 | **1.2985** (0.99990) |
+| gate re-initialised (`gate_fixedinit`) | 0.03 | 10 | 0 | — |
+| initial-bias sweep (`gate_bias40_more`) | 0.03 | 7 | 1 | 2.1990 (0.99961) |
+| float32 halting (`gate_fp32gate`) | 0.03 | 10 | 1 | 2.1990 (0.99984) |
+| penalty-weight sweep (`gate_gamma_sweep`) | 0.1, 0.3 | 10 | 3 | 2.1990 (0.99985) |
+| **total** | | **49** | **7** | |
+
+The **exact** allocation of 1.2985 — one factor to every transposition, four to
+every 5-cycle — was reached only in the earliest configuration, twice. Nothing
+since has gone below 2.199. Either one of the later "fixes" is a regression, or
+those two cells were lucky draws. Settling this is the first item in the queue,
+and it gates the value of everything built on top.
+
+### Precision: why the gate is evaluated in float32
+
+`work/check_gate_precision.py`. In bfloat16 a sigmoid rounds to exactly 1.0 for
+every logit above **6.2364**, with gradient exactly zero; the fp32 threshold is
+17.3287. A gate driven into that region is frozen open and the budget penalty
+can never close it. Measured directly: with logits set to 10 and 300 steps of
+budget-only optimisation, bf16 gives gradient 0 and n̄ stays at 4.0000, while
+fp32 closes from 3.9995 to 0.0625. With small logits both precisions agree
+(gradients 9.359 vs 9.304), so the effect is specific to saturation. The gate is
+therefore computed in float32; the recurrence stays in bf16, as the kernels
+require.
+
+### Gate initialisation
+
+The gate's output layer starts with zero weights and bias 4.0, giving
+λ = σ(4) = 0.982 and an initial effective order of 3.8233 for every token: the
+gate starts open and input-independent, and must learn to close. Verified in the
+training code path — the model class's default initialisation gave 0.9376
+instead, which would start the gate almost shut.
+
+---
+
+## Part 3f — State tracking in natural language: the Boxes dataset (21 September)
+
+First experiment outside group word problems, run by Shashwat Chaturvedi on the
+`nlp_experiment` branch (`experiments/hybrid_delta_attn.ipynb`; numbers
+transcribed into `results/boxes_hybrid.json`).
+
+**Task.** Kim & Schuster (ACL 2023) Boxes: a description of the contents of
+seven boxes, then operations (move / remove / put), then a query about one box;
+the model must write that box's contents. Scored by exact match on the answer.
+Training uses the 78 402 examples with at most two operations; testing uses
+2 000 examples for each of 0–4 operations and 1 020 with five or more, so three
+or more operations is extrapolation.
+
+**Models.** Three parameter-matched models (~469k), 2 layers, width 128, 4 heads
+× 32, three seeds each: DeltaProduct at **fixed n_h = 2**, causal attention with
+RoPE, and a hybrid that runs both branches and mixes their normalised outputs
+with a learned weight. Separate pure-PyTorch implementation in float32, verified
+against a sequential float64 reference; **no halting gate**.
+
+| operations | DeltaProduct | attention | hybrid |
+|---|---|---|---|
+| 0 | 0.988 (0.981–0.993) | 0.979 (0.947–0.984) | 0.995 (0.993–0.998) |
+| 1 | **0.968** (0.948–0.975) | 0.312 (0.243–0.387) | 0.933 (0.910–0.942) |
+| 2 | **0.929** (0.872–0.936) | 0.240 (0.215–0.267) | 0.861 (0.818–0.863) |
+| 3 | **0.886** (0.781–0.905) | 0.193 (0.156–0.238) | 0.774 (0.652–0.803) |
+| 4 | **0.863** (0.742–0.887) | 0.243 (0.147–0.244) | 0.749 (0.692–0.758) |
+| ≥5 | **0.818** (0.712–0.839) | 0.196 (0.111–0.225) | 0.649 (0.569–0.703) |
+
+Median of three seeds, range in brackets.
+
+**What this establishes.** The recurrent layer applies state updates in text that
+an equal-size attention model does not: both read the description correctly at
+zero operations, but from one operation onwards DeltaProduct holds at 0.968 while
+attention falls to 0.312. It also extrapolates, reaching 0.818 at five or more
+operations after training on at most two.
+
+**What it does not establish.**
+
+- **Nothing about adaptive order.** n_h is fixed at 2 and there is no gate. The
+  decisive follow-up is an n_h ∈ {1, 2, 3} sweep: if n_h = 1 already matches,
+  adaptive order has nothing to offer on Boxes.
+- **Nothing general about attention.** This is one small configuration trained
+  from scratch for 8 000 steps.
+- **The hybrid comparison is confounded.** Parameter matching left the hybrid a
+  feed-forward width of 256 against 455 for the DeltaProduct arm, and its learned
+  mixing weight stayed near one half (0.51–0.59). On a pure-recall control task
+  all three models tie, so neither branch holds an advantage that mixing could
+  combine; a router between attention and recurrence is therefore **not**
+  motivated by this data.
+
+---
+
 ## Part 4 — Claim structure
 
 **Claim 1 — capability at matched compute (measured, 3 of 5 points).**
@@ -574,6 +698,13 @@ p changes. **The generated group is S₅ for every p < 1.**
 
 (token accuracy; the p=1.0 verdict is the intended negative control and it
 fired correctly.)
+
+> **Caveat, 13 September.** Every cell above is a **single draw**, and cells of
+> this kind are bistable (Part 3c). Values near 0.999 or near 0.04 are deep in a
+> basin and robust; the mid-range entries — `fixed2` 0.4659, `fixed3` 0.5516,
+> `fixed4` 0.7070, `fixed3` 0.8689 — are exactly where a bistable cell lands when
+> sampled once and must not be read as capability measurements. The sweep needs
+> re-running over runs before any of these numbers goes in a document.
 
 ### 5.2 Error forensics at p = 0.1 (20 000 steps)
 
@@ -703,14 +834,25 @@ it.)
 
 ## Part 7 — Plan forward
 
-**Immediate (this week)**
+**Immediate (October)**
 
-1. **Run `exp_group_closure.py`.** 5 alphabets × 3 orders, ~2.5h. This is the
-   decisive test of Claim 2. Predictions are printed before the results, and
-   the script names its own failure condition.
-2. **Length extrapolation for `fixed3`** at p=0.1 (§6.1). Cheap, decisive.
-3. **Re-run p=0.5** at 60 000 steps to close §6.2.
-4. **Three seeds** on every headline cell (§5.3).
+1. **Find what raised the gate's floor from 1 to 2 factors.** The earliest
+   configuration reached the exact 1.2985 twice in 12 runs; nothing since has
+   gone below 2.199 (Part 3e). Walk from that configuration to the current one
+   **one change at a time** — gate re-initialisation, initial bias, float32
+   halting — with enough runs per step to tell a regression from a lucky draw.
+   *Failure condition:* if every step recovers 1.2985 at a comparable rate, the
+   earlier cells were draws and the floor is not a regression.
+2. **Measure the gate's escape rate over runs, not seeds**, with ≥20 runs on the
+   chosen configuration, reported as k/n with an interval. 3/10 cannot go in a
+   document.
+3. **Order sweep on Boxes:** DeltaProduct at n_h ∈ {1, 2, 3} (Part 3f). This
+   decides whether natural-language entity tracking is a setting where adaptive
+   order can help at all.
+4. **Re-run the matched-compute sweep over runs** so §5.1's mid-range entries
+   mean something, and finish the census on the remaining alphabet cells.
+5. **Length extrapolation for `fixed3`** at p=0.1 (§6.1), and the p=0.5 re-run at
+   60 000 steps (§6.2). Both need a `--k_test` flag that does not exist yet.
 
 **Next (2–4 weeks)**
 
@@ -857,6 +999,16 @@ results/escape_census.json      33 runs of the stock architecture; the file that
                                 retired the training wall.  Part 3c
 AUDIT.md                        methodology audit, 13 Sept: which claims survive,
                                 which errors caused which retraction, evidence rules
+work/make_figures.py            regenerates every report figure from results/*.json
+                                and nothing else; --selftest = 10 known-answer
+                                checks, --report writes caption-free versions
+work/check_gate_precision.py    bf16 vs fp32 saturation of the halting sigmoid
+results/gate_gamma_sweep.json   the penalty-weight sweep, 10 runs.  Part 3e
+results/boxes_hybrid.json       Boxes entity-tracking results.  Part 3f
+report_sept2026/                mid-semester report, LaTeX sources + PDF (54 pp)
+presentation/                   mid-semester presentation (.pptx, 22 slides)
+figures/, figures/report/,      figure outputs: screen, report (no titles),
+figures/slides/                 and slide-sized (larger fonts)
 ```
 
 Every experiment file carries a `--selftest` or self-test block that runs
