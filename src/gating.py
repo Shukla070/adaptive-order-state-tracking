@@ -111,6 +111,11 @@ class HaltingGate(nn.Module):
         self.per_head = per_head
         self.use_state_summary = use_state_summary
         self.fp32_halting = fp32_halting
+        # Recorded on every forward for diagnostics and for the optional logit
+        # wall in work/exp_gate_train.py. `last_logits` keeps its graph so a
+        # penalty on it reaches the gate; `last_lambdas` is detached.
+        self.last_logits = None
+        self.last_lambdas = None
 
         in_dim = hidden_size * (2 if use_state_summary else 1)
         out_dim = max_order * (num_heads if per_head else 1)
@@ -176,6 +181,8 @@ class HaltingGate(nn.Module):
         # a non-float32 input.
         lambdas = torch.sigmoid(logits.float() if self.fp32_halting
                                 else logits)
+        self.last_logits = logits
+        self.last_lambdas = lambdas.detach()
         gates = torch.cumprod(lambdas, dim=2 if self.per_head else -1)
 
         if hard:
@@ -442,6 +449,33 @@ def test_against_reference() -> bool:
     return ok
 
 
+def test_records_logits() -> bool:
+    """The gate must expose the pre-sigmoid values it actually used.
+
+    work/exp_gate_train.py penalises these (the logit wall) and reports their
+    maximum. If they were stale, detached, or taken after the sigmoid, the wall
+    would act on the wrong tensor or not reach the gate at all.
+    """
+    torch.manual_seed(0)
+    gate = HaltingGate(hidden_size=16, max_order=4, init_open_bias=1.0)
+    with torch.no_grad():
+        nn.init.normal_(gate.mlp[-1].weight, std=0.5)
+    x = torch.randn(2, 8, 16)
+    _, _ = gate(x)
+    z, lam = gate.last_logits, gate.last_lambdas
+    fresh = torch.allclose(z, gate.mlp(x))
+    pre = torch.allclose(torch.sigmoid(z), lam)
+    grad_ok = z.requires_grad and not lam.requires_grad
+    z.sum().backward()
+    reaches = gate.mlp[-1].weight.grad is not None and \
+        gate.mlp[-1].weight.grad.abs().sum().item() > 0
+    ok = fresh and pre and grad_ok and reaches
+    print(f"T8  gate records its logits    : current {fresh}, pre-sigmoid {pre}, "
+          f"graph kept {grad_ok}, reaches weights {reaches}   "
+          f"[{'PASS' if ok else 'FAIL'}]")
+    return ok
+
+
 if __name__ == "__main__":
     print("=" * 72)
     print("Adaptive-order gating — unit tests")
@@ -454,6 +488,7 @@ if __name__ == "__main__":
         test_gradients_flow(),
         test_hard_mode_is_integer(),
         test_against_reference(),
+        test_records_logits(),
     ]
     print("=" * 72)
     print("ALL TESTS PASSED" if all(results) else "SOME TESTS FAILED")

@@ -88,6 +88,28 @@ starting point. Two guards make a mismatch visible instead of silent:
     python work/exp_gate_train.py --gate_init hf_default --arms oracle,learned \
         --gammas 0.03 --seeds 1,2,3 --steps 1 \
         --fingerprint results/gate_train_p10.json --out /tmp/fp_p10.json
+
+THE LOGIT WALL (--logit_walls)
+------------------------------
+Rebuilding the earliest configuration (PLAN Part 3e) showed which seeds close is
+decided in the first ~1 000 steps, before the budget penalty exists: the task
+loss pushes every halting logit up, and once a logit passes 6.2364 the bf16
+sigmoid is exactly 1.0 with exactly zero gradient, so nothing can ever close it.
+
+`--logit_walls 5` adds  rho * mean(relu(|z| - 5)^2)  over every halting logit z,
+from step 1, with rho = --logit_wall_weight. It is zero inside [-5, 5] and its
+gradient, 2*rho*(|z| - 5), does not pass through the sigmoid, so it acts exactly
+where the sigmoid's own gradient has vanished. It is a penalty and not a clamp
+on purpose: torch.clamp has zero gradient outside its range, which would
+reproduce the frozen gate, and a straight-through clamp lets z drift without
+limit beyond the cap while the forward pass shows nothing.
+
+Known side effect, and its control: Adam normalises step size, so while any
+logit sits above the wall the shared output bias keeps moving down, dragging
+other tokens' logits with it. With no task loss opposing it, the wall alone
+lowers n_t (self-test T17d). In training the task loss opposes it -- but the
+γ = 0 arm with the wall on is the control that says how much closure the wall
+causes without any budget.
 """
 
 from __future__ import annotations
@@ -320,6 +342,99 @@ def gate_weight_norm(model):
         tot += g.mlp[-1].weight.detach().float().abs().sum().item()
         found = True
     return tot if found else None
+
+
+BF16_SAT_LOGIT = 6.2364   # sigmoid rounds to exactly 1.0 in bf16 above this
+FP32_SAT_LOGIT = 17.3287  # and in float32 above this (check_gate_precision.py)
+
+
+def gate_logits(model):
+    """Pre-sigmoid halting logits each gate recorded on the last forward.
+
+    Raises rather than returning nothing: a wall computed over an empty list is
+    zero, which would make --logit_walls a silent no-op.
+    """
+    out = []
+    for m in adaptive_layers(model):
+        g = getattr(m, "halting_gate", None)
+        if g is None:
+            continue
+        z = getattr(g, "last_logits", None)
+        if z is None:
+            raise RuntimeError(
+                "a halting gate recorded no logits. Either no forward pass has "
+                "run yet, or src/gating.py predates last_logits.")
+        out.append(z)
+    if not out:
+        raise RuntimeError("no halting gate found; --logit_walls has nothing to act on")
+    return out
+
+
+def logit_wall_loss(logits, c: float) -> torch.Tensor:
+    """mean over all halting logits of relu(|z| - c)^2, in float32.
+
+    Zero while every |z| <= c. The gradient 2*(|z| - c)*sign(z)/N does not pass
+    through the sigmoid, so it is non-zero exactly where the sigmoid's own
+    gradient has vanished.
+    """
+    return torch.stack([torch.relu(z.float().abs() - c).pow(2).mean()
+                        for z in logits]).mean()
+
+
+def saturation_stats(model):
+    """(largest halting logit, fraction of halting probabilities exactly 1.0).
+
+    Exact equality in the dtype the sigmoid was evaluated in, so this measures
+    saturation directly rather than inferring it from a threshold.
+    """
+    zmax, sat = [], []
+    for m in adaptive_layers(model):
+        g = getattr(m, "halting_gate", None)
+        if g is None or g.last_logits is None:
+            continue
+        zmax.append(g.last_logits.detach().float().max().item())
+        sat.append((g.last_lambdas == 1).float().mean().item())
+    if not zmax:
+        return None, None
+    return max(zmax), sum(sat) / len(sat)
+
+
+def wilson(k: int, n: int, z: float = 1.96):
+    """95% Wilson score interval for k successes in n."""
+    if n == 0:
+        return (0.0, 1.0)
+    p = k / n
+    den = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / den
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
+    return (max(0.0, centre - half), min(1.0, centre + half))
+
+
+def is_separated(row, acc_floor: float = 0.99) -> bool:
+    """The rule used everywhere since Part 3e: allocation correlates with
+    demand at >= 0.99 AND the task is kept (token accuracy >= 0.99)."""
+    c = row["alloc"].get("corr")
+    return c is not None and c >= 0.99 and row["token_acc"] >= acc_floor
+
+
+def is_exact(row, acc_floor: float = 0.99, tol: float = 0.01) -> bool:
+    """Every demand class receives exactly min(D, K) factors, task kept."""
+    by = row["alloc"].get("by_demand") or {}
+    if not by or row["token_acc"] < acc_floor:
+        return False
+    K = row["n_h"]
+    return all(abs(v["mean_n_t"] - min(int(d), K)) < tol for d, v in by.items())
+
+
+def arm_summary(rows):
+    """k/n separated and k/n exact with Wilson intervals, plus the sorted costs."""
+    n = len(rows)
+    ks = sum(is_separated(r) for r in rows)
+    ke = sum(is_exact(r) for r in rows)
+    costs = sorted(r["alloc"]["mean_n_t"] for r in rows
+                   if r["alloc"]["mean_n_t"] is not None)
+    return dict(n=n, separated=ks, sep_ci=wilson(ks, n),
+                exact=ke, exact_ci=wilson(ke, n), costs=costs)
 
 
 def expected_start_order(gate_init: str, bias: float, K: int):
@@ -601,6 +716,110 @@ def selftest() -> bool:
     check("T15g a seed absent from the reference says so",
           fp("learned", 9, 4.87) == "NO REFERENCE")
 
+    # ---- the logit wall -----------------------------------------------------
+    z = torch.tensor([[-7.0, -5.0, 0.0, 4.9, 5.0, 6.0, 8.0]], requires_grad=True)
+    wl = logit_wall_loss([z], 5.0)
+    want = (2.0 ** 2 + 1.0 ** 2 + 3.0 ** 2) / 7       # only |z| > 5 counts
+    wl.backward()
+    want_g = torch.tensor([[-4.0, 0, 0, 0, 0, 2.0, 6.0]]) / 7
+    check("T16 wall loss: zero inside [-c, c], squared excess outside",
+          abs(wl.item() - want) < 1e-6, f"{wl.item():.6f} vs {want:.6f}")
+    check("T16b wall gradient is 2(|z|-c)sign(z)/N outside, exactly 0 inside",
+          torch.allclose(z.grad, want_g), f"{z.grad.tolist()}")
+    zb = torch.tensor([10.0], dtype=torch.bfloat16, requires_grad=True)
+    torch.sigmoid(zb).sum().backward()
+    sig_g = zb.grad.item()
+    zb2 = torch.tensor([10.0], dtype=torch.bfloat16, requires_grad=True)
+    logit_wall_loss([zb2], 5.0).backward()
+    check("T16c at z=10 in bf16 the sigmoid's gradient is 0 and the wall's is not",
+          sig_g == 0.0 and zb2.grad.float().item() > 1.0,
+          f"sigmoid grad {sig_g}, wall grad {zb2.grad.float().item()}")
+
+    # the documented failure, reproduced, and the wall undoing it: a bf16 gate
+    # with every logit near 10, trained on the budget alone
+    def _sat_gate_run(wall, budget, steps=300):
+        torch.manual_seed(0)
+        gq = HaltingGate(hidden_size=16, max_order=4, init_open_bias=10.0,
+                         fp32_halting=False).to(torch.bfloat16)
+        with torch.no_grad():
+            nn.init.normal_(gq.mlp[-1].weight, std=0.02)
+        opt_q = torch.optim.AdamW(gq.parameters(), lr=1e-2)
+        xq = torch.randn(8, 32, 16, dtype=torch.bfloat16)
+        sat0 = None
+        for _ in range(steps):
+            _, nq = gq(xq)
+            if sat0 is None:
+                sat0 = (gq.last_lambdas == 1).float().mean().item()
+            lq = torch.zeros(())
+            if budget:
+                lq = lq + nq.float().mean()
+            if wall:
+                lq = lq + logit_wall_loss([gq.last_logits], wall)
+            opt_q.zero_grad(set_to_none=True)
+            lq.backward()
+            opt_q.step()
+        with torch.no_grad():
+            _, nq = gq(xq)
+        return (nq.float().mean().item(), gq.last_logits.float().max().item(),
+                sat0)
+    n_off, z_off, s_off = _sat_gate_run(0.0, True)
+    n_on, z_on, _ = _sat_gate_run(5.0, True)
+    n_wall, z_wall, _ = _sat_gate_run(5.0, False)
+    check("T17 setup: every halting probability starts at exactly 1.0 (bf16)",
+          s_off == 1.0, f"saturated fraction {s_off}")
+    check("T17b without the wall the budget cannot move a saturated gate",
+          n_off == 4.0, f"n_t {n_off:.4f}, zmax {z_off:.2f}")
+    check("T17c with the wall the same budget closes it",
+          n_on < 1.0 and z_on <= 5.0 + 0.5, f"n_t {n_on:.4f}, zmax {z_on:.2f}")
+    check("T17d side effect, recorded: the wall alone lowers n_t (no task loss)",
+          n_wall < 3.5 and z_wall <= 5.0 + 0.5, f"n_t {n_wall:.4f}, zmax {z_wall:.2f}")
+
+    # the wall must refuse to be a silent no-op
+    fresh_stub = _StubModel(bias=4.0)
+    try:
+        gate_logits(fresh_stub)
+        raised = False
+    except RuntimeError:
+        raised = True
+    check("T17e gate_logits raises before any forward instead of returning []",
+          raised)
+    nogate = nn.Sequential(nn.Linear(4, 4))
+    try:
+        gate_logits(nogate)
+        raised = False
+    except RuntimeError:
+        raised = True
+    check("T17f gate_logits raises on a model with no gate", raised)
+    _ = fresh_stub.layers[0].halting_gate(torch.randn(2, 5, 16))
+    zl = gate_logits(fresh_stub)
+    check("T17g after a forward the logits come back with their graph",
+          len(zl) == 1 and zl[0].requires_grad)
+    zm, sf = saturation_stats(fresh_stub)
+    check("T17h saturation stats on an open fp32 gate: zmax 4, nothing saturated",
+          abs(zm - 4.0) < 1e-5 and sf == 0.0, f"zmax {zm}, sat {sf}")
+
+    # ---- k/n with intervals ---------------------------------------------------
+    lo3, hi3 = wilson(3, 10)
+    lo0, hi0 = wilson(0, 20)
+    check("T18 Wilson 3/10 = [0.108, 0.603] (PLAN quotes [0.11, 0.60])",
+          abs(lo3 - 0.1078) < 1e-3 and abs(hi3 - 0.6032) < 1e-3,
+          f"[{lo3:.4f}, {hi3:.4f}]")
+    check("T18b Wilson 0/20 = [0, 0.161]: zero successes is not zero rate",
+          lo0 == 0.0 and abs(hi0 - 0.1611) < 1e-3, f"[{lo0:.4f}, {hi0:.4f}]")
+    mk = lambda acc, corr, d1, d4: dict(
+        token_acc=acc, n_h=4,
+        alloc=dict(corr=corr, mean_n_t=0.9 * d1 + 0.1 * d4,
+                   by_demand={"1": dict(mean_n_t=d1), "4": dict(mean_n_t=d4)}))
+    rows_t = [mk(0.9999, 1.0, 1.0, 4.0),    # exact
+              mk(0.9999, 1.0, 2.0, 4.0),    # separated at 2.199, not exact
+              mk(0.8937, 0.91, 1.2, 4.0),   # lost the task: neither
+              mk(0.7944, 1.0, 1.0, 4.0),    # exact-looking but task lost: neither
+              mk(0.9995, 0.0, 4.0, 4.0)]    # never closed
+    s = arm_summary(rows_t)
+    check("T18c summary: 2 separated, 1 exact, of 5 -- accuracy gates both",
+          s["n"] == 5 and s["separated"] == 2 and s["exact"] == 1,
+          f"{s['separated']} sep, {s['exact']} exact")
+
     print("\n  " + ("all self-tests passed" if ok else "SELF-TEST FAILED"))
     return ok
 
@@ -609,7 +828,7 @@ def selftest() -> bool:
 # Training
 # ===========================================================================
 
-def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
+def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
     """mode: 'fixed' | 'oracle' | 'learned'."""
     from exp_matched_compute import build
     from oracle_order import oracle_gates, set_external_gates
@@ -650,6 +869,11 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
             bud_t = mean_orders.mean()
             if gw > 0.0:
                 loss = task + gw * bud_t
+            if wall > 0.0:
+                # from step 1, not ramped: the saturation it prevents happens
+                # inside the penalty-free warmup
+                loss = loss + args.logit_wall_weight * logit_wall_loss(
+                    gate_logits(model), wall)
             bud = float(bud_t.detach().item())
             if step == 1:
                 want, tol = expected_start_order(args.gate_init,
@@ -669,12 +893,16 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
         if step % args.log_every == 0 or step == 1 or dense:
             extra = ""
             wn = None
+            zmax = sat = None
             if mode == "learned":
                 wn = gate_weight_norm(model)
+                zmax, sat = saturation_stats(model)
                 extra = (f"  gamma_eff {gw:.4f}  mean n_t {bud:.3f}"
-                         f"  gate |W| {wn:.3e}")
+                         f"  gate |W| {wn:.3e}  zmax {zmax:.2f}  sat {sat:.3f}")
             trace.append((step, round(task.item(), 4), round(bud, 4),
-                          None if wn is None else round(wn, 6)))
+                          None if wn is None else round(wn, 6),
+                          None if zmax is None else round(zmax, 4),
+                          None if sat is None else round(sat, 4)))
             print(f"      step {step:>6}  task {task.item():.4f}{extra}")
             if step == 1 and args.ref_rows is not None:
                 fp = fingerprint_check(args.ref_rows, mode, seed,
@@ -742,6 +970,9 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
                gate_init_bias=(None if args.gate_init == "hf_default"
                                else args.gate_init_bias),
                fingerprint=fingerprint,
+               logit_wall=(wall if mode == "learned" else None),
+               logit_wall_weight=(args.logit_wall_weight
+                                  if mode == "learned" and wall > 0 else None),
                gate_w_final=(gate_weight_norm(model) if mode == "learned" else None),
                loss_trace=trace, alloc=alloc)
     del model
@@ -751,16 +982,33 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed):
 
 def report(rows, args):
     print("=" * 78)
-    print(f"{'arm':<16} {'seed':>5} {'token':>8} {'seq':>7} {'cost':>7} "
+    print(f"{'arm':<22} {'seed':>5} {'token':>8} {'seq':>7} {'cost':>7} "
           f"{'mae':>6} {'under':>7} {'corr':>6}")
     print("-" * 78)
     for r in rows:
         a = r["alloc"]
         f = lambda v, p=3: ("  n/a" if v is None else f"{v:.{p}f}")
-        print(f"{r['arm']:<16} {r['seed']:>5} {r['token_acc']:>8.4f} "
+        print(f"{r['arm']:<22} {r['seed']:>5} {r['token_acc']:>8.4f} "
               f"{r['seq_acc']:>7.4f} {f(a['mean_n_t']):>7} {f(a['mae'],2):>6} "
               f"{f(a['under_frac'],2):>7} {f(a['corr'],2):>6}")
     print("=" * 78)
+
+    # Per-arm fractions first: they need no oracle, and they are the numbers
+    # that go in a document. Seeds, not repeats, are the unit here.
+    keys = sorted({(r["gamma"], r.get("logit_wall") or 0.0)
+                   for r in rows if r["mode"] == "learned"})
+    if keys:
+        print("  LEARNED-GATE ARMS  (separated = corr >= 0.99 and token >= 0.99;")
+        print("                      exact = every class gets min(D, K), token >= 0.99)")
+        for g_, w_ in keys:
+            arm = [r for r in rows if r["mode"] == "learned"
+                   and r["gamma"] == g_ and (r.get("logit_wall") or 0.0) == w_]
+            s = arm_summary(arm)
+            print(f"  gamma {g_:g}  wall {w_:g}   separated {s['separated']}/{s['n']} "
+                  f"[{s['sep_ci'][0]:.2f}, {s['sep_ci'][1]:.2f}]   exact "
+                  f"{s['exact']}/{s['n']} [{s['exact_ci'][0]:.2f}, {s['exact_ci'][1]:.2f}]")
+            print("      costs, sorted: " + " ".join(f"{c:.4f}" for c in s["costs"]))
+        print()
 
     orc = [r for r in rows if r["mode"] == "oracle"]
     if not orc:
@@ -770,11 +1018,14 @@ def report(rows, args):
     print(f"  oracle reference: token {best_orc['token_acc']:.4f} at cost "
           f"{best_orc['alloc']['mean_n_t']:.3f}\n")
 
-    for gamma in sorted({r["gamma"] for r in rows if r["mode"] == "learned"}):
+    for gamma, w_ in keys:
         arms = sorted([r for r in rows if r["mode"] == "learned"
-                       and r["gamma"] == gamma], key=lambda r: r["seed"])
+                       and r["gamma"] == gamma
+                       and (r.get("logit_wall") or 0.0) == w_],
+                      key=lambda r: r["seed"])
         n_closed, n_run = closure_fraction(arms)
-        print(f"  gamma = {gamma:g}   gate closed on {n_closed} of {n_run} run(s)")
+        print(f"  gamma = {gamma:g}  wall = {w_:g}   gate closed on {n_closed} of "
+              f"{n_run} run(s)")
         print("    per-seed cost — " + " · ".join(
             f"seed {r['seed']}: "
             + ("n/a" if r["alloc"]["mean_n_t"] is None
@@ -837,6 +1088,11 @@ def main():
                          "gate_fixedinit on. 'hf_default': the pre-repair start "
                          "(bias 0, small random weights, bf16), to re-run "
                          "gate_train_p10 / gate_bias40_more")
+    ap.add_argument("--logit_walls", default="0",
+                    help="comma list of logit-wall positions c; each learned "
+                         "arm is run once per value. 0 = no wall")
+    ap.add_argument("--logit_wall_weight", type=float, default=1.0,
+                    help="rho in rho * mean(relu(|z| - c)^2)")
     ap.add_argument("--fingerprint", default=None,
                     help="results json of the run being reproduced; step-1 "
                          "values are compared per seed and MATCH/MISMATCH logged")
@@ -866,6 +1122,14 @@ def main():
     from oracle_order import load_ell_lookup
 
     gammas = [float(x) for x in args.gammas.split(",")]
+    walls = [float(x) for x in args.logit_walls.split(",")]
+    sat_limit = BF16_SAT_LOGIT if args.gate_init == "hf_default" else FP32_SAT_LOGIT
+    for w_ in walls:
+        if w_ < 0 or (w_ > 0 and w_ >= sat_limit - 0.5):
+            raise SystemExit(
+                f"--logit_walls {w_:g}: a wall must sit clearly below the logit at "
+                f"which this gate's sigmoid saturates ({sat_limit}), or it cannot "
+                f"prevent saturation. Use e.g. 5.")
     seeds = [int(x) for x in args.seeds.split(",")]
     want = [a.strip() for a in args.arms.split(",")]
 
@@ -902,6 +1166,9 @@ def main():
         print(f"  gate        init repaired, bias {args.gate_init_bias:g} "
               f"(lambda = {1 / (1 + math.exp(-args.gate_init_bias)):.4f} at init)"
               f"   lr {lr_txt}")
+    if any(w_ > 0 for w_ in walls):
+        print(f"  logit wall  c in {{{', '.join(f'{w_:g}' for w_ in walls)}}}  "
+              f"(0 = off), weight {args.logit_wall_weight:g}, from step 1")
     if args.fingerprint:
         print(f"  fingerprint step 1 compared against {args.fingerprint}")
     print(f"  seeds       {', '.join(str(s) for s in seeds)}")
@@ -936,11 +1203,14 @@ def main():
                          data, lut, args, seed))
         if "learned" in want:
             for gamma in gammas:
-                print("-" * 78)
-                print(f"learned  gamma {gamma:g}  seed {seed}")
-                print("-" * 78)
-                emit(run_arm(f"learned(g={gamma:g})", args.max_order, "learned",
-                             gamma, data, lut, args, seed))
+                for w_ in walls:
+                    tag = (f"learned(g={gamma:g})" if w_ == 0
+                           else f"learned(g={gamma:g},wall={w_:g})")
+                    print("-" * 78)
+                    print(f"learned  gamma {gamma:g}  wall {w_:g}  seed {seed}")
+                    print("-" * 78)
+                    emit(run_arm(tag, args.max_order, "learned", gamma, data,
+                                 lut, args, seed, wall=w_))
 
     report(rows, args)
     print(f"\nwritten: {args.out}")
