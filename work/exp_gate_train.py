@@ -410,11 +410,21 @@ def wilson(k: int, n: int, z: float = 1.96):
     return (max(0.0, centre - half), min(1.0, centre + half))
 
 
-def is_separated(row, acc_floor: float = 0.99) -> bool:
+def is_separated(row, acc_floor: float = 0.99, soft: bool = False) -> bool:
     """The rule used everywhere since Part 3e: allocation correlates with
-    demand at >= 0.99 AND the task is kept (token accuracy >= 0.99)."""
+    demand at >= 0.99 AND the task is kept (token accuracy >= 0.99).
+
+    soft=True judges accuracy by the soft-gate evaluation instead of the hard
+    one; False when the run has no soft evaluation."""
     c = row["alloc"].get("corr")
-    return c is not None and c >= 0.99 and row["token_acc"] >= acc_floor
+    if soft:
+        se = row.get("soft_eval")
+        if not se:
+            return False
+        acc = se["token_acc"]
+    else:
+        acc = row["token_acc"]
+    return c is not None and c >= 0.99 and acc >= acc_floor
 
 
 def is_exact(row, acc_floor: float = 0.99, tol: float = 0.01) -> bool:
@@ -433,8 +443,44 @@ def arm_summary(rows):
     ke = sum(is_exact(r) for r in rows)
     costs = sorted(r["alloc"]["mean_n_t"] for r in rows
                    if r["alloc"]["mean_n_t"] is not None)
+    kss = sum(is_separated(r, soft=True) for r in rows)
     return dict(n=n, separated=ks, sep_ci=wilson(ks, n),
-                exact=ke, exact_ci=wilson(ke, n), costs=costs)
+                exact=ke, exact_ci=wilson(ke, n), costs=costs,
+                separated_soft=kss, sep_soft_ci=wilson(kss, n),
+                has_soft=any(r.get("soft_eval") for r in rows))
+
+
+def gates_hard_at(step: int, hard_from: int) -> bool:
+    """Training uses hard (straight-through) gates from step `hard_from` on.
+    0 means never: soft gates for the whole run, as in every run before 2 Oct."""
+    return hard_from > 0 and step >= hard_from
+
+
+@torch.no_grad()
+def evaluate_gates(model, te_x, te_y, hard: bool, batch: int = 128):
+    """Token and sequence accuracy, and mean n_t over all positions, with the
+    gates in the requested mode.
+
+    It sets the mode itself, so a caller cannot silently evaluate in whatever
+    mode training left behind. mean_n_t_all includes special tokens, so it is
+    not the allocation statistic (which excludes them); it is for comparing the
+    soft and hard passes of the same model.
+    """
+    if set_gate_hard(model, hard) == 0:
+        raise RuntimeError("evaluate_gates: model has no adaptive layer")
+    model.eval()
+    tc = tt = sc = ns = 0
+    nsum = ncount = 0.0
+    for i in range(0, te_x.shape[0], batch):
+        x, y = te_x[i:i + batch], te_y[i:i + batch]
+        pred = model(input_ids=x).logits.float().argmax(-1)
+        eq = pred == y
+        tc += eq.sum().item(); tt += eq.numel()
+        sc += eq.all(-1).sum().item(); ns += y.shape[0]
+        n_t = collect_n_t(model)[0].float()
+        nsum += n_t.sum().item(); ncount += n_t.numel()
+    return dict(token_acc=tc / tt, seq_acc=sc / max(1, ns),
+                mean_n_t_all=nsum / ncount)
 
 
 def expected_start_order(gate_init: str, bias: float, K: int):
@@ -820,6 +866,71 @@ def selftest() -> bool:
           s["n"] == 5 and s["separated"] == 2 and s["exact"] == 1,
           f"{s['separated']} sep, {s['exact']} exact")
 
+    # ---- hard gates in training, and the soft-gate evaluation ---------------
+    check("T19 hard-gate schedule: never when hard_from = 0",
+          not any(gates_hard_at(s_, 0) for s_ in (1, 4000, 12000, 20000)))
+    check("T19b hard from exactly step 12000, not one step earlier",
+          not gates_hard_at(11999, 12000) and gates_hard_at(12000, 12000)
+          and gates_hard_at(20000, 12000))
+    n_switch = sum(gates_hard_at(s_, 12000) != gates_hard_at(s_ - 1, 12000)
+                   for s_ in range(1, 20001))
+    check("T19c the switch happens once in a 20 000-step run, and never at 0",
+          n_switch == 1 and sum(gates_hard_at(s_, 0) != gates_hard_at(s_ - 1, 0)
+                                for s_ in range(1, 20001)) == 0)
+
+    import types as _types
+    import torch.nn.functional as _F
+
+    class _FakeLayer(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.adaptive_order = True
+            self.gate_hard = True          # left HARD, as training's end might
+            self.last_n_t = None
+
+    class _FakeLM(nn.Module):
+        """Right only with soft gates: the failure being diagnosed, in miniature."""
+        def __init__(self, V=5):
+            super().__init__()
+            self.layer = _FakeLayer()
+            self.V = V
+
+        def forward(self, input_ids):
+            y_ = input_ids % self.V
+            if self.layer.gate_hard:
+                y_ = (y_ + 1) % self.V
+            self.layer.last_n_t = torch.full(input_ids.shape,
+                                             1.0 if self.layer.gate_hard else 4 / 3)
+            return _types.SimpleNamespace(logits=_F.one_hot(y_, self.V).float())
+
+    fake = _FakeLM()
+    fx = torch.randint(0, 50, (300, 8))
+    fy = fx % 5
+    ev_soft = evaluate_gates(fake, fx, fy, hard=False)
+    ev_hard = evaluate_gates(fake, fx, fy, hard=True)
+    check("T19d soft evaluation sets soft mode itself: token 1.0, n_t 4/3",
+          ev_soft["token_acc"] == 1.0 and ev_soft["seq_acc"] == 1.0
+          and abs(ev_soft["mean_n_t_all"] - 4 / 3) < 1e-6, str(ev_soft))
+    check("T19e hard evaluation of the same model: token 0.0, n_t 1.0",
+          ev_hard["token_acc"] == 0.0 and abs(ev_hard["mean_n_t_all"] - 1.0) < 1e-6,
+          str(ev_hard))
+    try:
+        evaluate_gates(nn.Linear(2, 2), fx, fy, hard=False)
+        raised = False
+    except RuntimeError:
+        raised = True
+    check("T19f evaluating a model with no adaptive layer raises", raised)
+
+    rows_s = [dict(r, soft_eval=dict(token_acc=a))
+              for r, a in zip(rows_t, (0.9999, 0.9999, 0.9990, 0.9995, 0.9999))]
+    s2 = arm_summary(rows_s)
+    check("T19g summary under soft evaluation: corr-1.0 runs with soft acc >= 0.99",
+          s2["separated_soft"] == 3 and s2["separated"] == 2 and s2["has_soft"],
+          f"{s2['separated_soft']} soft, {s2['separated']} hard")
+    check("T19h runs without a soft evaluation never count as soft-separated",
+          arm_summary(rows_t)["separated_soft"] == 0
+          and not arm_summary(rows_t)["has_soft"])
+
     print("\n  " + ("all self-tests passed" if ok else "SELF-TEST FAILED"))
     return ok
 
@@ -828,7 +939,8 @@ def selftest() -> bool:
 # Training
 # ===========================================================================
 
-def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
+def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
+            hard_from=0):
     """mode: 'fixed' | 'oracle' | 'learned'."""
     from exp_matched_compute import build
     from oracle_order import oracle_gates, set_external_gates
@@ -852,6 +964,11 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
     trace = []
     t0 = time.perf_counter()
     for step in range(1, args.steps + 1):
+        if mode == "learned" and (gates_hard_at(step, hard_from)
+                                  != gates_hard_at(step - 1, hard_from)):
+            set_gate_hard(model, True)
+            print(f"      step {step:>6}  gates now HARD (straight-through) for "
+                  f"the rest of training")
         idx = torch.randint(0, tr_x.shape[0], (args.batch,), device=DEV, generator=g)
         x, y = tr_x[idx], tr_y[idx]
         if mode == "oracle":
@@ -964,6 +1081,16 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
                      under_frac=wmean("under_frac"), over_frac=wmean("over_frac"),
                      corr=wmean("corr"))
 
+    # The hard evaluation above is the reported number. The soft one shows how
+    # much of any accuracy loss comes from switching soft gates to {0, 1} at
+    # evaluation rather than from the trained model.
+    soft_eval = None
+    if mode == "learned":
+        soft_eval = evaluate_gates(model, te_x, te_y, hard=False)
+        print(f"      eval   hard gates: token {tc / tt:.4f}   |   soft gates: "
+              f"token {soft_eval['token_acc']:.4f}, seq {soft_eval['seq_acc']:.4f}, "
+              f"mean n_t {soft_eval['mean_n_t_all']:.3f}")
+
     row = dict(arm=name, mode=mode, n_h=n_h, gamma=gamma, seed=seed,
                token_acc=tc / tt, seq_acc=sc / max(1, ns), train_s=dt,
                gate_lr=gate_lr, gate_init=args.gate_init,
@@ -971,6 +1098,8 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
                                else args.gate_init_bias),
                fingerprint=fingerprint,
                logit_wall=(wall if mode == "learned" else None),
+               hard_from=(hard_from if mode == "learned" else None),
+               soft_eval=soft_eval,
                logit_wall_weight=(args.logit_wall_weight
                                   if mode == "learned" and wall > 0 else None),
                gate_w_final=(gate_weight_norm(model) if mode == "learned" else None),
@@ -982,31 +1111,40 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0):
 
 def report(rows, args):
     print("=" * 78)
-    print(f"{'arm':<22} {'seed':>5} {'token':>8} {'seq':>7} {'cost':>7} "
-          f"{'mae':>6} {'under':>7} {'corr':>6}")
+    print(f"{'arm':<30} {'seed':>4} {'token':>7} {'soft':>7} {'seq':>6} {'cost':>7} "
+          f"{'mae':>5} {'under':>6} {'corr':>5}")
     print("-" * 78)
     for r in rows:
         a = r["alloc"]
         f = lambda v, p=3: ("  n/a" if v is None else f"{v:.{p}f}")
-        print(f"{r['arm']:<22} {r['seed']:>5} {r['token_acc']:>8.4f} "
-              f"{r['seq_acc']:>7.4f} {f(a['mean_n_t']):>7} {f(a['mae'],2):>6} "
-              f"{f(a['under_frac'],2):>7} {f(a['corr'],2):>6}")
+        se = r.get("soft_eval")
+        soft_txt = "    n/a" if not se else f"{se['token_acc']:>7.4f}"
+        print(f"{r['arm']:<30} {r['seed']:>4} {r['token_acc']:>7.4f} {soft_txt} "
+              f"{r['seq_acc']:>6.3f} {f(a['mean_n_t']):>7} {f(a['mae'],2):>5} "
+              f"{f(a['under_frac'],2):>6} {f(a['corr'],2):>5}")
     print("=" * 78)
 
     # Per-arm fractions first: they need no oracle, and they are the numbers
     # that go in a document. Seeds, not repeats, are the unit here.
-    keys = sorted({(r["gamma"], r.get("logit_wall") or 0.0)
+    keys = sorted({(r["gamma"], r.get("logit_wall") or 0.0, r.get("hard_from") or 0)
                    for r in rows if r["mode"] == "learned"})
+    in_arm = lambda r, g_, w_, h_: (r["mode"] == "learned" and r["gamma"] == g_
+                                    and (r.get("logit_wall") or 0.0) == w_
+                                    and (r.get("hard_from") or 0) == h_)
     if keys:
         print("  LEARNED-GATE ARMS  (separated = corr >= 0.99 and token >= 0.99;")
         print("                      exact = every class gets min(D, K), token >= 0.99)")
-        for g_, w_ in keys:
-            arm = [r for r in rows if r["mode"] == "learned"
-                   and r["gamma"] == g_ and (r.get("logit_wall") or 0.0) == w_]
+        for g_, w_, h_ in keys:
+            arm = [r for r in rows if in_arm(r, g_, w_, h_)]
             s = arm_summary(arm)
-            print(f"  gamma {g_:g}  wall {w_:g}   separated {s['separated']}/{s['n']} "
+            print(f"  gamma {g_:g}  wall {w_:g}  hard from {h_ or 'never'}   "
+                  f"separated {s['separated']}/{s['n']} "
                   f"[{s['sep_ci'][0]:.2f}, {s['sep_ci'][1]:.2f}]   exact "
                   f"{s['exact']}/{s['n']} [{s['exact_ci'][0]:.2f}, {s['exact_ci'][1]:.2f}]")
+            if s["has_soft"]:
+                print(f"      separated if judged by SOFT-gate accuracy: "
+                      f"{s['separated_soft']}/{s['n']} "
+                      f"[{s['sep_soft_ci'][0]:.2f}, {s['sep_soft_ci'][1]:.2f}]")
             print("      costs, sorted: " + " ".join(f"{c:.4f}" for c in s["costs"]))
         print()
 
@@ -1018,14 +1156,12 @@ def report(rows, args):
     print(f"  oracle reference: token {best_orc['token_acc']:.4f} at cost "
           f"{best_orc['alloc']['mean_n_t']:.3f}\n")
 
-    for gamma, w_ in keys:
-        arms = sorted([r for r in rows if r["mode"] == "learned"
-                       and r["gamma"] == gamma
-                       and (r.get("logit_wall") or 0.0) == w_],
+    for gamma, w_, h_ in keys:
+        arms = sorted([r for r in rows if in_arm(r, gamma, w_, h_)],
                       key=lambda r: r["seed"])
         n_closed, n_run = closure_fraction(arms)
-        print(f"  gamma = {gamma:g}  wall = {w_:g}   gate closed on {n_closed} of "
-              f"{n_run} run(s)")
+        print(f"  gamma = {gamma:g}  wall = {w_:g}  hard from {h_ or 'never'}   "
+              f"gate closed on {n_closed} of {n_run} run(s)")
         print("    per-seed cost — " + " · ".join(
             f"seed {r['seed']}: "
             + ("n/a" if r["alloc"]["mean_n_t"] is None
@@ -1091,6 +1227,10 @@ def main():
     ap.add_argument("--logit_walls", default="0",
                     help="comma list of logit-wall positions c; each learned "
                          "arm is run once per value. 0 = no wall")
+    ap.add_argument("--hard_froms", default="0",
+                    help="comma list of steps from which training uses hard "
+                         "(straight-through) gates; each learned arm runs once "
+                         "per value. 0 = soft gates throughout")
     ap.add_argument("--logit_wall_weight", type=float, default=1.0,
                     help="rho in rho * mean(relu(|z| - c)^2)")
     ap.add_argument("--fingerprint", default=None,
@@ -1123,6 +1263,11 @@ def main():
 
     gammas = [float(x) for x in args.gammas.split(",")]
     walls = [float(x) for x in args.logit_walls.split(",")]
+    hard_froms = [int(x) for x in args.hard_froms.split(",")]
+    for h_ in hard_froms:
+        if h_ < 0 or h_ > args.steps:
+            raise SystemExit(f"--hard_froms {h_}: must be 0 (never) or a step "
+                             f"in 1..{args.steps}")
     sat_limit = BF16_SAT_LOGIT if args.gate_init == "hf_default" else FP32_SAT_LOGIT
     for w_ in walls:
         if w_ < 0 or (w_ > 0 and w_ >= sat_limit - 0.5):
@@ -1166,6 +1311,9 @@ def main():
         print(f"  gate        init repaired, bias {args.gate_init_bias:g} "
               f"(lambda = {1 / (1 + math.exp(-args.gate_init_bias)):.4f} at init)"
               f"   lr {lr_txt}")
+    if any(h_ > 0 for h_ in hard_froms):
+        print(f"  hard gates  from step {{{', '.join(str(h_) if h_ else 'never' for h_ in hard_froms)}}}"
+              f"  (straight-through; soft before)")
     if any(w_ > 0 for w_ in walls):
         print(f"  logit wall  c in {{{', '.join(f'{w_:g}' for w_ in walls)}}}  "
               f"(0 = off), weight {args.logit_wall_weight:g}, from step 1")
@@ -1204,13 +1352,19 @@ def main():
         if "learned" in want:
             for gamma in gammas:
                 for w_ in walls:
-                    tag = (f"learned(g={gamma:g})" if w_ == 0
-                           else f"learned(g={gamma:g},wall={w_:g})")
-                    print("-" * 78)
-                    print(f"learned  gamma {gamma:g}  wall {w_:g}  seed {seed}")
-                    print("-" * 78)
-                    emit(run_arm(tag, args.max_order, "learned", gamma, data,
-                                 lut, args, seed, wall=w_))
+                    for h_ in hard_froms:
+                        parts = [f"g={gamma:g}"]
+                        if w_:
+                            parts.append(f"wall={w_:g}")
+                        if h_:
+                            parts.append(f"hard@{h_}")
+                        tag = f"learned({','.join(parts)})"
+                        print("-" * 78)
+                        print(f"learned  gamma {gamma:g}  wall {w_:g}  "
+                              f"hard from {h_ or 'never'}  seed {seed}")
+                        print("-" * 78)
+                        emit(run_arm(tag, args.max_order, "learned", gamma, data,
+                                     lut, args, seed, wall=w_, hard_from=h_))
 
     report(rows, args)
     print(f"\nwritten: {args.out}")

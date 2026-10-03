@@ -539,8 +539,10 @@ require 1, 10% require 4).
 | 0.3 | 4,5 | ≥0.99978 | — | 4.0000 | 4.000 | 4.000 | 0.000 | 0.000 |
 
 **What holds.** Three of ten runs separate the two requirement classes exactly,
-with no supervision on the allocation. **No token is ever under-allocated in any
-run**, and 5-cycles receive all four factors in every run. Token accuracy is
+with no supervision on the allocation. **No token is under-allocated in any run
+of this sweep**, and 5-cycles receive all four factors in every run. (Not
+universal: seed 16 of the 2 October logit-wall experiment under-allocates 3–5%
+of tokens, in both arms, in runs where the task itself was not learned.) Token accuracy is
 ≥ 0.998 everywhere in this sweep, including the runs where the gate never
 closes, so here adding the gate is accuracy-neutral. (Not across all 49 runs:
 five fall below 0.998, the lowest `gate_fp32gate` seed 7 at 0.7944 — a run that
@@ -667,6 +669,71 @@ both γ. All 8 runs match `gate_train_p10` at step 1. Warmup logged every 250 st
 gate saturating open during the penalty-free warmup. That is a property of our
 gate (an unbounded sigmoid in bf16 with nothing opposing it for 4 000 steps),
 not of DeltaProduct.
+
+### The logit wall, 20 seeds per arm (2 October)
+
+`results/gate_wall_seeds.json` (seeds 11–30, γ = 0.1, pre-repair start, each seed
+with and without a wall at |z| = 5) and `results/gate_wall_anchor.json` (wall on,
+seeds 1–3). Driver `work/run_gate_wall.sh`. Single run per seed and arm.
+
+| | no wall | wall at 5 |
+|---|---|---|
+| any halting probability saturated (exactly 1.0) | 20 / 20 | **0 / 20** (and 0/3 anchors) |
+| gate closed with the class structure (corr = 1.00) | **10 / 20** [0.30, 0.70] | 8 / 20 [0.22, 0.61] |
+| … and token accuracy ≥ 0.99 (separated) | 4 / 20 [0.08, 0.42] | 1 / 20 [0.01, 0.24] |
+| exact allocation 1.2985 with accuracy ≥ 0.99 | 1 / 20 | 0 / 20 |
+| task loss > 0.05 at step 4 000 (slow to learn) | 1 / 20 | 5 / 20 |
+
+**1. The wall removes saturation and does not improve closure.** It does what it
+was built to do — no probability ever reaches 1.0, largest logit ≤ 6.00 — yet
+the gate stays open in 11 of 20 seeds, and the anchors behave as before (seed 1
+closes to 1.2985; seeds 2 and 3 do not). It also slows task learning (seed 17
+never learns the task). By the criterion written before the run, saturation is
+not *the* cause of non-closure, and the wall is dropped. Control
+(`gate_wall_nobudget.json`, wall on, γ = 0, seeds 11–13): 0/3 closed, soft order
+held at 3.922 throughout, so the wall does not close the gate on its own in
+training — the drag seen in self-test T17d needs the task loss to be absent.
+
+**2. Without the wall, saturation sets the level in every run that closed — but
+being unsaturated is not enough to close.** Saturated fraction at step 4 000, when
+the penalty switches on:
+
+| saturated fraction at step 4 000 | predicted if exactly the kept factors saturate | final n̄ |
+|---|---|---|
+| 0.323–0.327 (4 runs) | 0.9·1/4 + 0.1 = 0.325 | 1.2985 |
+| 0.572 (1 run) | 0.9·2/4 + 0.1 = 0.550 | 2.199 |
+| 0.750–0.797 (5 runs) | 0.9·3/4 + 0.1 = 0.775 | 3.0995 |
+| 1.000 (7 runs) | 1.0 | 4.000 |
+| 0.954, 0.889 (seeds 19, 28) | — | **4.000** |
+
+(Seed 16, which did not learn the task, is omitted.)
+
+In all 10 runs that closed, the saturated fraction was already at its final
+level by step 1 000 — before the penalty — and the factors kept open match it.
+(This matches fractions; which individual factors saturated was not logged.)
+But seeds 19 and 28 had 5–11% of probabilities unsaturated when the penalty
+started, and 22–45% by the end, and closed none of them. So saturation is a lock,
+not the only one — the same conclusion as the wall arm, where nothing saturated
+and 11 of 20 seeds still kept every factor open. Something else formed in the
+penalty-free warmup holds them open; a task solution already built on all four
+factors is the obvious candidate, untested.
+
+**3. A new problem, and probably ours: accuracy is lost at evaluation, not in
+training.** Of the runs that closed and then scored below 0.99, 12 of 13 end
+training with a task loss of 0.003–0.028 (no wall: 6/6; wall: 6/7, the seventh
+collapsed late), the same as runs that evaluate at 0.999. E.g. seed 12, no wall:
+final training loss 0.0058, evaluated token accuracy **0.652**. Training uses
+soft gates and evaluation hard {0, 1} gates; soft n̄ at the end exceeds the hard
+cost (1.333 against 1.2985 for seed 12), so the "closed" factors still carry a
+little β in training and the model relies on it. **Inferred, not yet measured:**
+these runs were not evaluated with soft gates, and no checkpoints were kept.
+This is why 10 closures yield only 4 usable runs.
+
+**4. Closure rate from the pre-repair start.** Seeds 11–30 at γ = 0.1: 10/20
+close with the right structure [0.30, 0.70]. Seeds 1–10 under the same start,
+mostly at γ = 0.03, closed on 2 of 10 seeds (1 and 7) [0.06, 0.51], counting
+closure regardless of accuracy. The intervals overlap; the difference could be
+γ, the seed sample, or chance, and is not claimed.
 
 ---
 
@@ -934,6 +1001,17 @@ it.)
 2. **Measure the gate's escape rate over runs, not seeds**, with ≥20 runs on the
    chosen configuration, reported as k/n with an interval. 3/10 cannot go in a
    document.
+   **Stopping rule for the per-token gate (pre-registered 3 October, before the
+   hard-gate results).** Usable = closes with the class structure (corr ≥ 0.99)
+   *and* hard-gate token accuracy ≥ 0.99. After (i) hard-gate training and
+   (ii) penalty from step 1 have each been tried, if the best configuration gives
+   fewer than **15 usable runs out of 20 seeds** at p = 0.10, the per-token gate
+   goes on hold as a research extension and the main deliverable moves to the
+   per-layer learned order (Tier 3, Part 7b). Moving down the ladder must cite
+   this rule. Today's figure is 4/20.
+2b. **Prototype a per-layer learned order** on the A₅ and S₅ alphabets: does it
+   find 2 and 4? It is the shortest path to a *measured* speedup (a layer that
+   needs 2 factors is built with 2) and rests directly on the demand model.
 3. **Order sweep on Boxes:** DeltaProduct at n_h ∈ {1, 2, 3} (Part 3f). This
    decides whether natural-language entity tracking is a setting where adaptive
    order can help at all.

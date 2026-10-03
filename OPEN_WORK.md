@@ -20,7 +20,8 @@ mid-range entries of that sweep are not capability measurements.
 
 **Measured with the learned gate.** 7 of 49 runs recover the demand structure,
 from 4 distinct seeds; 3 of 10 in the penalty-weight sweep (2 of 5 seeds), at
-2.199 factors per token and token accuracy 0.9998. No run ever under-allocates.
+2.199 factors per token and token accuracy 0.9998. Under-allocation is rare:
+one seed (16, 2 October), in runs where the task itself was not learned.
 Accuracy is ≥0.998 in every run of the penalty-weight sweep, but not across all
 49: five runs fall below, the lowest at 0.7944. The exact allocation (1.2985)
 was reached only in the earliest configuration, on one seed, from a gate that
@@ -82,13 +83,32 @@ saturates fully open (PLAN Part 3e, "Rebuilding the earliest configuration").
 **2. Establish the gate's success rate over runs.** ≥20 runs on the chosen
 configuration, reported as `k/n` with an interval. 3/10 cannot go in a document.
 Since the seed decides closure, replicate over **distinct seeds**, not repeats.
-First lever to test, given item 1: stop the gate saturating open during the
-penalty-free warmup.
+First lever tested (2 October): a logit wall. It removed saturation (0/20) but
+did not raise closure (8/20 vs 10/20 without) and slowed learning, so it is
+dropped. Two findings from that run now lead (PLAN Part 3e, "The logit wall"):
+**(a)** most closed runs lose accuracy only at hard-gate evaluation — fix first:
+evaluate soft and hard, and train with hard (straight-through) gates once the
+penalty has ramped; **(b)** the warmup locks factors open by more than
+saturation — next lever: penalty from step 1.
+*Built, not yet run (2 Oct):* `--hard_froms` (straight-through hard gates from a
+given step) and a soft-gate evaluation of every learned run, in
+`exp_gate_train.py`; driver `work/run_gate_hard.sh` (20 seeds × {never, 12000}).
 Candidate levers once the baseline is known: when the penalty switches on and
 how it ramps, the gate's initial bias, PonderNet-style halting (every step
 receives gradient), and a curriculum on the demand mixture.
 
-**3. Order sweep on Boxes:** DeltaProduct at `n_h ∈ {1, 2, 3}`, three seeds
+**Stopping rule (pre-registered 3 Oct, PLAN Part 7):** after hard-gate training
+and penalty-from-step-1 have each been tried, fewer than 15/20 usable runs
+(corr ≥ 0.99 and hard token ≥ 0.99) at p = 0.10 puts the per-token gate on hold
+and makes the per-layer learned order the main deliverable. Today: 4/20.
+Next gate run: `SEEDS=12,13,15,25,29,30 OUT=results/gate_hard_6seeds bash
+work/run_gate_hard.sh` (~3.5 h), the six seeds that closed but lost accuracy.
+
+**2b. Per-layer learned order prototype** on A₅ / S₅ alphabets — should find 2
+and 4. Shortest path to a measured speedup.
+
+**3. Order sweep on Boxes:** (run in parallel if Shashwat or the institute
+cluster can take it) DeltaProduct at `n_h ∈ {1, 2, 3}`, three seeds
 each. This decides whether natural-language entity tracking is a setting where
 adaptive order can help at all. If `n_h = 1` already matches `n_h = 2`, it is
 not. Then train the gate there and check whether operation tokens receive more
@@ -114,6 +134,31 @@ not kept; only a checkpoint directory survives). Five minutes.
 512-length heterogeneous dataset.
 
 ---
+
+## Broader applications to try (discussion, 3 Oct)
+
+Exploring is not claiming: try these, claim only what is measured.
+
+- **bAbI-style / Boxes-style entity tracking QA** — closest to what works; cheap,
+  trainable from scratch on 6 GB.
+- **SQuAD** — mainstream extractive QA. Mostly recall, little state change, so
+  expect little from order; still a useful check of the layer on ordinary text,
+  and the gate's allocation shows which tokens it treats as expensive.
+- **Situation tracking over update streams (e.g. a disaster-response RAG
+  system)** — reports arrive as updates (road closed, shelter full, resource
+  moved); a query needs the *current* state, which plain retrieval gets wrong
+  when facts go stale. Most tokens are filler and a few are updates:
+  heterogeneous demand, the regime where per-token order should pay. Start with a
+  synthetic Boxes-like generator in that domain.
+- **Building occupancy from WiseNET** (Marroquin et al., Data in Brief 2019;
+  6 indoor cameras, 77 annotated people tracks, building model with rooms and
+  doors). Not as a vision task: derive the event stream (person enters/leaves a
+  space, groups merge/split) from the ground-truth annotations and ask "who is
+  in room X now". Real movement data for Boxes-style tracking; links to the
+  disaster idea (who is still inside during an evacuation). Too small to train
+  on: use as a real test set, train on a simulator of the same building. First
+  check: do the annotations give identities across cameras?
+- **Chess board-state tracking** — already the Part 7b application target.
 
 ## Deferred deliberately
 
