@@ -101,6 +101,7 @@ class HaltingGate(nn.Module):
         init_open_bias: float = 4.0,
         use_state_summary: bool = False,
         fp32_halting: bool = True,
+        min_order: int = 0,
     ) -> None:
         super().__init__()
         if max_order < 1:
@@ -111,6 +112,12 @@ class HaltingGate(nn.Module):
         self.per_head = per_head
         self.use_state_summary = use_state_summary
         self.fp32_halting = fp32_halting
+        # The first `min_order` factors are always on: their halting
+        # probabilities are fixed at 1 and the gate decides only the rest.
+        # min_order = 1 means the layer can never drop below plain DeltaNet --
+        # a gate allowed to reach order 0 makes the layer write nothing, and a
+        # budget penalty applied before the task is learned drives it there.
+        self.min_order = min_order
         # Recorded on every forward for diagnostics and for the optional logit
         # wall in work/exp_gate_train.py. `last_logits` keeps its graph so a
         # penalty on it reaches the gate; `last_lambdas` is detached.
@@ -182,8 +189,14 @@ class HaltingGate(nn.Module):
         lambdas = torch.sigmoid(logits.float() if self.fp32_halting
                                 else logits)
         self.last_logits = logits
-        self.last_lambdas = lambdas.detach()
-        gates = torch.cumprod(lambdas, dim=2 if self.per_head else -1)
+        self.last_lambdas = lambdas.detach()   # before forcing: trainable ones
+        order_dim = 2 if self.per_head else lambdas.dim() - 1
+        m = min(int(getattr(self, "min_order", 0)), self.max_order)
+        if m > 0:
+            lambdas = torch.cat(
+                [torch.ones_like(lambdas.narrow(order_dim, 0, m)),
+                 lambdas.narrow(order_dim, m, self.max_order - m)], dim=order_dim)
+        gates = torch.cumprod(lambdas, dim=order_dim)
 
         if hard:
             hard_gates = (gates > 0.5).to(gates.dtype)
@@ -476,6 +489,32 @@ def test_records_logits() -> bool:
     return ok
 
 
+def test_min_order() -> bool:
+    """min_order = 1: a fully shut gate still gives exactly one factor."""
+    torch.manual_seed(0)
+    x = torch.randn(2, 8, 16)
+    shut = HaltingGate(hidden_size=16, max_order=4, init_open_bias=-40.0)
+    _, n0 = shut(x)
+    shut.min_order = 1
+    _, n1 = shut(x)
+    _, n1h = shut(x, hard=True)
+    opened = HaltingGate(hidden_size=16, max_order=4, init_open_bias=0.0, min_order=1)
+    with torch.no_grad():
+        nn.init.normal_(opened.mlp[-1].weight, std=0.5)
+    _, n_mid = opened(x)
+    n_mid.sum().backward()
+    w = opened.mlp[-1].weight.grad          # rows = factors 1..K
+    first_row_zero = w[0].abs().sum().item() == 0.0
+    others_alive = w[1:].abs().sum().item() > 0.0
+    ok = (n0.max().item() < 1e-6 and (n1 - 1).abs().max().item() < 1e-6
+          and (n1h - 1).abs().max().item() == 0.0
+          and n_mid.min().item() >= 1.0 and first_row_zero and others_alive)
+    print(f"T9  min_order=1 floor          : shut gate 0 -> {n1.mean().item():.3f} "
+          f"(hard {n1h.mean().item():.0f}), factor-1 logit gets no gradient "
+          f"{first_row_zero}, others do {others_alive}   [{'PASS' if ok else 'FAIL'}]")
+    return ok
+
+
 if __name__ == "__main__":
     print("=" * 72)
     print("Adaptive-order gating — unit tests")
@@ -489,6 +528,7 @@ if __name__ == "__main__":
         test_hard_mode_is_integer(),
         test_against_reference(),
         test_records_logits(),
+        test_min_order(),
     ]
     print("=" * 72)
     print("ALL TESTS PASSED" if all(results) else "SOME TESTS FAILED")

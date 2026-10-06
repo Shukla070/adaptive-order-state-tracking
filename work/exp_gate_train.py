@@ -483,21 +483,35 @@ def evaluate_gates(model, te_x, te_y, hard: bool, batch: int = 128):
                 mean_n_t_all=nsum / ncount)
 
 
-def expected_start_order(gate_init: str, bias: float, K: int):
-    """(expected mean n_t at step 1, tolerance) for a soft gate.
+def expected_start_order(gate_init: str, bias: float, K: int, hard: bool = False,
+                         min_order: int = 0):
+    """(expected mean n_t at step 1, tolerance).
 
-    repaired    zero output weight, bias `bias`, float32: every token gets
-                sum_{i=1..K} sigmoid(bias)^i exactly (3.8233 at bias 4, K 4).
-    hf_default  bias 0 and N(0, 0.02) output weights: sigmoid ~ 0.5, so n_t is
-                0.9375 up to the small input-dependence of those weights. The
-                runs made this way logged 0.933-0.945, hence the wider band.
+    Gate i (1-based) is the product of halting probabilities 1..i, and the first
+    `min_order` of those are fixed at 1. With every probability at lam:
+        g_i = 1 for i <= m,   g_i = lam ** (i - m) otherwise.
+    Soft: n_t = sum g_i (3.8233 at bias 4, K 4, m 0). Hard: the number of g_i
+    above 0.5 (4 at bias 4). The pre-repair start has lam ~0.5 per token, so its
+    hard start is only known to lie between m and m + 1, and with m = 0 it is
+    ~0 -- a layer that writes nothing -- which is refused.
     """
+    m = min(min_order, K)
     if gate_init == "repaired":
         lam = 1.0 / (1.0 + math.exp(-bias))
-        return sum(lam ** i for i in range(1, K + 1)), 5e-3
-    if gate_init == "hf_default":
-        return sum(0.5 ** i for i in range(1, K + 1)), 0.02
-    raise ValueError(f"unknown gate_init {gate_init!r}")
+    elif gate_init == "hf_default":
+        lam = 0.5
+    else:
+        raise ValueError(f"unknown gate_init {gate_init!r}")
+    g = [1.0 if i <= m else lam ** (i - m) for i in range(1, K + 1)]
+    if not hard:
+        return sum(g), (5e-3 if gate_init == "repaired" else 0.02)
+    if gate_init == "repaired":
+        return float(sum(x > 0.5 for x in g)), 1e-6
+    if m == 0:
+        raise ValueError("hard gates from step 1 with the pre-repair start "
+                         "begin at order ~0; use --gate_init repaired or "
+                         "--min_order 1")
+    return m + 0.5, 0.5
 
 
 def fingerprint_check(ref_rows, mode, seed, task, n_t=None, w=None,
@@ -733,6 +747,26 @@ def selftest() -> bool:
     except ValueError:
         raised = True
     check("T14f an unknown --gate_init raises instead of guessing", raised)
+    check("T14g hard gates from step 1, open start: order exactly 4, not 3.8233",
+          expected_start_order("repaired", 4.0, 4, hard=True)[0] == 4.0)
+    check("T14h hard start at bias 0.5: sigmoid 0.62, products .62/.39 -> order 1",
+          expected_start_order("repaired", 0.5, 4, hard=True)[0] == 1.0)
+    try:
+        expected_start_order("hf_default", 4.0, 4, hard=True)
+        raised = False
+    except ValueError:
+        raised = True
+    check("T14i pre-repair start with hard gates from step 1 is refused", raised)
+    w_m1 = expected_start_order("repaired", 4.0, 4, min_order=1)[0]
+    check("T14j min_order 1, open start, soft: 1 + .982 + .964 + .947 = 3.8933",
+          abs(w_m1 - 3.8933) < 1e-4, f"{w_m1:.4f}")
+    check("T14k min_order 1, pre-repair start, soft: 1 + .5 + .25 + .125 = 1.875",
+          abs(expected_start_order("hf_default", 0.0, 4, min_order=1)[0] - 1.875) < 1e-9)
+    lo_h, tol_h = expected_start_order("hf_default", 0.0, 4, hard=True, min_order=1)
+    check("T14l min_order 1 makes the pre-repair hard start legal, in [1, 2]",
+          abs(lo_h - 1.5) < 1e-9 and tol_h == 0.5)
+    check("T14m min_order 1, open start, hard: still exactly 4",
+          expected_start_order("repaired", 4.0, 4, hard=True, min_order=1)[0] == 4.0)
 
     # ---- fingerprint ------------------------------------------------------
     # real step-1 rows: gate_train_p10 seed 1 (n_t not logged) and
@@ -950,7 +984,7 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
     model = build(n_h, adaptive, args.n_heads, args.head_dim, args.hidden,
                   args.n_layers, args.vocab, seed,
                   gate_init_bias=args.gate_init_bias,
-                  gate_init=args.gate_init)
+                  gate_init=args.gate_init, min_order=args.min_order)
     if mode == "learned":
         set_gate_hard(model, False)          # soft while training
     # Only the learned arm has a gate to give its own learning rate. The oracle
@@ -993,8 +1027,9 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
                     gate_logits(model), wall)
             bud = float(bud_t.detach().item())
             if step == 1:
-                want, tol = expected_start_order(args.gate_init,
-                                                 args.gate_init_bias, n_h)
+                want, tol = expected_start_order(
+                    args.gate_init, args.gate_init_bias, n_h,
+                    hard=gates_hard_at(1, hard_from), min_order=args.min_order)
                 if abs(bud - want) > tol:
                     raise SystemExit(
                         f"gate did not start where --gate_init {args.gate_init} "
@@ -1098,6 +1133,7 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
                                else args.gate_init_bias),
                fingerprint=fingerprint,
                logit_wall=(wall if mode == "learned" else None),
+               min_order=(args.min_order if mode == "learned" else None),
                hard_from=(hard_from if mode == "learned" else None),
                soft_eval=soft_eval,
                logit_wall_weight=(args.logit_wall_weight
@@ -1227,6 +1263,10 @@ def main():
     ap.add_argument("--logit_walls", default="0",
                     help="comma list of logit-wall positions c; each learned "
                          "arm is run once per value. 0 = no wall")
+    ap.add_argument("--min_order", type=int, default=0,
+                    help="first N factors always on; the gate decides only the "
+                         "rest. 1 = never below plain DeltaNet. 0 = off, as in "
+                         "every run before 6 Oct")
     ap.add_argument("--hard_froms", default="0",
                     help="comma list of steps from which training uses hard "
                          "(straight-through) gates; each learned arm runs once "
@@ -1268,6 +1308,10 @@ def main():
         if h_ < 0 or h_ > args.steps:
             raise SystemExit(f"--hard_froms {h_}: must be 0 (never) or a step "
                              f"in 1..{args.steps}")
+    if args.gate_init == "hf_default" and 1 in hard_froms and args.min_order == 0:
+        raise SystemExit("--hard_froms 1 with --gate_init hf_default: every halting "
+                         "sigmoid starts at ~0.5, so hard gates start the model at "
+                         "order ~0. Use --gate_init repaired.")
     sat_limit = BF16_SAT_LOGIT if args.gate_init == "hf_default" else FP32_SAT_LOGIT
     for w_ in walls:
         if w_ < 0 or (w_ > 0 and w_ >= sat_limit - 0.5):
@@ -1311,6 +1355,8 @@ def main():
         print(f"  gate        init repaired, bias {args.gate_init_bias:g} "
               f"(lambda = {1 / (1 + math.exp(-args.gate_init_bias)):.4f} at init)"
               f"   lr {lr_txt}")
+    if args.min_order:
+        print(f"  min order   first {args.min_order} factor(s) always on")
     if any(h_ > 0 for h_ in hard_froms):
         print(f"  hard gates  from step {{{', '.join(str(h_) if h_ else 'never' for h_ in hard_froms)}}}"
               f"  (straight-through; soft before)")

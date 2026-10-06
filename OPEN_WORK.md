@@ -90,9 +90,11 @@ dropped. Two findings from that run now lead (PLAN Part 3e, "The logit wall"):
 evaluate soft and hard, and train with hard (straight-through) gates once the
 penalty has ramped; **(b)** the warmup locks factors open by more than
 saturation — next lever: penalty from step 1.
-*Built, not yet run (2 Oct):* `--hard_froms` (straight-through hard gates from a
-given step) and a soft-gate evaluation of every learned run, in
-`exp_gate_train.py`; driver `work/run_gate_hard.sh` (20 seeds × {never, 12000}).
+*Run 3 Oct (6 seeds, `gate_hard_6seeds.json`):* hard gates from step 12 000 did
+not raise usable runs (1/6 vs 2/6) and shocked training at the switch (seed 13:
+loss 0.004 → 0.937, ended 0.983); only 4/12 runs closed by step 12 000, so the mismatch test
+had no collapsed runs to explain. Seeds do not reliably repeat closure. PLAN Part
+3e, "Hard gates late in training".
 Candidate levers once the baseline is known: when the penalty switches on and
 how it ramps, the gate's initial bias, PonderNet-style halting (every step
 receives gradient), and a curriculum on the demand mixture.
@@ -101,8 +103,14 @@ receives gradient), and a curriculum on the demand mixture.
 and penalty-from-step-1 have each been tried, fewer than 15/20 usable runs
 (corr ≥ 0.99 and hard token ≥ 0.99) at p = 0.10 puts the per-token gate on hold
 and makes the per-layer learned order the main deliverable. Today: 4/20.
-Next gate run: `SEEDS=12,13,15,25,29,30 OUT=results/gate_hard_6seeds bash
-work/run_gate_hard.sh` (~3.5 h), the six seeds that closed but lost accuracy.
+Remaining before the stopping rule is applied: penalty from step 1.
+*Built 6 Oct, not yet run:* `work/run_gate_early_penalty.sh` — 20 seeds, two arms:
+(A) pre-repair start, soft gates, penalty from step 1; (B) open start, hard
+straight-through gates and penalty from step 1. ~11 h. Both arms keep the first
+factor always on (`--min_order 1`, new 6 Oct): without it, a 500-step smoke of
+arm A closed every factor by step 250 (order 0.07, loss at chance) — penalty
+from step 1 drives the gate shut before the task is learned, and a layer at
+order 0 writes nothing.
 
 **2b. Per-layer learned order prototype** on A₅ / S₅ alphabets — should find 2
 and 4. Shortest path to a measured speedup.

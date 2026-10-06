@@ -654,12 +654,21 @@ both γ. All 8 runs match `gate_train_p10` at step 1. Warmup logged every 250 st
    configurations. Among seed 1's runs the closure level varied between identical
    repeats (1.2985 / 2.199; 2.199 / 1.4778). So the seed fixes the outcome's
    class and run-to-run noise picks the level.
+   **Corrected 3 October:** not in general. Six seeds that all closed on 2 October
+   (12, 13, 15, 25, 29, 30) closed again in only 4 of 12 runs of the same
+   configuration up to step 12 000 (`gate_hard_6seeds.json`) — below the base
+   rate. Seeds 1–3 looked
+   determined; across seeds 11–30 the seed is at most a weak predictor.
 3. **The class is decided in the first ~1 000 steps, before any penalty.** Seeds
    2 and 3 reach n̄ = 4.00 by step 500–1 000 and their gate |W| is then
    bit-identical to step 20 000 (bf16 saturation, Part 3e). Seed 1 never fully
    opens: n̄ sits at 2.7–3.3 through the warmup, and drops to its final level
    within 2 000 steps of the penalty switching on. Across all 45 runs that logged
    their warmup, no bf16 run that was fully open by step 2 000 ever closed.
+   **Corrected 3 October:** one has since — seed 12 (hard-gate arm) was fully
+   open at step 2 000 with 91% of probabilities saturated, lost saturation by
+   step 6 000 as the gate's inputs drifted (0.35), then closed. Saturation is
+   usually permanent, not always.
 4. **One run lost accuracy late.** Seed 1, γ = 0.03, repeat: task loss rose from
    0.004 to 0.012 and n̄ from 1.43 to 1.88 at the final logged step; evaluation
    token accuracy 0.8937. One logged point, so no trend is claimed; it fails the
@@ -734,6 +743,49 @@ close with the right structure [0.30, 0.70]. Seeds 1–10 under the same start,
 mostly at γ = 0.03, closed on 2 of 10 seeds (1 and 7) [0.06, 0.51], counting
 closure regardless of accuracy. The intervals overlap; the difference could be
 γ, the seed sample, or chance, and is not claimed.
+
+### Hard gates late in training, 6 seeds (3 October)
+
+`results/gate_hard_6seeds.json`. Seeds 12, 13, 15, 25, 29, 30 — all of which
+closed on 2 October, five of them losing accuracy at evaluation. Same
+configuration as the 2 October no-wall arm, two arms per seed: soft gates
+throughout, and hard (straight-through) gates from step 12 000. Every run is now
+evaluated with both soft and hard gates. Step 1 matched 2 October in 12 of 12.
+
+| seed | soft arm: cost, hard / soft token | hard-from-12 000 arm: cost, hard token | 2 Oct |
+|---|---|---|---|
+| 12 | 4.000 | 1.659 (corr 0.86), 0.9996 | 1.2985, 0.652 |
+| 13 | **3.0995**, 0.9990 / 0.9997 | 3.0995, **0.9834** | 3.0995, 0.878 |
+| 15 | **2.199**, 0.9928 / 1.0000 | 4.000 | 1.2985, 0.966 |
+| 25 | 4.000 | 4.000, 0.9630 | 3.0995, 0.780 |
+| 29 | 4.000 | 4.000 | 1.2985, 0.974 |
+| 30 | 4.000 | **3.0995**, 0.9951 | 3.0995, 0.973 |
+
+Separated (corr ≥ 0.99 and token ≥ 0.99): soft arm 2/6, hard arm 1/6.
+
+1. **The planned test of the evaluation mismatch did not get its cases.** Only 4
+   of 12 runs had closed by step 12 000 (a fifth, seed 13's hard arm, was closed
+   by the switch itself), so the seeds did not repeat their 2 October behaviour;
+   and
+   neither closed run in the soft arm lost accuracy: hard vs soft token 0.9990 vs
+   0.9997 and 0.9928 vs 1.0000. The gap is in the predicted direction and small.
+   No collapsed run was available to explain.
+2. **But the switch itself shows the model relies on partly-open factors.**
+   Switching soft gates to hard at step 12 000 raised the task loss immediately:
+   seed 13 from 0.004 to **0.937** — its soft order was 3.97 just before, and
+   snapping to {0, 1} took transpositions' fourth factor away (order 3.00) —
+   seed 12 from 0.005 to 0.123, seed 30 from 0.048 to 0.074. This is the soft/hard dependence measured
+   in training rather than inferred from evaluation.
+3. **Hard gates from step 12 000 are not a fix in this form.** The shock is
+   recovered in 2 of 3 cases within 2 000 steps; seed 13 ended at 0.9834. Usable
+   runs did not rise (1/6 vs 2/6). A switch earlier, an annealed switch, or hard
+   gates throughout would avoid a late shock; none has been run.
+4. **Saturation can dissolve** (seed 12, hard arm; see correction to point 3
+   above), and seed 30 (soft arm) again shows the second lock: 23% unsaturated
+   at step 4 000 and no closure.
+
+Stopping rule status (Part 7): hard-gate training tried once, penalty from step 1
+not yet. Best usable rate still about 4 in 20.
 
 ---
 

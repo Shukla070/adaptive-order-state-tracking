@@ -136,7 +136,7 @@ def reinit_halting_gates(model, init_bias: float, to_float32: bool = True) -> in
 
 def build(n_h: int, adaptive: bool, n_heads: int, head_dim: int, hidden: int,
           n_layers: int, vocab: int, seed: int, gate_init_bias: float = 4.0,
-          gate_init: str = "repaired"):
+          gate_init: str = "repaired", min_order: int = 0):
     """`gate_init_bias` is the halting gate's output bias at init. The default
     4.0 is the value every experiment before 15 Sept ran with, so existing
     callers are unaffected. It is exposed because sigmoid(4.0) = 0.982 has
@@ -192,6 +192,11 @@ def build(n_h: int, adaptive: bool, n_heads: int, head_dim: int, hidden: int,
         else:
             raise ValueError(
                 f"gate_init must be 'repaired' or 'hf_default', got {gate_init!r}")
+        # first `min_order` factors always on (see src/gating.py); 0 = off
+        for mod in m.modules():
+            g = getattr(mod, "halting_gate", None)
+            if getattr(mod, "adaptive_order", False) and g is not None:
+                g.min_order = min_order
     if adaptive:
         n_adaptive = sum(1 for mod in m.modules()
                          if getattr(mod, "adaptive_order", False))
