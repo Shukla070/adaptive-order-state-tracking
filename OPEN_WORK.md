@@ -103,7 +103,13 @@ receives gradient), and a curriculum on the demand mixture.
 and penalty-from-step-1 have each been tried, fewer than 15/20 usable runs
 (corr ≥ 0.99 and hard token ≥ 0.99) at p = 0.10 puts the per-token gate on hold
 and makes the per-layer learned order the main deliverable. Today: 4/20.
-Remaining before the stopping rule is applied: penalty from step 1.
+**Penalty-from-step-1 probe (6 Oct, 3 seeds):** arm A 0/3 usable — stopped by the
+pre-registered rule; arm B (open start, hard gates and penalty from step 1, first
+factor always on) **3/3 at the exact 1.2985** with accuracy ≥ 0.9992 — earns the
+full 20 seeds. A same-seed smoke of B had not escaped by step 2 500, so this is
+still a race. PLAN Part 3e, "Penalty from step 1".
+**Next: arm B on 20 seeds (11–30), ~5.5 h.** The stopping rule reads this run:
+≥ 15/20 usable keeps the per-token gate as the main track.
 *Built 6 Oct, not yet run:* `work/run_gate_early_penalty.sh` — 20 seeds, two arms:
 (A) pre-repair start, soft gates, penalty from step 1; (B) open start, hard
 straight-through gates and penalty from step 1. ~11 h. Both arms keep the first

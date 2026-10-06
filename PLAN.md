@@ -787,6 +787,48 @@ Separated (corr ≥ 0.99 and token ≥ 0.99): soft arm 2/6, hard arm 1/6.
 Stopping rule status (Part 7): hard-gate training tried once, penalty from step 1
 not yet. Best usable rate still about 4 in 20.
 
+### Penalty from step 1, 3-seed probe (6 October)
+
+`results/gate_early_probe_{A,B}.json`, driver `work/run_gate_early_penalty.sh`
+with seeds 11–13. Both arms: γ = 0.1 ramped from step 1 over 4 000 steps (no
+penalty-free warmup), first factor always on (`--min_order 1`; without it a
+500-step smoke closed every factor by step 250 and the layer wrote nothing).
+Decision rule written before the run: 0/3 usable stops an arm, 2–3/3 earns the
+full 20 seeds.
+
+| | seed 11 | seed 12 | seed 13 | usable |
+|---|---|---|---|---|
+| **A** pre-repair start, soft gates | 1.199, hard tok 0.022 | **1.2985**, hard tok 0.219, *soft tok 0.995* | 1.0995, hard tok 0.040 | **0/3** |
+| **B** open start, hard gates from step 1 | **1.2985**, 1.0000 | **1.2985**, 0.9992 | **1.2985**, 1.0000 | **3/3** |
+
+(cost in factors per token from the learned gate, hard evaluation; usable = class
+split corr ≥ 0.99 and hard token accuracy ≥ 0.99.)
+
+1. **Arm B reached the exact allocation in 3 of 3 runs** — one factor to every
+   transposition, four to every 5-cycle, no under-allocation, token accuracy
+   ≥ 0.9992 — with no supervision on the allocation. Before this, the exact
+   allocation with accuracy kept had appeared in 1 of 20 runs (2 October) and in
+   2 of 12 runs, both on one seed, in the earliest configuration. Its gate never saturated (≤ 2.4% of
+   probabilities), and in seed 11 the allocation settled at 1.30 by step 750,
+   together with the task.
+2. **But it is still a race, not yet a reliable mechanism.** The 2 500-step smoke
+   test of the *same configuration and seed* (seed 11) had not escaped: loss 2.30
+   at step 2 500 with half the 5-cycles under-allocated, where this run was at
+   0.004. bf16 run-to-run variation decides it, as on the plateau cells (Part
+   3c). Three of three is [0.44, 1.00]; the rule needs 15 of 20.
+3. **Arm A fails both ways.** Seeds 11 and 13 under-allocated 5-cycles (3 and 2
+   factors) and never learned the task. Seed 12 found the exact allocation and
+   scored **0.995 with soft gates but 0.219 with hard gates** — the first direct
+   measurement of the soft/hard mismatch inferred on 2 October (Part 3e, the
+   logit wall, point 3), and an extreme case of it.
+4. Read together: training on the gates evaluation uses (hard, straight-through)
+   from the first step removes the mismatch, and starting open with the penalty
+   from step 1 avoids the warmup lock. Which of B's three differences from A
+   matters (open start, hard gates, or both) is not separated.
+
+Costs are required work per token; Path A still computes every factor, so none
+of this is a wall-clock saving.
+
 ---
 
 ## Part 3f — State tracking in natural language: the Boxes dataset (21 September)
