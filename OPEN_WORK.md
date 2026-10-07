@@ -108,8 +108,12 @@ pre-registered rule; arm B (open start, hard gates and penalty from step 1, firs
 factor always on) **3/3 at the exact 1.2985** with accuracy ≥ 0.9992 — earns the
 full 20 seeds. A same-seed smoke of B had not escaped by step 2 500, so this is
 still a race. PLAN Part 3e, "Penalty from step 1".
-**Next: arm B on 20 seeds (11–30), ~5.5 h.** The stopping rule reads this run:
-≥ 15/20 usable keeps the per-token gate as the main track.
+**Arm B on 20 seeds (7 Oct, `gate_early_B20.json`): 13/20 usable, all 13 exact
+(1.2985, token ≥ 0.9986).** Every failure under-allocates 5-cycles and never
+learns the task; the outcome is visible at step 500. **Stopping rule triggered**
+(13 < 15). Decision pending: apply it (per-layer becomes the main track) or
+record an amendment with its reason before any further run. PLAN Part 3e,
+"Arm B on 20 seeds".
 *Built 6 Oct, not yet run:* `work/run_gate_early_penalty.sh` — 20 seeds, two arms:
 (A) pre-repair start, soft gates, penalty from step 1; (B) open start, hard
 straight-through gates and penalty from step 1. ~11 h. Both arms keep the first

@@ -57,6 +57,7 @@ thing we have and it is ours.
 | Gate closure is itself bistable, independently of accuracy | **measured** — accuracy 0.98–1.00 on every arm including the ones where cost stayed at exactly 4.000 | Part 3d |
 | Learned gate, penalty-weight sweep (10 runs) | **measured** — 3 of 10 runs recover the demand structure at 2.199 factors/token, token 0.9998; no run under-allocates | `results/gate_gamma_sweep.json`; Part 3e |
 | Learned gate across all configurations | **measured** — 7 of 49 runs recover the structure, from 4 distinct seeds; best allocation 1.2985 (exact) on one seed of the earliest configuration only | Part 3e |
+| Learned gate, hard gates + penalty from step 1 (7 Oct) | **measured** — **13 of 20** seeds reach the exact 1.2985 with token ≥ 0.9986 [0.43, 0.82]; all 7 failures under-allocate 5-cycles and never learn the task. Stopping-rule threshold (15/20) **not met** | `results/gate_early_B20.json`; Part 3e |
 | Gate must be evaluated in float32 | **measured** — bf16 sigmoid saturates above logit 6.2364 with exactly zero gradient; fp32 threshold 17.33 | `results/gate_fp32gate.json`; Part 3e |
 | State tracking in natural language (Boxes) | **measured**, fixed order only — DeltaProduct n_h=2 reaches 0.968 exact match after one operation vs 0.312 for equal-size attention; hybrid does not help | `results/boxes_hybrid.json`; Part 3f |
 | Real wall-clock saving (ragged expansion) | **not done** | all costs are notional |
@@ -828,6 +829,33 @@ split corr ≥ 0.99 and hard token accuracy ≥ 0.99.)
 
 Costs are required work per token; Path A still computes every factor, so none
 of this is a wall-clock saving.
+
+### Arm B on 20 seeds (7 October) — the stopping-rule run
+
+`results/gate_early_B20.json`: open start, hard straight-through gates and the
+penalty from step 1, first factor always on, γ = 0.1, seeds 11–30.
+
+**13 of 20 usable** [0.43, 0.82] — and all 13 are *exact*: one factor for every
+transposition, four for every 5-cycle, token accuracy 0.9986–1.0000. Costs,
+sorted: 1.0 ×3, 1.0995 ×3, 1.2654, 1.2985 ×13.
+
+1. **Every failure is the same failure.** All 7 under-allocate the 5-cycles
+   (three runs gave them 1 factor, three gave 2, one 3.67 on average) and never
+   learn the task (final loss 0.81–3.49). None of the earlier failure
+   modes appears: nothing saturated open, and no run that found the allocation
+   lost accuracy at evaluation (hard and soft evaluation agree in all 20).
+2. **The outcome is visible by step 500, before the task is learned.** Order at
+   step 500: 1.28–1.31 in 11 of the 13 successes (already the right allocation,
+   at task loss ≈ 4), 1.00–1.17 in all 7 failures (one success, seed 18, was
+   also at 1.17). Successes reach task loss
+   < 0.1 by step 750–1 250, except seed 17 (step 18 000).
+3. **Seed does not decide it.** Seed 11 succeeded in the 6 October probe and
+   failed here; seeds 12 and 13 succeeded both times.
+4. **Stopping rule (Part 7): triggered.** 13/20 is below the pre-registered
+   15/20. By the rule as written, the per-token gate goes on hold and the
+   per-layer learned order becomes the main deliverable. Any decision to amend
+   the rule instead must be recorded here, dated, with its reason, before
+   further runs.
 
 ---
 
