@@ -1,6 +1,6 @@
 # Adaptive-Order DeltaProduct — Master Plan and Record
 
-**Version 7.1** · 1 October 2026 · supersedes v1–v6 entirely (7.1: Part 3e corrections)
+**Version 8** · 8 October 2026 · supersedes v1–v7 entirely (8: stopping rule applied, main deliverable redefined — Part 7)
 Utkarsh Shukla · B.Tech AI, NITK Surathkal · Guide: Anand Kumar M
 
 This is the single living document for the project. It carries the full record
@@ -28,6 +28,16 @@ valuable finding turned out to be a correction to the *cost model everyone in
 this line of work has been assuming*, including DeltaProduct itself and
 including us until 11 September. Part 3 is that correction. It is the strongest
 thing we have and it is ours.
+
+**Update, 8 October.** The learned gate now works on the toy task: trained on the
+same hard gates evaluation uses, with the budget penalty from the first step, it
+reaches the exact allocation (1 factor per transposition, 4 per 5-cycle, accuracy
+≥ 0.9986) in **13 of 20** runs. That is short of the 15/20 reliability bar set in
+advance, so — by that rule — the per-token gate is no longer the main
+deliverable. It becomes the *instrument*: the main deliverable is a layer whose
+order is learned by the gate and then built at that size, which turns the saving
+into measured wall-clock time with standard kernels. Per-token savings stay as
+the extension (they need a ragged kernel). Part 7 has the plan.
 
 ---
 
@@ -57,6 +67,7 @@ thing we have and it is ours.
 | Gate closure is itself bistable, independently of accuracy | **measured** — accuracy 0.98–1.00 on every arm including the ones where cost stayed at exactly 4.000 | Part 3d |
 | Learned gate, penalty-weight sweep (10 runs) | **measured** — 3 of 10 runs recover the demand structure at 2.199 factors/token, token 0.9998; no run under-allocates | `results/gate_gamma_sweep.json`; Part 3e |
 | Learned gate across all configurations | **measured** — 7 of 49 runs recover the structure, from 4 distinct seeds; best allocation 1.2985 (exact) on one seed of the earliest configuration only | Part 3e |
+| **Main deliverable (8 Oct)** | **redefined** — layer sized by the learned gate, measured wall-clock saving; per-token savings become the extension | Part 7, revised plan |
 | Learned gate, hard gates + penalty from step 1 (7 Oct) | **measured** — **13 of 20** seeds reach the exact 1.2985 with token ≥ 0.9986 [0.43, 0.82]; all 7 failures under-allocate 5-cycles and never learn the task. Stopping-rule threshold (15/20) **not met** | `results/gate_early_B20.json`; Part 3e |
 | Gate must be evaluated in float32 | **measured** — bf16 sigmoid saturates above logit 6.2364 with exactly zero gradient; fp32 threshold 17.33 | `results/gate_fp32gate.json`; Part 3e |
 | State tracking in natural language (Boxes) | **measured**, fixed order only — DeltaProduct n_h=2 reaches 0.968 exact match after one operation vs 0.312 for equal-size attention; hybrid does not help | `results/boxes_hybrid.json`; Part 3f |
@@ -857,6 +868,15 @@ sorted: 1.0 ×3, 1.0995 ×3, 1.2654, 1.2985 ×13.
    the rule instead must be recorded here, dated, with its reason, before
    further runs.
 
+**Decision, 8 October: the rule is applied, not amended.** No further runs aimed at
+per-token reliability on this cell; 13/20 exact stands as the per-token result.
+An amendment (one more attempt with automatic restarts of runs that are visibly
+failing at step 500) was considered and declined: it would make the *recipe*
+reliable rather than the mechanism, and it would spend more effort on the toy
+cell while the two largest gaps — no measured speedup, no real task — stayed
+untouched. The restart recipe is postponed, not discarded; it costs one night
+whenever a write-up needs a reliability figure. Part 7 records the new plan.
+
 ---
 
 ## Part 3f — State tracking in natural language: the Boxes dataset (21 September)
@@ -1106,7 +1126,42 @@ it.)
 
 ## Part 7 — Plan forward
 
-**Immediate (October)**
+### Revised plan, 8 October (supersedes the October list below)
+
+**Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
+gate* and then *built at that size*. Run the working recipe (open start, hard
+straight-through gates and the penalty from step 1, first factor always on);
+take the largest order the gate gives any token; rebuild the layer with that many
+factors and retrain or fine-tune. Factors the gate never uses are removed, so
+the saving is real with the existing kernels and can be timed. This is Tier 3 of
+Part 7b reached through the Tier-1 gate, and it keeps the gate — the novel
+mechanism — at the centre. Per-token savings (Tier 1 proper) remain the
+extension and need the ragged kernel (Path B).
+
+1. **Score allocation by the demand model, not transposition length.** Built
+   8 October: `exp_gate_train.py --demand model` charges D(g) from the alphabet's
+   generated group (S₅ → ℓ; A₅ → 2 for every non-identity element; anything else
+   refused). The oracle still uses ℓ. Self-tests T20–T20h.
+2. **The A₅ experiment.** The working recipe on the all-5-cycle alphabet (p = 1.0,
+   data already generated), scored with `--demand model`; 3-seed probe first,
+   20 seeds if it holds. **Prediction:** the gate settles at **2 factors per
+   token** — while the same 5-cycles received 4 under the S₅ alphabet. If it does,
+   a learned mechanism has independently confirmed the demand model (the
+   sharpened Claim 2, item 5b below), and the layer can be rebuilt at 2.
+   *Failure condition:* the gate settles at 3 or 4 with accuracy ≥ 0.99 — the
+   model is not using the 3-dimensional representation, and the prediction fails
+   for learned models. *Known risk:* A₅ at 2 factors escaped the plateau in only
+   3 of 10 runs (Part 3c); the gate may never reach 2.
+3. **First measured speedup.** Build the layer at the gate's order, train to the
+   same accuracy, and time training steps and inference against 4 factors on the
+   same GPU. No speedup is claimed before this measurement.
+4. **Boxes order sweep** (n_h ∈ {1, 2, 3}), in parallel if Shashwat or the
+   institute cluster can take it: does order matter on natural-language state
+   tracking at all?
+5. **Postponed:** restart-on-failure reliability run; Path B (ragged expansion);
+   the open-start / hard-gate attribution of arm B's success.
+
+**Immediate (October) — superseded 8 October, kept as the record**
 
 1. **Find what raised the gate's floor from 1 to 2 factors.** The earliest
    configuration reached the exact 1.2985 on one seed (two runs); nothing since
@@ -1201,6 +1256,11 @@ continuations of this project. Anything that abandons it is a different project
 and needs saying out loud.
 
 ### The tiers
+
+> **8 October:** moved per the stopping rule (Part 3e, "Arm B on 20 seeds"). Tier 1
+> is no longer the main deliverable; the main deliverable is Tier 3 with the
+> order chosen by the Tier-1 gate (Part 7, revised plan). The trigger was 13/20
+> usable against the pre-registered 15/20.
 
 | tier | mechanism | abandon it when |
 |---|---|---|

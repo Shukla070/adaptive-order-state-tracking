@@ -56,6 +56,22 @@ anything about adaptive order in natural language.
 
 ## Next, in order
 
+**Decided 8 Oct — stopping rule applied, not amended** (PLAN Part 3e, Part 7).
+13/20 exact stands as the per-token result. Main deliverable is now a layer whose
+order is learned by the gate and then built at that size, so the saving can be
+timed with existing kernels; per-token savings become the extension.
+
+**A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;
+A₅ alphabet → 2 for every element; other groups refused). Self-tests T20–T20h;
+numbering verified against both data files.
+**B. A₅ experiment** — working recipe at p = 1.0 with `--demand model`; 3-seed
+probe, then 20. Predicted: 2 factors per token. Fails if it settles at 3 or 4.
+**C. Rebuild at the gate's order and time it** — the first measured speedup.
+**D. Boxes order sweep** — parallel, Shashwat or cluster.
+**Postponed:** restart-recipe reliability run; Path B; attribution of arm B.
+
+*Everything below is the record of how we got here.*
+
 **1. Find what raised the gate's floor from 1 to 2 factors.** The earliest
 configuration (`gate_train_p10.json`) reached the exact 1.2985 on seed 1 (two
 runs). Nothing since has gone below 2.199, across four later configurations and
