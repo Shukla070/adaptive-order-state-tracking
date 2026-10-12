@@ -1,0 +1,122 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p1000=128.csv   p = 1.0
+  demand      E[D] = 4.000 by transposition length   fixed order must provision 4
+  scoring     --demand model: alphabet of 24 tokens generates a group of order 60; per-token demand over the alphabet [2] (mean over alphabet tokens 2.00)
+  budget      10000 steps x batch 128, lr 0.001
+  gammas      0.1   (0 = gate present, never penalised)
+  schedule    penalty off for 3000 steps, then ramped over 4000
+  gate        init repaired, bias 4 (lambda = 0.9820 at init)   lr = model lr
+  min order   first 1 factor(s) always on
+  hard gates  from step {1}  (straight-through; soft before)
+  logit wall  c in {0, 5}  (0 = off), weight 1, from step 1
+  seeds       11, 12
+  WARNING: fewer than 3 seeds. Outcomes on these cells are
+  bistable; a single run cannot distinguish a result from a draw.
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 1  seed 11
+------------------------------------------------------------------------------
+      step      1  gates now HARD (straight-through) for the rest of training
+      step      1  task 4.8726  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.864e-01  zmax 4.00  sat 0.000
+      step    250  task 4.0432  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.662e+00  zmax 4.84  sat 0.000
+      step    500  task 4.0291  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.797e+00  zmax 5.46  sat 0.000
+      step    750  task 4.0055  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.279e+00  zmax 4.29  sat 0.000
+      step   1000  task 3.9892  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.780e+00  zmax 5.29  sat 0.000
+      step   1250  task 3.9585  gamma_eff 0.0000  mean n_t 4.000  gate |W| 5.803e+00  zmax 11.77  sat 0.000
+      step   1500  task 3.2671  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.644e+00  zmax 19.01  sat 0.472
+      step   1750  task 0.8416  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.792e+00  zmax 19.77  sat 0.750
+      step   2000  task 0.4778  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.785e+00  zmax 19.59  sat 0.750
+      step   2250  task 0.2337  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.770e+00  zmax 19.54  sat 0.739
+      step   2500  task 0.0532  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.757e+00  zmax 19.47  sat 0.750
+      step   2750  task 0.0400  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.741e+00  zmax 19.38  sat 0.750
+      step   3000  task 0.0417  gamma_eff 0.0000  mean n_t 4.000  gate |W| 6.729e+00  zmax 19.31  sat 0.740
+      step   3250  task 0.0292  gamma_eff 0.0063  mean n_t 4.000  gate |W| 6.719e+00  zmax 19.29  sat 0.750
+      step   3500  task 0.0289  gamma_eff 0.0125  mean n_t 4.000  gate |W| 6.709e+00  zmax 19.27  sat 0.750
+      step   3750  task 0.0273  gamma_eff 0.0188  mean n_t 4.000  gate |W| 6.696e+00  zmax 19.19  sat 0.750
+      step   4000  task 0.0449  gamma_eff 0.0250  mean n_t 4.000  gate |W| 6.687e+00  zmax 19.16  sat 0.750
+      step   4250  task 0.0313  gamma_eff 0.0312  mean n_t 4.000  gate |W| 6.677e+00  zmax 19.17  sat 0.750
+      step   4500  task 0.0221  gamma_eff 0.0375  mean n_t 4.000  gate |W| 6.665e+00  zmax 19.13  sat 0.739
+      step   4750  task 0.0163  gamma_eff 0.0438  mean n_t 4.000  gate |W| 6.656e+00  zmax 19.10  sat 0.750
+      step   5000  task 0.0216  gamma_eff 0.0500  mean n_t 4.000  gate |W| 6.645e+00  zmax 19.08  sat 0.728
+      step   5250  task 0.0162  gamma_eff 0.0563  mean n_t 4.000  gate |W| 6.635e+00  zmax 19.05  sat 0.739
+      step   5500  task 0.0125  gamma_eff 0.0625  mean n_t 4.000  gate |W| 6.625e+00  zmax 19.02  sat 0.750
+      step   5750  task 0.0137  gamma_eff 0.0688  mean n_t 4.000  gate |W| 6.615e+00  zmax 18.97  sat 0.750
+      step   6000  task 0.0157  gamma_eff 0.0750  mean n_t 4.000  gate |W| 6.606e+00  zmax 18.97  sat 0.750
+      step   6250  task 0.0192  gamma_eff 0.0813  mean n_t 4.000  gate |W| 6.595e+00  zmax 18.93  sat 0.750
+      step   6500  task 0.0120  gamma_eff 0.0875  mean n_t 4.000  gate |W| 6.586e+00  zmax 18.92  sat 0.750
+      step   6750  task 0.0157  gamma_eff 0.0938  mean n_t 4.000  gate |W| 6.577e+00  zmax 18.89  sat 0.750
+      step   7000  task 0.0106  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.567e+00  zmax 18.89  sat 0.750
+      step   7250  task 0.0154  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.556e+00  zmax 18.87  sat 0.750
+      step   7500  task 0.0141  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.548e+00  zmax 18.85  sat 0.750
+      step   7750  task 0.0130  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.537e+00  zmax 18.81  sat 0.750
+      step   8000  task 0.0093  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.528e+00  zmax 18.79  sat 0.750
+      step   8250  task 0.0100  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.519e+00  zmax 18.78  sat 0.750
+      step   8500  task 0.0134  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.511e+00  zmax 18.77  sat 0.750
+      step   8750  task 0.0099  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.502e+00  zmax 18.76  sat 0.750
+      step   9000  task 0.0129  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.495e+00  zmax 18.77  sat 0.750
+      step   9250  task 0.0117  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.484e+00  zmax 18.73  sat 0.740
+      step   9500  task 0.0077  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.475e+00  zmax 18.72  sat 0.739
+      step   9750  task 0.0095  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.466e+00  zmax 18.69  sat 0.750
+      step  10000  task 0.0079  gamma_eff 0.1000  mean n_t 4.000  gate |W| 6.458e+00  zmax 18.70  sat 0.739
+      eval   hard gates: token 0.9985   |   soft gates: token 0.9985, seq 0.9065, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 5  hard from 1  seed 11
+------------------------------------------------------------------------------
+      step      1  gates now HARD (straight-through) for the rest of training
+      step      1  task 4.8726  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.864e-01  zmax 4.00  sat 0.000
+      step    250  task 4.0432  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.662e+00  zmax 4.84  sat 0.000
+      step    500  task 4.0292  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.288e+00  zmax 4.72  sat 0.000
+      step    750  task 4.0060  gamma_eff 0.0000  mean n_t 4.000  gate |W| 3.781e+00  zmax 4.69  sat 0.000
+      step   1000  task 3.9881  gamma_eff 0.0000  mean n_t 4.000  gate |W| 5.049e+00  zmax 4.99  sat 0.000
+      step   1250  task 3.9529  gamma_eff 0.0000  mean n_t 4.000  gate |W| 5.484e+00  zmax 4.92  sat 0.000
+      step   1500  task 2.9397  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.761e+00  zmax 5.24  sat 0.000
+      step   1750  task 0.7938  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.568e+00  zmax 5.22  sat 0.000
+      step   2000  task 0.0086  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.179e+00  zmax 5.04  sat 0.000
+      step   2250  task 0.0068  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.182e+00  zmax 5.03  sat 0.000
+      step   2500  task 0.0045  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.178e+00  zmax 5.02  sat 0.000
+      step   2750  task 0.0043  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.188e+00  zmax 5.01  sat 0.000
+      step   3000  task 0.0038  gamma_eff 0.0000  mean n_t 4.000  gate |W| 4.211e+00  zmax 5.02  sat 0.000
+      step   3250  task 0.0022  gamma_eff 0.0063  mean n_t 4.000  gate |W| 4.222e+00  zmax 5.01  sat 0.000
+      step   3500  task 0.0019  gamma_eff 0.0125  mean n_t 4.000  gate |W| 4.233e+00  zmax 5.01  sat 0.000
+      step   3750  task 0.0018  gamma_eff 0.0188  mean n_t 4.000  gate |W| 4.242e+00  zmax 5.01  sat 0.000
+      step   4000  task 0.0022  gamma_eff 0.0250  mean n_t 4.000  gate |W| 4.262e+00  zmax 5.01  sat 0.000
+      step   4250  task 0.0015  gamma_eff 0.0312  mean n_t 4.000  gate |W| 4.249e+00  zmax 5.01  sat 0.000
+      step   4500  task 0.0022  gamma_eff 0.0375  mean n_t 4.000  gate |W| 4.285e+00  zmax 5.01  sat 0.000
+      step   4750  task 0.0015  gamma_eff 0.0438  mean n_t 4.000  gate |W| 4.287e+00  zmax 5.01  sat 0.000
+      step   5000  task 0.0017  gamma_eff 0.0500  mean n_t 4.000  gate |W| 4.291e+00  zmax 5.01  sat 0.000
+      step   5250  task 0.0013  gamma_eff 0.0563  mean n_t 4.000  gate |W| 4.284e+00  zmax 5.01  sat 0.000
+      step   5500  task 0.0013  gamma_eff 0.0625  mean n_t 4.000  gate |W| 4.263e+00  zmax 5.01  sat 0.000
+      step   5750  task 0.0016  gamma_eff 0.0688  mean n_t 4.000  gate |W| 4.239e+00  zmax 5.01  sat 0.000
+      step   6000  task 0.0009  gamma_eff 0.0750  mean n_t 4.000  gate |W| 4.207e+00  zmax 5.01  sat 0.000
+      step   6250  task 0.0016  gamma_eff 0.0813  mean n_t 4.000  gate |W| 4.219e+00  zmax 5.00  sat 0.000
+      step   6500  task 0.0012  gamma_eff 0.0875  mean n_t 4.000  gate |W| 4.156e+00  zmax 5.00  sat 0.000
+      step   6750  task 0.0017  gamma_eff 0.0938  mean n_t 4.000  gate |W| 4.123e+00  zmax 5.00  sat 0.000
+      step   7000  task 0.0011  gamma_eff 0.1000  mean n_t 4.000  gate |W| 4.071e+00  zmax 4.98  sat 0.000
+      step   7250  task 0.0013  gamma_eff 0.1000  mean n_t 4.000  gate |W| 4.026e+00  zmax 5.00  sat 0.000
+      step   7500  task 0.0009  gamma_eff 0.1000  mean n_t 4.000  gate |W| 4.210e+00  zmax 5.01  sat 0.000
+      step   7750  task 0.0010  gamma_eff 0.1000  mean n_t 4.000  gate |W| 4.805e+00  zmax 5.00  sat 0.000
+Traceback (most recent call last):
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/work/exp_gate_train.py", line 1558, in <module>
+    main()
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/work/exp_gate_train.py", line 1549, in main
+    emit(run_arm(tag, args.max_order, "learned", gamma, data,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/work/exp_gate_train.py", line 1160, in run_arm
+    loss.backward()
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/.venv/lib/python3.12/site-packages/torch/_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/.venv/lib/python3.12/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/.venv/lib/python3.12/site-packages/torch/autograd/graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: unknown error
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
