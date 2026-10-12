@@ -29,3 +29,6 @@ Thumbs.db
 # documents is taken from the JSON in results/, which is committed.
 results_S5_*.log
 nohup.out
+
+# trained models saved by exp_gate_train.py --save_dir (large binary files)
+checkpoints/

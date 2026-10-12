@@ -1084,6 +1084,13 @@ def selftest() -> bool:
           arm_summary(rows_t)["separated_soft"] == 0
           and not arm_summary(rows_t)["has_soft"])
 
+    # ---- saving a trained model --------------------------------------------
+    nm = checkpoint_name(dict(arm="learned(g=0.1,hard@1)", gamma=0.1, seed=11))
+    check("T21 checkpoint name is file-system safe and keeps arm, gamma, seed",
+          nm == "learned_g_0_1_hard_1_g0.1_seed11.pt", nm)
+    nm2 = checkpoint_name(dict(arm="learned(g=0.1,hard@1)", gamma=0.3, seed=11))
+    check("T21b two penalty weights never share a file", nm2 != nm, nm2)
+
     print("\n  " + ("all self-tests passed" if ok else "SELF-TEST FAILED"))
     return ok
 
@@ -1260,9 +1267,41 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
                                   if mode == "learned" and wall > 0 else None),
                gate_w_final=(gate_weight_norm(model) if mode == "learned" else None),
                loss_trace=trace, alloc=alloc)
+    if getattr(args, "save_dir", None) and mode == "learned":
+        row["checkpoint"] = save_checkpoint(model, row, args, n_h, adaptive, seed)
+        print(f"      saved  {row['checkpoint']}")
     del model
     torch.cuda.empty_cache()
     return row
+
+
+def checkpoint_name(row) -> str:
+    """File-system-safe name for a run: arm, penalty weight, seed."""
+    import re
+    arm = re.sub(r"[^A-Za-z0-9]+", "_", str(row["arm"])).strip("_")
+    return f"{arm}_g{row['gamma']:g}_seed{row['seed']}.pt"
+
+
+def save_checkpoint(model, row, args, n_h, adaptive, seed) -> str:
+    """Everything needed to rebuild the model exactly and to check the load:
+    the weights, the arguments `build` was called with, where the data came
+    from, and the accuracy and cost this run was evaluated at."""
+    sd = Path(args.save_dir)
+    sd.mkdir(parents=True, exist_ok=True)
+    path = sd / checkpoint_name(row)
+    torch.save(dict(
+        state_dict=model.state_dict(),
+        build=dict(n_h=n_h, adaptive=adaptive, n_heads=args.n_heads,
+                   head_dim=args.head_dim, hidden=args.hidden,
+                   n_layers=args.n_layers, vocab=args.vocab, seed=seed,
+                   gate_init_bias=args.gate_init_bias, gate_init=args.gate_init,
+                   min_order=args.min_order),
+        data=dict(p=args.p, k=args.k, data_dir=args.data_dir,
+                  n_train=args.n_train, n_test=args.n_test),
+        result=dict(token_acc=row["token_acc"], seq_acc=row["seq_acc"],
+                    mean_n_t=row["alloc"]["mean_n_t"], gamma=row["gamma"]),
+    ), path)
+    return str(path)
 
 
 def report(rows, args):
@@ -1407,6 +1446,10 @@ def main():
                     help="also log every 250 steps up to this step, to see "
                          "what the gate does during the penalty-free warmup")
     ap.add_argument("--out", default="results/gate_train.json")
+    ap.add_argument("--save_dir", default=None,
+                    help="save each learned arm's trained model here (weights, "
+                         "build settings, data settings and its evaluated "
+                         "accuracy and cost), for work/check_ragged_trained.py")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
