@@ -61,11 +61,44 @@ anything about adaptive order in natural language.
 order is learned by the gate and then built at that size, so the saving can be
 timed with existing kernels; per-token savings become the extension.
 
+**Amended 11 Oct** (PLAN Part 7, "Review, 11 October"): main deliverable is now
+the per-token gate with ragged expansion at inference and a measured speedup.
+Queue: (1) ragged expansion — *built*, run `work/check_ragged.py`; (2) save a
+trained arm-B model and check accuracy through Path B — *built 12 Oct*:
+`exp_gate_train.py --save_dir`, `work/check_ragged_trained.py` (T0 reload, T1 same
+accuracy and >= 99.9% identical predictions on every path, T2 mutant must fail;
+timing with the learned gate inside the forward pass). *Done 13 Oct*
+(PLAN, "Trained models through the ragged path"): both trained models pass
+every check; ragged runs at 0.80 (32×512) and 0.73–0.74 (32×2048) of the best
+4-factor layer with the real gate. Caveat: sequence accuracy drops slightly
+(0.9795 → 0.9595, 0.9965 → 0.9940). On the untrained model T1 fails (90%
+agreement) but T3 and the margin check show bf16 ties, not a bug;
+(2b) optional — test whether the sequence-accuracy drop is training-rounding
+(e.g. score the float64 reference recurrence's predictions as a third path);
+(3) restart rule;
+(4) Boxes order sweep → gate on Boxes or chess; (5) A₅ written up as is.
+The items below are the 8 Oct queue, kept as the record.
+
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;
 A₅ alphabet → 2 for every element; other groups refused). Self-tests T20–T20h;
 numbering verified against both data files.
 **B. A₅ experiment** — working recipe at p = 1.0 with `--demand model`; 3-seed
 probe, then 20. Predicted: 2 factors per token. Fails if it settles at 3 or 4.
+  *9 Oct:* first probe 0/3 — the penalty shut every run to 1 factor by step 250,
+  before the task was learned (prediction untested). Without the penalty the
+  task is learned at 4 by step ~2 000, but the logits then saturate in float32.
+  Delayed-penalty smoke: without the wall the logits lock open in float32; with
+  the wall the task is learned at 4 and the wall alone closes nothing; whether
+  the penalty then trims was not reached (CUDA error at step 7 750). Next: wall
+  5 + delay at 20 000 steps, γ 0.1 and 0.3, 3 runs each (PLAN Part 3e,
+  "The A₅ experiment, first attempt"). On group tasks this is the only route
+  to a per-layer saving: the S₅ mix needs 4 for its 5-cycles.
+  *11 Oct, 20k-step result:* no run reached 2 (orders 4, 4, 3.37 at γ 0.1;
+  1 (collapse), 4, 3.00 at γ 0.3). Prediction fails for this recipe by the
+  pre-registered rule; no 20-run follow-up. A 3-factor exact tracker must be
+  using a 3-D representation (rank argument), so the gate stops one spare
+  factor short rather than missing the representation. One run gives a
+  gate-chosen 3 at 0.9994 → enough to start C (build at 3, time against 4).
 **C. Rebuild at the gate's order and time it** — the first measured speedup.
 **D. Boxes order sweep** — parallel, Shashwat or cluster.
 **Postponed:** restart-recipe reliability run; Path B; attribution of arm B.

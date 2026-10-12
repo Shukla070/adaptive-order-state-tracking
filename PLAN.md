@@ -71,7 +71,8 @@ the extension (they need a ragged kernel). Part 7 has the plan.
 | Learned gate, hard gates + penalty from step 1 (7 Oct) | **measured** — **13 of 20** seeds reach the exact 1.2985 with token ≥ 0.9986 [0.43, 0.82]; all 7 failures under-allocate 5-cycles and never learn the task. Stopping-rule threshold (15/20) **not met** | `results/gate_early_B20.json`; Part 3e |
 | Gate must be evaluated in float32 | **measured** — bf16 sigmoid saturates above logit 6.2364 with exactly zero gradient; fp32 threshold 17.33 | `results/gate_fp32gate.json`; Part 3e |
 | State tracking in natural language (Boxes) | **measured**, fixed order only — DeltaProduct n_h=2 reaches 0.968 exact match after one operation vs 0.312 for equal-size attention; hybrid does not help | `results/boxes_hybrid.json`; Part 3f |
-| Real wall-clock saving (ragged expansion) | **not done** | all costs are notional |
+| Training time by fixed order | **measured** (found 11 Oct in existing files) — 0.45 / 0.58 / 0.79 / 1.00 of the 4-factor time for orders 1–4 | §5.1 result files; Part 7, review of 11 Oct |
+| Real wall-clock saving (ragged expansion) | **not done** | adaptive costs are notional; ragged expansion not built |
 
 ---
 
@@ -877,6 +878,138 @@ cell while the two largest gaps — no measured speedup, no real task — stayed
 untouched. The restart recipe is postponed, not discarded; it costs one night
 whenever a write-up needs a reliability figure. Part 7 records the new plan.
 
+### The A₅ experiment, first attempt (8–9 October)
+
+The working recipe from S₅ (open start, hard straight-through gates and the
+penalty from step 1, first factor always on, γ = 0.1), on the all-5-cycle
+alphabet (p = 1.0), scored with `--demand model` (every token: D = 2).
+
+**3-seed probe, `results/gate_a5_probe.json`: 0 of 3 usable** [0.00, 0.56].
+All three runs fell from 4 factors to exactly 1.000 by step 250 and stayed there
+for 20 000 steps; token accuracy 0.0663–0.0669 under both hard and soft gates.
+One factor cannot represent A₅ (D = 2), so nothing was learned. Neither the
+prediction (2 factors) nor its pre-registered failure (3 or 4) was tested: the
+gate shut before the task existed.
+
+**Diagnosis, 5 000-step smoke tests, seeds 11–12**
+(`results/gate_a5_smoke_gamma.json`, `results/gate_a5_smoke_slowgate.json`):
+
+| arm | step 250 | step 2 000 | final order | token (hard) |
+|---|---|---|---|---|
+| γ = 0 (no penalty) | 4.000 | 4.000, loss 1.3–1.5 | 4.000, 4.000 | 0.9986, 0.9993 |
+| γ = 0.1 | 1.000 | 1.000 | 1.000, 1.000 | 0.0616, 0.0608 |
+| γ = 0.1, gate lr 1e-4 (10× slower) | 1.21–1.25 | 1.000 | 1.000, 1.000 | 0.0608, 0.0634 |
+
+1. **The penalty causes the collapse; the task gradient does not.** Without it
+   the gate stays at 4 and the task is learned by step ~2 000–2 500.
+2. **It is a race, and the penalty wins it at any penalty strength.** The gate
+   shut at γ_eff = 0.006. Adam normalises step size, so a small but consistent
+   push moves the gate at full speed while the task gradient is still noise.
+   Slowing the gate 10× only delays the collapse from step 250 to 500; the task
+   needs ~2 000 steps at full order.
+3. **Why S₅ did not show this:** 90% of S₅ tokens are transpositions, learnable
+   at 1 factor, so the task starts improving immediately and the 5-cycles push
+   their factors back open. With every token a 5-cycle, 1 factor makes no
+   progress on anything and nothing pushes back. The recipe was tuned on a mix
+   where the cheapest order already learns something; that is our setup, not
+   the mechanism.
+4. **New hazard for the obvious fix.** In the γ = 0 runs the halting logits rose
+   to 18.3–19.2 once the task was learned, above the float32 saturation point
+   (17.33): 3 of 4 factors at exactly λ = 1 (sat 0.74–0.75), zero gradient. A
+   plain penalty delay would therefore lock the gate open — the same lock as the
+   September warmup, now in float32. The logit wall (Part 3e) exists for this.
+
+**Delayed penalty, 10 000-step smoke (9 October)** — penalty off for 3 000
+steps, ramped to γ = 0.1 by step 7 000 (`results/gate_a5_smoke_delay.json`,
+`results/gate_a5_smoke_wallctl.json`):
+
+| arm | task learned (loss < 0.05) | logits at end | final order | token hard / soft |
+|---|---|---|---|---|
+| delay, no wall, seed 11 | step ~2 500 | zmax 18.7, sat 0.74 | 4.000 | 0.9985 / 0.9985 |
+| delay, wall 5, seed 11 | step ~2 000 | zmax 5.0, sat 0 | 4.000 at step 7 750 (crashed) | — |
+| wall 5, no penalty, seeds 11, 12 | step ~2 000 / ~4 000 | zmax 5.0, sat 0 | 4.000, 4.000 | 0.9998 / 0.9343, 0.9960 / 0.7528 |
+
+1. **The float32 lock is real.** Without the wall, the logits passed 17.33 by
+   step 1 500 and three of four factors were frozen open before the penalty
+   started. The wall prevents it (zmax held at 5.0, sat 0 throughout).
+2. **The wall alone closes nothing** (control: order 4.000 in both runs), so any
+   closure in the wall arm is the penalty's.
+3. **Not yet known whether the penalty can trim a learned model.** The wall arm
+   ran only 750 steps at full penalty before a CUDA "unknown error" stopped
+   the job at step 7 750 (most likely a WSL/driver fault from the laptop
+   sleeping, not a code error — the next job in the chain ran normally). Order
+   was still 4.000, but the gate weight norm had started rising (4.03 → 4.81
+   over the last 500 steps), so something was moving. One arm, unfinished:
+   no conclusion. Seed 12 of the delay arms never ran.
+4. **Soft evaluation is unreliable with the wall** (0.75–0.93 soft vs ≥ 0.996
+   hard): the wall holds λ near 0.993, and the product over factors is visibly
+   below 1. Models are trained and scored with hard gates, so this is a
+   reporting caveat, not a defect.
+
+**Why this matters for the main deliverable.** A layer built at the gate's
+*largest* order saves nothing on the S₅ mix: the 5-cycles there genuinely need
+4. A per-layer saving exists only where the hand-chosen order over-provisions —
+which is exactly the A₅ case (transposition length says 4; the demand model says
+2; fixed n_h = 3 is already known to solve it at 0.9994). So the A₅ run is not a
+side test: on the group tasks it is the only route to a measured saving, and
+Boxes is the other.
+
+**Next:** the delayed-penalty, wall-5 arm at full length (20 000 steps),
+γ ∈ {0.1, 0.3}, three runs each. Reading, fixed before the run:
+- settles at **2** with token ≥ 0.99 → the prediction holds; go to 20 runs.
+- settles at **3** with token ≥ 0.99 → the pre-registered failure of the
+  prediction for learned models (the known risk: fixed n_h = 2 learned A₅ to
+  only 0.1207 in 20 000 steps). Still a 25% smaller layer to build and time.
+- stays at **4** → a trained model defends its factors; the penalty only acts
+  before learning. Next lever: a larger γ after the task is learned.
+- drops below 2 and loses accuracy → γ too strong once the task is learned.
+
+**Result, 20 000 steps, wall 5, penalty from step 3 000 (9 October;
+`results/gate_a5_delay_wall.json`)** — token accuracy with hard gates:
+
+| γ | run 11 | run 12 | run 13 |
+|---|---|---|---|
+| 0.1 | 4.000, 0.9996 | 4.000, 0.9997 | **3.373**, 0.9997 (still falling: 3.58 at 9k, 3.38 at 20k) |
+| 0.3 | **1.000, 0.0559** (shut 4 → 1 between steps 7k and 8k; never recovered) | 4.000, 0.9984 | **3.000**, 0.9994 (exactly 3 from step 12k on) |
+
+1. **No run reached 2.** By the rule written before the run, the prediction
+   fails for this recipe: five of six runs ended at 3–4 with accuracy ≥ 0.99.
+   Per the plan, there is no 20-run follow-up of this recipe.
+2. **The meaning attached to that failure condition is wrong for the run at 3.**
+   The rule said a gate at 3 or 4 means the model "is not using the 3-D
+   representation". But the irreducible representations of A₅ have dimensions
+   1, 3, 3, 4, 5, and a 5-cycle has rank(ρ − I) = 2, 2, 4, 4 in the four
+   non-trivial ones. A₅ is simple, so any non-trivial representation is
+   faithful, and the only faithful representations with 5-cycle rank ≤ 3 are a
+   single 3-dimensional irrep plus trivial parts. So a 3-factor model that
+   tracks A₅ exactly and homomorphically *must* be using a 3-D representation —
+   and is carrying one factor it does not need. That inference assumes exact,
+   homomorphic per-head tracking, which is not verified (no checkpoint was
+   saved). The rule stands as written; only its interpretation is corrected.
+3. **What the gate does in practice: it trims greedily and stops one factor
+   short.** Removing a factor whose β is not already ≈ 0 costs task loss under
+   hard gates (run 13 at γ = 0.3: task loss 0.61 at step 7 000 as it dropped a
+   factor, recovered by 8 000). Nothing drives the spare factor's β to zero first,
+   so the last redundant factor is defended. A larger γ does not fix this — it
+   turns the trim into a collapse (run 11).
+4. **Outcomes are bistable here too** (4, 3.37, 3, 1 at similar settings), so
+   these are counts, not trends.
+5. **Reporting defect found:** the summary's "separated" criterion uses the
+   correlation between allocation and demand, which is undefined when every
+   token has the same demand (reported as 0.00). For single-demand alphabets
+   only the settled order and accuracy are meaningful.
+
+**For the deliverable:** one run in six gives a gate-chosen layer of 3 factors
+at 0.9994, where transposition length says 4. Fixed n_h = 3 is known to solve
+this task (0.9994, one run, §5.1). That is enough to build and time 3 against 4
+— the first measurable saving — but the gate's choice is not yet reliable.
+
+**Context for the 2-factor goal:** fixed n_h = 2 on this alphabet escapes the
+plateau in 3 of 10 runs within 20 000 steps (`A5_c5:2`, Part 3b corrections),
+so 2 factors are learnable, slowly and rarely. The demand model's capacity claim
+is supported by those fixed-order runs; what failed is the gate's ability to
+find that solution by trimming a trained model.
+
 ---
 
 ## Part 3f — State tracking in natural language: the Boxes dataset (21 September)
@@ -1125,6 +1258,260 @@ it.)
 ---
 
 ## Part 7 — Plan forward
+
+### Review, 11 October — before the next run
+
+**A measurement we already had.** Every matched-compute sweep and escape-census
+run recorded its training time (`train_s`), and fixed orders build a layer with
+exactly that many factors. Same script, same GPU, 20 000 steps, batch 128:
+
+| order | 20k-step training time, s (5 sweeps, §5.1 files) | relative to 4 |
+|---|---|---|
+| 1 | 342.5 – 379.6 | 0.45 |
+| 2 | 440.7 – 454.9 | 0.58 |
+| 3 | 598.7 – 606.3 | 0.79 |
+| 4 | 758.7 – 761.3 | 1.00 |
+
+So the cost of each fixed order **is measured**, five times over, within 3%
+at orders 2–4 (11% at order 1). The status line "no wall-clock measured" was true only of
+the *adaptive* layer (Path A computes every factor: oracle 756 s vs fixed4
+761 s). The fixed-order run planned for tonight would have re-measured this.
+These are end-to-end training times; inference has not been timed.
+
+**What the record supports, by route.**
+
+- *Per-token gate on the heterogeneous S₅ mix:* works in 13 of 20 runs, exact
+  allocation at 1.2985 factors per token. Notional only, because Path A runs
+  every factor. If cost tracks expanded sequence length — the table above
+  suggests it roughly does — a ragged expansion at 1.30 would land between
+  fixed1 and fixed2, about half of fixed4. **That is a projection, not a
+  measurement.**
+- *Per-layer order built at the gate's choice (the 8 October deliverable):*
+  on the S₅ mix the largest order any token needs is 4, so the saving is zero —
+  Tier 3's own abandon condition (Part 7b) holds there. On A₅ the gate chose 3
+  in 1 of 6 runs (and 2 factors were never reached), and a 3-factor layer
+  trains in 0.79 of the time. A plain sweep over n_h = 1–4 finds 3 just as
+  well, so on present evidence the gate adds nothing over a sweep there.
+- *A₅ learnability:* with 4 factors and the gate open, the task was learned in
+  12 of 12 runs; fixed 3: 1 run (0.9994); fixed 2: 3 of 10 (Part 3b census).
+
+**Ragged expansion is smaller than the plan assumed.** In this layer a factor
+whose hard gate is 0 has β = 0, an exact identity in the kernel
+(`work/check_beta_identity.py`). The first factor is always on, so the decay
+term (placed on the first sub-step) is always kept. Dropping closed sub-steps,
+moving the query to the last kept sub-step, and packing sequences with
+`cu_seqlens` (already accepted by `chunk_gated_delta_rule`) should give the same
+output as Path A, which can be checked by test. With packed sequences the cost
+is the sum of kept factors, not the maximum per position over the batch, so the
+"batching dilutes the saving" argument in Part 7b (granularity constraint) may
+not apply. Unverified until built and timed.
+
+**Amendment, 11 October (decided before any code or run).** The main
+deliverable changes from "a layer built at the gate's largest order" to
+**"the per-token gate with ragged expansion at inference, with a measured
+speedup at equal accuracy"**.
+
+*Reason.* The per-layer route met its own abandon condition (Part 7b, Tier 3:
+"learned order gives no accuracy or cost advantage over the best hand-chosen
+n_h") on the S₅ mix, where the largest order needed is 4; on A₅ the gate does
+no better than a sweep over n_h. The per-token gate is the part that works
+(13/20 exact), and ragged expansion is what turns its allocation into time.
+*What does not change.* The stopping rule's verdict stands: 13/20 is the
+reported per-token reliability, and no further runs aim at raising it on the
+S₅ cell except the restart rule (step 3 below), which is reported as a training
+procedure with its cost. Per-layer results already obtained stay in the record.
+
+**Plan under the amendment:**
+1. *Ragged expansion* — built 11 October, inference only:
+   `src/ragged_expansion.py` (packing, float64 self-test R1–R11 with four
+   mutants), the layer switch `ragged` in `gated_deltaproduct.py`
+   (PATCH(ragged-expansion); previous file kept as `.orig.ragged`), and
+   `work/check_ragged.py` (real-kernel equality with Path A, mutants, timing
+   grid). Pass criteria and the speedup reading are written in that file's
+   header before its first run: speedup claimed only where ragged at the
+   learned S₅ allocation is ≥ 10% faster than fixed n_h = 4.
+2. *Accuracy through Path B on a trained model* — needs a checkpoint (none has
+   ever been saved): one arm-B run with saving, then evaluate with ragged on.
+3. *Restart rule* — failure is visible by step 500; restart failing runs and
+   report reliability per attempt and per procedure.
+4. *Real task* — Boxes order sweep (n_h ∈ {1, 2, 3}); if order matters, the gate
+   on Boxes; otherwise chess.
+5. *A₅* — written up as it stands; no further gate tuning now.
+
+**Ragged expansion, first measurement (11 October; `results/ragged_bench_v1.json`).**
+RTX 4050 laptop, 1-layer model at the experiment size, forward pass only,
+median of 30 after warm-up; synthetic allocation matching the learned one
+(order 4 for 10% of tokens, else 1; mean 1.23–1.30); random weights; peak
+memory ≤ 3.3 GB, so no spill.
+
+*Correctness (real kernel):* all pass. Ragged vs Path A relative L2 7.6e-3; both
+judged against a float64 reference of the recurrence, ragged 7.05e-3 and Path A
+6.57e-3 — the same bf16 noise. All gates open: identical (0.0). Three mutants
+detected (0.26–0.78). An earlier version of the check failed on an
+argmax-agreement criterion (0.9907) that was unsuitable for random-weight
+logits; it was replaced by the stricter reference comparison, not loosened
+(header of `work/check_ragged.py`).
+
+| batch | length | fixed 1 | fixed 4 | Path A | ragged | ragged / fixed 4 |
+|---|---|---|---|---|---|---|
+| 1 | 128–2048 | 3.1 | 4.7 | 4.9–5.0 | 7.1–7.3 | 1.49–1.56 |
+| 8 | 128, 512 | 3.2 | 4.7, 5.7 | 4.9, 5.8 | 7.3, 7.8 | 1.55, 1.37 |
+| 8 | 2048 | 4.7 | 16.0 | 16.1 | 12.1 | **0.76** |
+| 32 | 128 | 3.1 | 5.4 | 5.6 | 13.7 | 2.56 |
+| 32 | 512 | 4.6 | 15.6 | 15.8 | 12.4 | **0.79** |
+| 32 | 2048 | 18.3 | 62.2 | 62.9 | 42.9 | **0.69** |
+
+(ms per forward pass)
+
+1. **By the rule fixed before the run, a speedup is claimed in 3 of 9 cells** —
+   the three large ones: 0.69–0.79 of the fixed-4 time. This is the first
+   measured wall-clock saving from the adaptive layer. It is inference, one
+   GPU, one small model, a synthetic allocation, and one run of the grid.
+2. **Small sizes are slower** (1.4–2.6×). There the GPU is mostly idle: fixed 1
+   and fixed 4 differ by only 1.6 ms, and ragged adds a roughly fixed ~2.3 ms
+   of packing and launch overhead. Batch 1 — the case Part 7b's target
+   statement named — shows no saving at any length tested.
+3. **The large-size saving is well short of what the arithmetic allows.** At
+   batch 32, length 2048, fixed orders cost about 15 ms per factor
+   (18.3 / 35.7 / 48.3 / 62.2), so 1.30 factors per token should land near
+   23 ms; ragged took 42.9. Ragged at order 4 everywhere took 78.3 against
+   Path A's 62.9: about 15 ms of packing overhead. Version 1 packed by stacking
+   all four factors and selecting with boolean masks (several full copies and a
+   host synchronisation per mask).
+4. **One cell is unexplained:** batch 32, length 128, ragged took 13.7 ms at
+   the mixed allocation but 9.7 ms with every factor kept. Not investigated;
+   a second run of the grid will show whether it repeats.
+
+**Version 2 of the packing** (same day): index_copy per factor into
+preallocated buffers, one host synchronisation, no stacked copy. Same CPU
+self-test (R1–R11, all pass). To be re-checked and re-timed with the same
+command; the version-1 numbers above stay as the record.
+
+**Version 2, two runs of the grid (12 October; `results/ragged_bench_v2a.json`,
+`_v2b.json`).** Correctness unchanged (same C1–C4 values). Ragged / fixed 4,
+run a / run b:
+
+| batch × length | v1 | v2a | v2b |
+|---|---|---|---|
+| 8 × 2048 | 0.76 | 0.67 | 0.69 |
+| 32 × 512 | 0.79 | 0.71 | 0.70 |
+| 32 × 2048 | 0.69 | 0.67 | 0.65 |
+| small cells (6) | 1.37–2.56 | 1.35–1.62 | 1.38–1.63 |
+
+1. **The claim holds in the same 3 of 9 cells, now 0.65–0.71 of the fixed-4
+   time**, and the two runs agree to within 0.02. Fixed-order times also repeat
+   within ~3%.
+2. **My prediction was wrong.** I expected the new packing to bring the large
+   cells to 0.4–0.5; it moved them by 0.02–0.09. With every factor kept, ragged
+   is still 12–14 ms slower than Path A at 32 × 2048 (74.0–75.9 vs 62.1–62.7),
+   so most of the overhead is not where I assumed. Not guessing again:
+   `work/profile_ragged.py` splits each forward into GPU kernel time by
+   category before the next change.
+3. The version-1 anomaly at 32 × 128 (ragged slower at the mixed allocation
+   than at all-4) did not repeat (7.7–7.8 vs 9.0 ms).
+4. Small sizes stay ~2.5 ms slower than Path A in both runs: a fixed cost.
+
+**Where the time goes (12 October; `results/ragged_profile.json`,
+`work/profile_ragged.py`).** GPU kernel time per forward, ms, batch 32 × 2048:
+
+| | wall | recurrence | packing | matmul | conv | copies/elementwise | GPU idle | launches |
+|---|---|---|---|---|---|---|---|---|
+| fixed 4 | 60.9 | 35.4 | 0.3 | 6.0 | 5.5 | 11.7 | 0.6 | 62 |
+| ragged, learned allocation | 41.0 | 13.2 | 6.8 | 6.0 | 5.5 | 2.7 | 5.4 | 163 |
+| ragged, all factors kept | 74.6 | 40.9 | 6.9 | 6.0 | 5.5 | 4.8 | 8.8 | 163 |
+
+1. **The recurrence does scale with the kept factors:** 13.2 against 35.4 ms
+   (0.37; the allocation alone predicts 0.33). That part of the mechanism works.
+2. **The rest of the gap is overhead, in three places.** Packing 6.8 ms (one
+   index_copy kernel alone is 5.6 ms, because version 2 writes every factor of
+   every token, the closed ones into scratch rows); GPU idle 5.4 ms (host
+   synchronisation and 163 kernel launches against 62); and per-factor
+   projections and convolutions, 11.5 ms, which are computed for all four
+   factors regardless.
+3. **The fixed-4 baseline itself carries ~9 ms of copies** — upstream's
+   interleaving stacks four tensors to build the expanded sequence. Part of
+   ragged's measured advantage is therefore just not paying that copy, which a
+   better-written fixed layer would not pay either. **The 0.65–0.71 figure
+   overstates what adaptivity buys against a well-written fixed layer**, and is
+   not to be quoted without this caveat.
+4. Running the packed sequences through the kernel costs ~15% more than the
+   batched layout for the same work (40.9 vs 35.4 ms with every factor kept).
+
+**Fused factors (built 12 October).** The four factors' projections run as one
+matmul, and their convolutions as one depthwise convolution, on concatenated
+weights. The result is already interleaved, so Path A needs no copy and ragged
+expansion needs one gather of the kept rows only. It is offered to the fixed
+layer as well, and **the claim rule was revised before its first run**:
+fused ragged *plus the learned gate's own cost* (previously left out, because
+the timed runs used external gates) against the *faster* of the per-factor and
+fused 4-factor baselines, at least 10% faster. Correctness checks C5–C8 and
+CPU self-tests R12–R14 added; R12–R14 pass.
+
+**Fused factors, two runs (12 October; `results/ragged_bench_v3a.json`,
+`_v3b.json`).** Correctness: all checks pass; fused and per-factor paths are
+bitwise identical (C5, C8: 0.0), fused ragged matches the float64 reference as
+closely as Path A (7.05e-3 vs 6.57e-3). Times in ms, run a / run b:
+
+| batch × length | fixed 4 (original) | fixed 4 (fused) | fused ragged | gate | (ragged + gate) / best 4 |
+|---|---|---|---|---|---|
+| 32 × 2048 | 63.8 / 63.3 | 56.2 / 56.2 | 39.0 / 39.6 | 3.1 / 3.2 | **0.75 / 0.76** |
+| 32 × 512 | 14.9 / 16.4 | 14.1 / 13.9 | 10.3 / 10.0 | 0.8 / 0.7 | **0.79 / 0.77** |
+| 8 × 2048 | 17.0 / 16.2 | 14.0 / 14.1 | 12.9 / 9.7 | 0.7 / 0.7 | 0.98 / 0.74 |
+| 6 small cells | | | | | 1.19–2.68 |
+
+1. **The fair figure: 0.75–0.79 of the best 4-factor time, gate cost included,
+   at batch 32 (lengths 512 and 2048), in both runs** — about 21–25% faster.
+   This replaces the 0.65–0.71 figure, which compared against the original
+   code's copy-heavy layer and left out the gate.
+2. **Batch 8 × 2048 is not claimed:** it met the rule in one run (0.74) and not
+   the other (0.98). Small sizes remain slower and very noisy run to run.
+3. Removing the copies made the fixed layer 7.6 ms faster (63.8 → 56.2) but the
+   ragged path only ~2.5 ms faster (41.8 → 39.0), so most of the earlier
+   advantage over the original code was indeed the copies.
+4. **Overhead is still large.** Fixed fused orders 1–4 at 32 × 2048 cost 20.0 /
+   31.6 / 44.5 / 56.2 ms, so 1.30 factors per token would be ~23.5 ms with no
+   overhead; fused ragged takes 39.0. With every factor kept it takes 80.4 against
+   56.2, about 24 ms of packing and kernel overhead at full length. The learned
+   gate itself costs 3.1 ms (about 5% of the baseline).
+5. ~~Not yet measured: accuracy of a trained model through this path.~~
+   Measured 13 October, below.
+
+**Trained models through the ragged path (12–13 October;
+`results/gate_B_saved.json`, `results/ragged_trained.json`,
+`results/ragged_trained_check2.json`; `work/check_ragged_trained.py`).** Best
+recipe, seeds 11–13, models saved with `--save_dir`: seeds 12 and 13 exact
+(1.2985, token 0.9998 and 1.0000), seed 11 failed (1.199, token 0.42) — 2/3.
+
+| model | Path A token / seq | ragged token / seq | prediction agreement | error vs float64 ref, ragged / Path A | margin at disagreements (median, all tokens) |
+|---|---|---|---|---|---|
+| seed 12 (trained) | 0.9998 / 0.9795 | 0.9996 / 0.9595 | 0.99951 | 1.88e-2 / 1.81e-2 | 2.31 (7.81) |
+| seed 13 (trained) | 1.0000 / 0.9965 | 0.9999 / 0.9940 | 0.99997 | 2.32e-2 / 2.14e-2 | 0.56 (8.08) |
+| seed 11 (not learned) | 0.4218 / 0 | 0.4210 / 0 | 0.90032 | 2.65e-2 / 2.07e-2 | 0.0625 (0.44) |
+
+Speed with the trained gate inside the forward pass, ragged / best 4-factor
+layer: 32 × 512: 0.80, 0.80; 32 × 2048: 0.73, 0.74 (seeds 12, 13).
+
+1. **On both trained models the ragged path passes every check**: reload (T0),
+   same token accuracy within 0.0002 and ≥ 99.95% identical predictions (T1),
+   and its recurrence output is as close to a float64 reference as Path A's
+   (T3). The speedup with the real gate matches the synthetic figure.
+2. **Sequence accuracy is a little lower on the ragged path** (0.9795 → 0.9595
+   and 0.9965 → 0.9940): a handful of borderline tokens flip, and one flip
+   spoils a sequence. Token accuracy is lower in all three models (by 0.00002, 0.0002 and 0.0008).
+   Likely cause, not tested: the model was trained under Path A's exact bf16
+   rounding, and any other rounding is a small perturbation of it. To be stated
+   with the result, not hidden.
+3. **T1 failed as written on the untrained model (seed 11): 90% agreement.**
+   Recorded as failed. The checks added before the re-run show why: its
+   ragged output is as close to the float64 reference as Path A's (T3 pass),
+   and the disagreeing tokens sit at near-ties (median margin 0.0625, one bf16
+   step at that scale, against 0.44 overall). A model that has not learned the
+   task has near-flat scores, and rounding decides between them. This is the
+   second time an argmax-agreement criterion misled us on a non-confident
+   model; such criteria are only used on trained models from now on.
+4. **T2 was a test-design error, corrected 13 Oct**: the broken variant changes
+   only multi-factor tokens (~10%), so its agreement sits near 0.90 regardless;
+   T2 now asks whether T1 catches it, which it does on all three models.
 
 ### Revised plan, 8 October (supersedes the October list below)
 
