@@ -629,6 +629,83 @@ def fingerprint_check(ref_rows, mode, seed, task, n_t=None, w=None,
 
 
 # ===========================================================================
+# Restart rule: a learned run whose mean order is still below a threshold at a
+# fixed early step is stopped and started again from a new seed. Failures of
+# the best recipe were visible by step 500 in the 20-run study (PLAN Part 3e).
+# ===========================================================================
+
+class RestartRun(Exception):
+    """Raised inside run_arm when the restart check fires."""
+
+    def __init__(self, step: int, order: float):
+        super().__init__(f"mean order {order:.4f} at step {step}")
+        self.step, self.order = step, order
+
+
+def restart_due(step: int, order: float, restart_at: int, restart_below: float) -> bool:
+    """True only at the check step, only when the rule is on, only below the threshold."""
+    return restart_below > 0 and step == restart_at and order < restart_below
+
+
+def attempt_seed(seed: int, attempt: int) -> int:
+    """Seed for attempt 1, 2, ... of a run: the base seed, then +1000 per restart."""
+    return seed + 1000 * (attempt - 1)
+
+
+def run_with_restarts(run, seed: int, max_attempts: int, log=print):
+    """run(seed, check) -> row, may raise RestartRun when check is True. The last
+    attempt runs with check=False, so every base seed ends in a trained result.
+    Returns that row with base_seed, n_attempts and the attempt history added."""
+    history = []
+    for a in range(1, max_attempts + 1):
+        s = attempt_seed(seed, a)
+        last = a == max_attempts
+        try:
+            row = run(s, not last)
+        except RestartRun as e:
+            history.append(dict(attempt=a, seed=s, restarted_at=e.step, order=round(e.order, 4)))
+            log(f"      RESTART  attempt {a} (seed {s}): {e} -- below the threshold, "
+                f"starting attempt {a + 1} (seed {attempt_seed(seed, a + 1)})")
+            continue
+        history.append(dict(attempt=a, seed=s, restarted_at=None,
+                            order=row.get("order_at_check"), check_applied=not last))
+        row.update(base_seed=seed, n_attempts=a, attempts=history)
+        return row
+    raise AssertionError("unreachable: the last attempt never raises")
+
+
+def restart_summary(rows):
+    """Procedure-level numbers for runs made with the restart rule."""
+    rr = [r for r in rows if r.get("attempts")]
+    ke = sum(is_exact(r) for r in rr)
+    hist = [h for r in rr for h in r["attempts"]]
+    return dict(
+        n=len(rr), exact=ke, exact_ci=wilson(ke, len(rr)) if rr else (0.0, 0.0),
+        restarts=sum(r["n_attempts"] - 1 for r in rr),
+        first_attempt_passed=sum(r["n_attempts"] == 1 for r in rr),
+        # a run that passed the check and still failed: the signal missed it
+        missed=sorted(r["base_seed"] for r in rr
+                      if r["attempts"][-1].get("check_applied") and not is_exact(r)),
+        # every attempt was below the threshold; the last ran unchecked
+        exhausted=sorted(r["base_seed"] for r in rr
+                         if not r["attempts"][-1].get("check_applied")),
+        restarted_steps=sum(h["restarted_at"] for h in hist if h["restarted_at"]),
+        attempts_by_seed={r["base_seed"]: r["n_attempts"] for r in rr},
+    )
+
+
+# Step-500 mean order and outcome of every run in the 20-run study of the best
+# recipe (results/gate_early_B20.json): seed -> (order at step 500, exact).
+REF_B20_STEP500 = {
+    15: (1.0, False), 30: (1.0, False), 27: (1.0044, False), 22: (1.0346, False),
+    28: (1.0418, False), 26: (1.1006, False), 18: (1.1669, True), 11: (1.1719, False),
+    29: (1.2787, True), 21: (1.284, True), 12: (1.2875, True), 23: (1.2932, True),
+    24: (1.2949, True), 19: (1.2997, True), 20: (1.2997, True), 25: (1.3021, True),
+    13: (1.3032, True), 16: (1.3047, True), 14: (1.3073, True), 17: (2.5632, True),
+}
+
+
+# ===========================================================================
 # Self-test -- every check is verified to FAIL against a wrong implementation
 # ===========================================================================
 
@@ -1091,6 +1168,61 @@ def selftest() -> bool:
     nm2 = checkpoint_name(dict(arm="learned(g=0.1,hard@1)", gamma=0.3, seed=11))
     check("T21b two penalty weights never share a file", nm2 != nm, nm2)
 
+    # ---- restart rule ------------------------------------------------------
+    check("T22 restart fires only at the check step, below the threshold, when on",
+          restart_due(500, 1.17, 500, 1.2) and not restart_due(500, 1.25, 500, 1.2)
+          and not restart_due(499, 1.0, 500, 1.2) and not restart_due(501, 1.0, 500, 1.2)
+          and not restart_due(500, 1.0, 500, 0.0))
+    check("T22b attempt seeds: base seed first, then distinct",
+          [attempt_seed(31, a) for a in (1, 2, 3)] == [31, 1031, 2031])
+    restarted = {s for s, (o, _) in REF_B20_STEP500.items() if restart_due(500, o, 500, 1.20)}
+    fails = {s for s, (_, ex) in REF_B20_STEP500.items() if not ex}
+    check("T22c on the 20-run study, threshold 1.20 at step 500 restarts all 7 failures "
+          "and 1 of 13 successes (seed 18)",
+          fails <= restarted and restarted - fails == {18} and len(fails) == 7,
+          f"restarted {sorted(restarted)}, failures {sorted(fails)}")
+
+    calls = []
+
+    def fake_run(fail_attempts):
+        def run(s, check_on):
+            calls.append((s, check_on))
+            if check_on and s in fail_attempts:
+                raise RestartRun(500, 1.05)
+            return dict(seed=s, order_at_check=1.29)
+        return run
+
+    calls.clear()
+    r = run_with_restarts(fake_run({41, 1041}), 41, 5, log=lambda *_: None)
+    check("T22d two restarts, then a completed third attempt on seed 2041",
+          r["n_attempts"] == 3 and r["seed"] == 2041 and r["base_seed"] == 41
+          and [h["restarted_at"] for h in r["attempts"]] == [500, 500, None]
+          and calls == [(41, True), (1041, True), (2041, True)], str(r))
+    calls.clear()
+    r = run_with_restarts(fake_run({7 + 1000 * i for i in range(10)}), 7, 3, log=lambda *_: None)
+    check("T22e the last attempt runs without the check, so every seed ends trained",
+          r["n_attempts"] == 3 and calls[-1] == (2007, False)
+          and r["attempts"][-1]["check_applied"] is False, str(calls))
+    calls.clear()
+    r = run_with_restarts(fake_run(set()), 9, 5, log=lambda *_: None)
+    check("T22f a run that passes the check is never restarted",
+          r["n_attempts"] == 1 and calls == [(9, True)])
+
+    def fake_row(base, attempts, exact, last_checked=True):
+        by = {1: dict(n=90, mean_n_t=1.0), 4: dict(n=10, mean_n_t=4.0 if exact else 1.0)}
+        hist = [dict(attempt=i + 1, restarted_at=500) for i in range(attempts - 1)]
+        hist.append(dict(attempt=attempts, restarted_at=None, check_applied=last_checked))
+        return dict(base_seed=base, n_attempts=attempts, attempts=hist, n_h=4,
+                    token_acc=0.9999 if exact else 0.3, alloc=dict(by_demand=by))
+    rs = [fake_row(31, 1, True), fake_row(32, 3, True), fake_row(33, 1, False),
+          fake_row(34, 5, False, last_checked=False), dict(fake_row(35, 1, True))]
+    sm = restart_summary(rs)
+    check("T22g restart summary: 3/5 exact, 6 restarts, 3 first-attempt passes, "
+          "seed 33 missed, seed 34 exhausted, 3000 restarted steps",
+          sm["n"] == 5 and sm["exact"] == 3 and sm["restarts"] == 6
+          and sm["first_attempt_passed"] == 3 and sm["missed"] == [33]
+          and sm["exhausted"] == [34] and sm["restarted_steps"] == 3000, str(sm))
+
     print("\n  " + ("all self-tests passed" if ok else "SELF-TEST FAILED"))
     return ok
 
@@ -1100,8 +1232,10 @@ def selftest() -> bool:
 # ===========================================================================
 
 def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
-            hard_from=0, dlut=None):
-    """mode: 'fixed' | 'oracle' | 'learned'."""
+            hard_from=0, dlut=None, check_restart=False):
+    """mode: 'fixed' | 'oracle' | 'learned'. check_restart: apply the restart
+    rule (--restart_below at --restart_at); raises RestartRun if it fires."""
+    order_at_check = None
     from exp_matched_compute import build
     from oracle_order import oracle_gates, set_external_gates
 
@@ -1152,6 +1286,13 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
                 loss = loss + args.logit_wall_weight * logit_wall_loss(
                     gate_logits(model), wall)
             bud = float(bud_t.detach().item())
+            if step == args.restart_at:
+                order_at_check = bud
+                if check_restart and restart_due(step, bud, args.restart_at,
+                                                 args.restart_below):
+                    del model, opt
+                    torch.cuda.empty_cache()
+                    raise RestartRun(step, bud)
             if step == 1:
                 want, tol = expected_start_order(
                     args.gate_init, args.gate_init_bias, n_h,
@@ -1266,6 +1407,10 @@ def run_arm(name, n_h, mode, gamma, data, lut, args, seed, wall=0.0,
                logit_wall_weight=(args.logit_wall_weight
                                   if mode == "learned" and wall > 0 else None),
                gate_w_final=(gate_weight_norm(model) if mode == "learned" else None),
+               order_at_check=(None if order_at_check is None else round(order_at_check, 4)),
+               restart_rule=(dict(at=args.restart_at, below=args.restart_below,
+                                  max_attempts=args.max_attempts)
+                             if mode == "learned" and args.restart_below > 0 else None),
                loss_trace=trace, alloc=alloc)
     if getattr(args, "save_dir", None) and mode == "learned":
         row["checkpoint"] = save_checkpoint(model, row, args, n_h, adaptive, seed)
@@ -1342,6 +1487,22 @@ def report(rows, args):
                       f"[{s['sep_soft_ci'][0]:.2f}, {s['sep_soft_ci'][1]:.2f}]")
             print("      costs, sorted: " + " ".join(f"{c:.4f}" for c in s["costs"]))
         print()
+        rs_ = restart_summary(rows)
+        if rs_["n"]:
+            print(f"  RESTART PROCEDURE  (mean order < {args.restart_below:g} at step "
+                  f"{args.restart_at} -> new seed; at most {args.max_attempts} attempts)")
+            print(f"      exact {rs_['exact']}/{rs_['n']} "
+                  f"[{rs_['exact_ci'][0]:.2f}, {rs_['exact_ci'][1]:.2f}] per base seed")
+            print(f"      restarts {rs_['restarts']}   first attempt passed the check "
+                  f"{rs_['first_attempt_passed']}/{rs_['n']}   restarted steps "
+                  f"{rs_['restarted_steps']} (vs {rs_['n'] * args.steps} for the "
+                  f"completed runs)")
+            print(f"      passed the check but not exact (missed): {rs_['missed'] or 'none'}")
+            print(f"      every attempt below the threshold (last ran unchecked): "
+                  f"{rs_['exhausted'] or 'none'}")
+            print("      attempts per base seed: " + " ".join(
+                f"{k}:{v}" for k, v in sorted(rs_["attempts_by_seed"].items())))
+            print()
 
     orc = [r for r in rows if r["mode"] == "oracle"]
     if not orc:
@@ -1450,6 +1611,16 @@ def main():
                     help="save each learned arm's trained model here (weights, "
                          "build settings, data settings and its evaluated "
                          "accuracy and cost), for work/check_ragged_trained.py")
+    ap.add_argument("--restart_below", type=float, default=0.0,
+                    help="restart rule: a learned run whose mean order at "
+                         "--restart_at is below this is stopped and started again "
+                         "from seed + 1000 per attempt. 0 = off (every run before "
+                         "14 Oct)")
+    ap.add_argument("--restart_at", type=int, default=500,
+                    help="the step at which the restart rule checks the order")
+    ap.add_argument("--max_attempts", type=int, default=5,
+                    help="attempts per base seed; the last one runs without the "
+                         "check, so every seed ends in a trained result")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -1545,6 +1716,10 @@ def main():
               f"(0 = off), weight {args.logit_wall_weight:g}, from step 1")
     if args.fingerprint:
         print(f"  fingerprint step 1 compared against {args.fingerprint}")
+    if args.restart_below > 0:
+        print(f"  restart     mean order < {args.restart_below:g} at step {args.restart_at}"
+              f" -> new seed (+1000 per attempt), at most {args.max_attempts} attempts;"
+              f" the last runs to the end")
     print(f"  seeds       {', '.join(str(s) for s in seeds)}")
     if len(seeds) < 3:
         print("  WARNING: fewer than 3 seeds. Outcomes on these cells are")
@@ -1589,9 +1764,17 @@ def main():
                         print(f"learned  gamma {gamma:g}  wall {w_:g}  "
                               f"hard from {h_ or 'never'}  seed {seed}")
                         print("-" * 78)
-                        emit(run_arm(tag, args.max_order, "learned", gamma, data,
-                                     lut, args, seed, wall=w_, hard_from=h_,
-                                     dlut=dlut))
+                        if args.restart_below > 0:
+                            emit(run_with_restarts(
+                                lambda s, chk: run_arm(
+                                    tag, args.max_order, "learned", gamma, data, lut,
+                                    args, s, wall=w_, hard_from=h_, dlut=dlut,
+                                    check_restart=chk),
+                                seed, args.max_attempts))
+                        else:
+                            emit(run_arm(tag, args.max_order, "learned", gamma, data,
+                                         lut, args, seed, wall=w_, hard_from=h_,
+                                         dlut=dlut))
 
     report(rows, args)
     print(f"\nwritten: {args.out}")

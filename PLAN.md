@@ -1596,6 +1596,44 @@ which could only widen its lead over 1 factor, whose curve is flat.
 
 Per the rule, **the learned gate goes on Boxes next.**
 
+### Restart rule — pre-registered 14 October, before any run
+
+*Question.* The best recipe reaches the exact allocation in 13 of 20 runs, and
+every failure is visible at step 500. Does restarting the visibly failing runs
+turn it into a training procedure that reliably delivers the allocation? This
+measures a *procedure*, not the mechanism: the 13/20 stays the per-run figure.
+
+*Rule.* A learned run whose mean order (training batch, hard gates) at step 500
+is below **1.20** is stopped and started again from seed base + 1000 per
+attempt; at most **5 attempts**, the fifth runs to the end without the check,
+so every base seed ends in a trained model. Threshold from the 20-run study
+(`results/gate_early_B20.json`): at step 500 the 7 failures sat at 1.00–1.17,
+the successes at 1.28–1.31 (one at 2.56) except seed 18 at 1.167. So 1.20
+restarts all 7 failures and 1 of 13 successes there — chosen on those runs,
+so the test is on new ones.
+
+*Run.* `work/run_gate_restart.sh`: the best recipe unchanged (open start, hard
+straight-through gates and the penalty from step 1, ramp 4 000, γ 0.1, first
+factor always on, 20 000 steps), **new base seeds 31–50**, models saved. Code:
+`--restart_below / --restart_at / --max_attempts` in `exp_gate_train.py`;
+self-tests T22–T22g (the threshold on the 20-run study, seeds per attempt,
+the unchecked last attempt, the summary), each confirmed to fail on a broken
+version (check at every step after 500, threshold flipped or at 1.25, the
+same seed every attempt, last attempt still checked, missed failures counted
+wrongly). About 6 h.
+
+*Reported.* Exact k/20 per base seed with a 95% interval; restarts; first
+attempts that passed the check (expected about 12/20 from the study); runs that
+passed the check and still failed ("missed"); seeds where every attempt was
+below the threshold; restarted steps against completed steps.
+
+*Decision.* **≥ 18/20 exact**: the restart procedure becomes the standard way
+to train the gate from here on (Boxes included), always reported as a
+procedure with its restart count, never as the gate's per-run reliability.
+**< 18/20**: the step-500 signal is not enough; 13/20 remains the figure and
+gate runs on Boxes are made without restarts, with enough runs to report a
+fraction.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
