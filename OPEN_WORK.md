@@ -75,7 +75,10 @@ every check; ragged runs at 0.80 (32×512) and 0.73–0.74 (32×2048) of the bes
 agreement) but T3 and the margin check show bf16 ties, not a bug;
 (2b) optional — test whether the sequence-accuracy drop is training-rounding
 (e.g. score the float64 reference recurrence's predictions as a third path);
-(3) restart rule;
+(3) restart rule; (4a) Boxes order sweep — *done 14 Oct: ORDER MATTERS*
+(E median 0.810 / 0.915 / 0.889 for 1 / 2 / 3 factors, 2 factors 5/5 above
+the 1-factor median; PLAN "Boxes order sweep") → next: the learned gate on
+Boxes, compared against fixed 2 and 3 factors;
 (4) Boxes order sweep → gate on Boxes or chess; (5) A₅ written up as is.
 The items below are the 8 Oct queue, kept as the record.
 

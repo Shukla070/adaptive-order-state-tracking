@@ -1513,6 +1513,89 @@ layer: 32 × 512: 0.80, 0.80; 32 × 2048: 0.73, 0.74 (seeds 12, 13).
    only multi-factor tokens (~10%), so its agreement sits near 0.90 regardless;
    T2 now asks whether T1 catches it, which it does on all three models.
 
+### Boxes order sweep — pre-registered 13 October, before any run
+
+*Question.* Does the number of factors per token matter on real text? If it
+does not, a learned per-token order has nothing to save on Boxes and the next
+real task is chess board state.
+
+*Setup.* `work/exp_boxes_order.py`, using `work/boxes_lib.py`: a verbatim copy
+of the code cells of Shashwat's notebook (`experiments/hybrid_delta_attn.ipynb`,
+branch `nlp_experiment`, commit abd1349), whose own self-test still passes.
+Pure-PyTorch float32 DeltaProduct (no decay gate, β ∈ (0, 2)); his settings: 2
+layers, d 128, 4 heads × 32, 8 000 steps, batch 64, train on ≤ 2 operations,
+exact match on 0…8 (≥ 3 = extrapolation). DeltaProduct only, `n_h` ∈ {1, 2, 3},
+5 runs each (seeds 0–4, interleaved). **Same parameter count at every order**
+(469,120, his `n_h = 2` model): the MLP width is 589 / 455 / 321, so more
+factors never means more parameters. Each order has its own storage key (the
+notebook's key has no `n_h` and would overwrite one order with the next).
+Self-test W1–W6, every check confirmed to fail on a broken version (key
+without `n_h`, no size matching, wrong buckets in E, no count criterion).
+
+*Decision rule.* E(run) = unweighted mean exact match over ops = 3, 4, ≥ 5;
+m1 = median E at `n_h = 1`; for k ∈ {2, 3}: gain_k = median E(k) − m1,
+above_k = runs at k with E > m1.
+- **ORDER MATTERS**: some k has gain_k ≥ 0.05 and above_k ≥ 80% of its runs →
+  the learned gate goes on Boxes next.
+- **NO GAIN**: every k has gain_k < 0.03 → one factor is enough here; chess next.
+- **UNINFORMATIVE**: no run of any order reaches E = 0.10 → fix the setup.
+- **INCONCLUSIVE**: anything else → 5 more runs per order (seeds 5–9), once,
+  same rule on all 10; still INCONCLUSIVE counts as NO GAIN.
+
+*Amendment, 13 October, after the smoke run and before the sweep*
+(`results/boxes_order_smoke.json`, 500 steps, one run per order). The smoke
+run confirmed the pipeline (vocabulary 123, 78,402 training examples, no
+unknown words, all three orders at 469,120 parameters) and the time per order
+(0.5 / 1.15 / 2.3 min per 500 steps for 1 / 2 / 3 factors). At 500 steps E was
+0.32 / 0.07 / 0.01: higher orders learn more slowly at the start. One run each,
+at 6% of training: not evidence about the final answer, but it means a fixed
+8 000-step budget could rank the orders by speed rather than by capability.
+Changes: **16 000 steps** (not 8 000); quick evaluation on 500 examples per
+bucket every 2 000 steps; and a convergence condition, checked after
+UNINFORMATIVE and before the rest of the rule: **NOT CONVERGED** if for any order
+the median quick-eval E rose by more than 0.03 over the last quarter of
+training (step 12 000 → 16 000) → no decision, rerun at twice the steps.
+Self-test W5b, confirmed to fail without the override and with the rise
+measured from the start. Expected cost ≈ 2.1 h per seed, ≈ 10.5 h in all.
+
+*Prediction (weakly held).* NO GAIN is plausible: a "move" needs about two
+state changes, but the sentence gives the model several tokens to make them.
+Shashwat's three `n_h = 2` runs (E ≈ 0.88, 0.86, 0.75) show the run-to-run
+spread this rule has to see through.
+
+**Result (13–14 October; `results/boxes_order.json`, `.log`): ORDER MATTERS.**
+15 of 15 runs completed (16 000 steps, none diverged), 469,120 parameters each.
+E = mean exact match on 3, 4 and ≥ 5 operations, sorted per run:
+
+| factors | E per run, sorted | median E | ops = 1 / 2 (median) | minutes per run |
+|---|---|---|---|---|
+| 1 | 0.595 0.721 0.810 0.842 0.888 | 0.810 | 0.952 / 0.890 | 14 |
+| 2 | 0.833 0.844 0.915 0.916 0.924 | 0.915 | 0.971 / 0.945 | 33 |
+| 3 | 0.810 0.884 0.889 0.909 0.909 | 0.889 | 0.978 / 0.944 | 75 |
+
+Rule: 2 factors gain +0.105 with 5/5 runs above the 1-factor median (0.810);
+3 factors gain +0.079 with 4/5 (the fifth, 0.8096, sits just below 0.8103).
+Convergence: rise over the last quarter −0.005 / +0.029 / −0.005 — none above
+0.03, so the verdict stands; the 2-factor curve is the one still edging up,
+which could only widen its lead over 1 factor, whose curve is flat.
+
+1. **On real text, at equal parameter count, two factors per token beat one.**
+   Every 2-factor run (lowest 0.833) is above the 1-factor median; the
+   1-factor runs are spread widely (0.595–0.888), so its best run matches
+   the 2-factor runs but its typical run does not.
+2. **Three factors add nothing over two** here (median 0.889 vs 0.915, ranges
+   overlapping), with the MLP at 321 instead of 455. The useful order on
+   this task and size is 2.
+3. The gain is largest where the state changes most (≥ 5 operations: 0.761 →
+   0.873) and present in distribution too (2 operations: 0.890 → 0.945).
+4. Training cost in this pure-PyTorch implementation: 14 / 33 / 75 min per
+   run. Not an inference measurement and not the fla kernel.
+5. Scope: one task, one model size, 5 runs per order, float32 pure-PyTorch
+   DeltaProduct without the decay gate. Shashwat's 8 000-step 2-factor runs
+   (E 0.745–0.877) were below these, so the longer budget mattered.
+
+Per the rule, **the learned gate goes on Boxes next.**
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting

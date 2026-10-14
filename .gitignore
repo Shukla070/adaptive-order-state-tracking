@@ -32,3 +32,6 @@ nohup.out
 
 # trained models saved by exp_gate_train.py --save_dir (large binary files)
 checkpoints/
+
+# Boxes dataset, downloaded by work/exp_boxes_order.py (28 MB zip)
+boxes_data/
