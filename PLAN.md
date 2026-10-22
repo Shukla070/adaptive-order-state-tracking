@@ -1634,6 +1634,38 @@ procedure with its restart count, never as the gate's per-run reliability.
 gate runs on Boxes are made without restarts, with enough runs to report a
 fraction.
 
+**Result (14 October; `results/gate_restart.json`, `.log`; 6.0 h): 18 of 20
+exact** [0.70, 0.97] — the rule's bar, met exactly. **Applied: the restart
+procedure is the standard way to train the gate from here on**, reported as
+a procedure with its restart count.
+
+| | count |
+|---|---|
+| base seeds ending exact | 18 / 20 |
+| first attempts that passed the check | 11 / 20 (expected about 12) |
+| restarts | 24 (12 000 steps against 400 000 completed: 3% extra) |
+| attempts per seed | 1 ×10, 2 ×2, 3 ×4, 5 ×4 |
+| passed the check and still failed ("missed") | 1 (seed 36, attempt 3) |
+| all four checked attempts below 1.20 | 4 seeds (33, 39, 42, 44); the unchecked 5th attempt succeeded in 3 |
+
+1. **Attempts that passed the check succeeded 15 of 16 times**; counting the
+   two unchecked fifth attempts that were also above 1.20, 17 of 18. The one
+   miss (attempt 3 of seed 36) sat just above the bar (1.211) and failed in a
+   new way: it learned the task only partly (token 0.848, loss stuck near 0.4–0.6)
+   with 3.75 factors on 5-cycles and 1.10 on transpositions — not the
+   under-allocate-and-learn-nothing failure seen before.
+2. **The check also restarts runs that would have succeeded.** Seed 39's fifth
+   attempt was at 1.129 at step 500 (below the bar), ran unchecked, and reached
+   the exact allocation — as seed 18 did in the 20-run study (1.167). Seed 44's
+   fifth attempt (1.147) failed. How many of the 24 restarted attempts would
+   have succeeded is unknown: they were stopped.
+3. **Checked attempts passed 16 of 40 times** [0.26, 0.55] — 11/20 first attempts,
+   5/20 later ones. Small numbers; no trend is read from the split.
+4. **Against the plain recipe** (13/20, `gate_early_B20`), 18/20 is higher but not
+   separated by these sample sizes (Fisher exact, two-sided p = 0.13; intervals
+   [0.43, 0.82] and [0.70, 0.97] overlap). The claim is "the procedure reached
+   18/20 at 3% extra compute", not "restarts are proven better".
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
