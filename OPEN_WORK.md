@@ -78,7 +78,7 @@ agreement) but T3 and the margin check show bf16 ties, not a bug;
 (3) restart rule — *done 14 Oct: 18/20 exact [0.70, 0.97], meets the bar; restarts are now the standard training procedure (24 restarts, 3% extra steps; one miss; PLAN "Restart rule")*; (4a) Boxes order sweep — *done 14 Oct: ORDER MATTERS*
 (E median 0.810 / 0.915 / 0.889 for 1 / 2 / 3 factors, 2 factors 5/5 above
 the 1-factor median; PLAN "Boxes order sweep") → next: the learned gate on
-Boxes, compared against fixed 2 and 3 factors;
+Boxes — *built and pre-registered 22 Oct* (PLAN "Learned gate on Boxes": hand rule + γ probe on dev, then 5 final runs);
 (4) Boxes order sweep → gate on Boxes or chess; (5) A₅ written up as is.
 The items below are the 8 Oct queue, kept as the record.
 

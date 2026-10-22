@@ -1666,6 +1666,68 @@ a procedure with its restart count.
    [0.43, 0.82] and [0.70, 0.97] overlap). The claim is "the procedure reached
    18/20 at 3% extra compute", not "restarts are proven better".
 
+### Learned gate on Boxes — pre-registered 22 October, before any run
+
+*Question.* On Boxes, can the learned gate keep the accuracy of 2 factors per
+token while using fewer, and does it give the second factor to the tokens that
+change the state? The gate gets no labels; token kinds are used only to read
+its allocation afterwards.
+
+*Setup.* `work/exp_boxes_gate.py`. Identical to the order sweep (Shashwat's
+model and data, 2 layers, 16 000 steps, batch 64, same optimiser, schedule,
+seed scheme and quick evaluation) except: maximum order **K = 2** (the sweep
+found a third factor adds nothing); the gate is `src/gating.py`'s HaltingGate
+with the S₅ recipe (open start, bias 4; hard straight-through gates from step 1;
+first factor always on; penalty γ × mean order over non-padding tokens,
+ramped linearly from step 1 to γ over 4 000 steps). Model size held at
+469,120 parameters: the gate's 16.8k parameters come out of the MLP width
+(455 → 422). Float32 throughout. Self-tests G1–G7: an open gate reproduces
+the original branch bit for bit; a closed second factor equals a
+one-factor recurrence (float64, 4e-16); per-token closing equals an explicit
+loop; the training loop reproduces `run_one`'s losses exactly; padding is
+excluded from the order; the γ choice and decisions on known answers. Each
+new check confirmed to fail on a broken version (gate on v instead of β,
+rule giving query tokens 2, padding counted, first factor allowed to close,
+γ chosen by best dev score alone).
+
+*Arms.*
+- **Reference, not re-run:** fixed 1 (median E 0.810) and fixed 2 (0.915),
+  the 5 + 5 runs of `results/boxes_order.json`, same code path.
+- **Hand rule:** the second factor only for tokens inside the operation
+  sentences (boxes_lib's 'operation' kind), one elsewhere; 469,120
+  parameters; seeds 0–4. Tells whether an uneven allocation is enough here.
+- **Learned gate, probe:** γ ∈ {0.01, 0.03, 0.1}, seeds 0–1. γ is chosen on
+  the **dev split**, never the test split: the largest γ whose median dev E
+  is within 0.02 of the best γ's median dev E.
+- **Learned gate, final:** 5 new runs (seeds 10–14) at the chosen γ, reported
+  on the test split.
+
+*Restarts are not used,* although the restart procedure was adopted on
+14 October: its threshold (1.20 at step 500) is the S₅ allocation's, and Boxes
+has no known target allocation, so the rule cannot be applied as written.
+Every run logs its order and loss at step 500, so a Boxes signal can be
+defined afterwards if outcomes split.
+
+*Decision (final stage, 5 runs).* Bar E ≥ 0.885 (fixed-2 median − 0.03).
+- **NOT CONVERGED** (checked first, as in the sweep): no decision; rerun longer.
+- **GATE WORKS:** median E ≥ 0.885 and median order ≤ 1.5 → the gate on Boxes
+  goes into the faster path next (timing).
+- **ACCURACY, NO SAVING:** median E ≥ 0.885, order > 1.5 → reported; a larger γ
+  is tried only if the hand rule shows a cheaper allocation works.
+- **LOSES ACCURACY:** median E < 0.885 → read against the hand rule: if the
+  rule reaches the bar, the structure exists and the gate misses it (look
+  for our setup's fault first); if not, the second factor's value is not
+  concentrated in operation tokens.
+- **Mechanism, reported either way:** operation tokens get a higher mean
+  order than description tokens in at least 4 of 5 runs.
+- **Hand rule:** median E ≥ 0.885 → an uneven allocation is enough here.
+
+*Prediction (weakly held).* The hand rule comes close to fixed 2 at about
+1.1–1.3 factors per token; the gate settles between 1.1 and 1.5 at γ 0.01–0.03
+and collapses towards 1 at γ 0.1.
+
+*Cost.* Probe: 11 runs × ~33–35 min ≈ 6.3 h (one night). Final: 5 runs ≈ 3 h.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
