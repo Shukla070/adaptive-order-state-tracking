@@ -29,8 +29,10 @@ E = unweighted mean exact match over 3, 4 and 5+ operations (as in the sweep).
 Order = mean factors per non-padding token with hard gates, over both layers.
 
 Decision (final stage, 5 runs), written before any run
-  GATE WORKS              median E >= 0.885 and median order <= 1.5
-  ACCURACY, NO SAVING     median E >= 0.885 and median order > 1.5
+  GATE WORKS              median E >= 0.885 and median order <= 1.6
+  ACCURACY, NO SAVING     median E >= 0.885 and median order > 1.6
+                          (bar amended from 1.5 on 22 Oct before any full run: on the
+                          test split the hand rule itself costs 1.508)
   LOSES ACCURACY          median E < 0.885; read against the rule arm
   NOT CONVERGED           (checked first) median quick-eval E rose > 0.03 over the
                           last quarter of training: no decision, rerun longer
@@ -74,7 +76,11 @@ import torch.nn.functional as F  # noqa: E402
 K = 2
 TARGET_PARAMS = eo.REF_PARAMS            # 469,120: Shashwat's fixed-2 Boxes model
 FIXED2_MEDIAN_E, FIXED1_MEDIAN_E = 0.915, 0.810   # results/boxes_order.json
-E_BAR, ORDER_BAR, SELECT_TOL = FIXED2_MEDIAN_E - 0.03, 1.5, 0.02
+# ORDER_BAR amended 22 Oct before any full run (PLAN.md): 1.5 -> 1.6. The test split spreads
+# examples evenly over 0-8 operations, so operation tokens are about half of all tokens and the
+# hand rule itself costs 1.508 there; 1.6 means at least 40% of second factors skipped.
+E_BAR, ORDER_BAR, SELECT_TOL = FIXED2_MEDIAN_E - 0.03, 1.6, 0.02
+IN_DIST_MAX_OPS = 2           # order is also reported on test examples like the training data
 PROBE_GAMMAS, PROBE_SEEDS, RULE_SEEDS, FINAL_SEEDS = (0.01, 0.03, 0.1), (0, 1), (0, 1, 2, 3, 4), (10, 11, 12, 13, 14)
 RAMP, GATE_BIAS, GATE_MLP = 4000, 4.0, 64
 KIND_NAMES = ["description", "operation", "query", "answer"]
@@ -196,6 +202,7 @@ def evaluate(model, task, mode, device, n=None):
     G = len(task.group_names)
     right, total = torch.zeros(G), torch.zeros(G)
     osum = torch.zeros(len(KIND_NAMES)); ocnt = torch.zeros(len(KIND_NAMES))
+    gsum = torch.zeros(G); gcnt = torch.zeros(G)
     for b in task.eval_batches(n):
         bd = bl.Batch(*[t.to(device) for t in b])
         if mode == "rule":
@@ -206,16 +213,21 @@ def evaluate(model, task, mode, device, n=None):
         for ki in range(len(KIND_NAMES)):
             sel = b.kinds == ki
             osum[ki] += nt[sel].sum(); ocnt[ki] += sel.sum()
+        valid = b.kinds >= 0
+        for gi in range(G):
+            sel = valid & (b.group == gi)
+            gsum[gi] += nt[sel].sum(); gcnt[gi] += sel.sum()
     model.train()
     acc = {name: (right[i] / total[i]).item() if total[i] > 0 else float("nan") for i, name in enumerate(task.group_names)}
     by_kind = {KIND_NAMES[i]: (osum[i] / ocnt[i]).item() for i in range(len(KIND_NAMES)) if ocnt[i] > 0}
     order = (osum.sum() / ocnt.sum()).item()
-    return acc, order, by_kind
+    by_group = {name: (gsum[i] / gcnt[i]).item() for i, name in enumerate(task.group_names) if gcnt[i] > 0}
+    return acc, order, by_kind, by_group
 
 
 # ----------------------------------------------------------------------------- training
 
-def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print):
+def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print, save_path=None):
     """Mirrors boxes_lib.run_one (same seed handling, optimiser, schedule, clipping,
     batch generator), plus the gate's budget penalty and the rule's gates."""
     bl.set_seed(seed)
@@ -256,14 +268,23 @@ def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print):
                 f"  gamma_eff {gw:.4f}  {(time.time() - t0) / 60:.1f} min")
             run_l, run_o = [], []
         if a.eval_every and step % a.eval_every == 0:
-            acc, o, _ = evaluate(model, task, mode, device, n=a.quick_n)
+            acc, o, _, _ = evaluate(model, task, mode, device, n=a.quick_n)
             curve_eval.append((step, acc))
             log(f"  [{mode} g{gamma} seed{seed}]   quick-eval E {eo.extrap_score(acc):.3f}  order {o:.3f}")
-    final, order, by_kind = evaluate(model, task, mode, device)
-    dev, dev_order, _ = evaluate(model, dtask, mode, device) if dtask is not None else ({}, None, None)
+    final, order, by_kind, by_group = evaluate(model, task, mode, device)
+    dev, dev_order, _, _ = evaluate(model, dtask, mode, device) if dtask is not None else ({}, None, None, None)
+    buckets = getattr(task, "bucket_of_group", None) or []
+    in_dist = [g for g, bk in zip(task.group_names, buckets) if bk <= IN_DIST_MAX_OPS and g in by_group]
+    order_in = statistics.mean(by_group[g] for g in in_dist) if in_dist else None
+    if save_path:
+        os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
+        torch.save({"state_dict": model.state_dict(), "mode": mode, "gamma": gamma, "seed": seed, "d_ff": d_ff,
+                    "build": {k: getattr(a, k) for k in ("d", "layers", "heads", "head_dim", "chunk", "conv_k")},
+                    "vocab_size": task.vocab_size, "K": K}, save_path)
     return {"mode": mode, "gamma": gamma, "seed": seed, "params": bl.n_params(model), "d_ff": d_ff, "steps": step,
             "diverged": diverged, "minutes": (time.time() - t0) / 60, "final": final,
             "extrap": eo.extrap_score(final) if all(c in final for c in eo.EXTRAP) else None, "order": order, "order_by_kind": by_kind,
+            "order_by_group": by_group, "order_in_dist": order_in, "checkpoint": save_path,
             "dev": dev, "dev_extrap": eo.extrap_score(dev) if dev else None, "at500": at500,
             "curve_loss": curve_loss, "curve_eval": curve_eval}
 
@@ -399,6 +420,8 @@ def selftest(device):
     check("ACCURACY, NO SAVING", decide_gate([0.92] * 5, [1.8] * 5) == "ACCURACY, NO SAVING")
     check("LOSES ACCURACY", decide_gate([0.85] * 5, [1.1] * 5) == "LOSES ACCURACY")
     check("bar is 0.885 inclusive", decide_gate([0.885] * 5, [1.5] * 5) == "GATE WORKS" and decide_gate([0.8849] * 5, [1.5] * 5) == "LOSES ACCURACY")
+    check("order bar is 1.6 inclusive (amended from 1.5)", decide_gate([0.9] * 5, [1.6] * 5) == "GATE WORKS"
+          and decide_gate([0.9] * 5, [1.61] * 5) == "ACCURACY, NO SAVING")
     bk = [{"operation": 1.6, "description": 1.1}] * 4 + [{"operation": 1.0, "description": 1.2}]
     check("mechanism: 4 of 5 runs is enough, 3 of 5 is not",
           mechanism_ok(bk) == (True, 4) and mechanism_ok(bk[:3] + bk[-1:] * 2) == (False, 3))
@@ -413,6 +436,22 @@ def selftest(device):
     r2 = run(ab2, tk, None, "rule", 0.0, 0, 32, "cpu", 3, 4, log=lambda *_: None)
     check("rule run: operation tokens at 2, description at 1",
           abs(r2["order_by_kind"].get("operation", 0) - 2) < 1e-9 and abs(r2["order_by_kind"].get("description", 0) - 1) < 1e-9, str(r2["order_by_kind"]))
+    check("rule run: order 1.3 in every bucket and on 0-2 operations (3 of 10 tokens are operations)",
+          all(abs(v - 1.3) < 1e-6 for v in r2["order_by_group"].values()) and abs(r2["order_in_dist"] - 1.3) < 1e-6,
+          str(r2["order_by_group"]))
+    import tempfile
+    tmp = os.path.join(tempfile.mkdtemp(), "m.pt")
+    r3 = run(ab2, tk, None, "learned", 0.1, 0, 32, "cpu", 3, 4, log=lambda *_: None, save_path=tmp)
+    ck = torch.load(tmp)
+    m2 = build_model(tk.vocab_size, ab2, "learned", 32)
+    m2.load_state_dict(ck["state_dict"])
+    xb = tk.train_batch(4, torch.Generator().manual_seed(5))
+    m2.eval()
+    a1 = m2(xb.x)
+    bl.set_seed(123)
+    m3 = build_model(tk.vocab_size, ab2, "learned", 32); m3.load_state_dict(ck["state_dict"]); m3.eval()
+    check("saved model reloads and gives the same output; checkpoint path recorded",
+          r3["checkpoint"] == tmp and torch.equal(a1, m3(xb.x)) and ck["d_ff"] == 32 and ck["mode"] == "learned")
     print("SELF-TEST", "PASSED" if ok else "FAILED")
     return ok
 
@@ -480,7 +519,9 @@ def summary(res):
                 bk = "  ".join(f"{k} {v:.2f}" for k, v in r["order_by_kind"].items())
                 dv = f"dev E {r['dev_extrap']:.3f}  " if r.get("dev_extrap") is not None else ""
                 a5 = r.get("at500") or {}
-                print(f"     seed {r['seed']:>2}: test E {r['extrap']:.3f}  {dv}order {r['order']:.3f}  [{bk}]"
+                oi = r.get("order_in_dist")
+                oi = f" (0-2 ops {oi:.3f})" if oi is not None else ""
+                print(f"     seed {r['seed']:>2}: test E {r['extrap']:.3f}  {dv}order {r['order']:.3f}{oi}  [{bk}]"
                       f"  step-500 order {a5.get('order', float('nan')):.3f}")
         if rs and all(r.get("dev_extrap") is not None for r in rs):
             probe[g] = [r["dev_extrap"] for r in rs]
@@ -507,6 +548,8 @@ def main():
     ap.add_argument("--batch_size", type=int, default=64)
     ap.add_argument("--boxes_dir", default=os.path.join(REPO, "boxes_data"))
     ap.add_argument("--out", default=os.path.join(REPO, "results", "boxes_gate.json"))
+    ap.add_argument("--save_dir", default=os.path.join(REPO, "checkpoints", "boxes_gate"),
+                    help="every trained model is saved here, for timing on the faster path later")
     ap.add_argument("--device", default=bl.DEVICE)
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--summary", action="store_true")
@@ -544,7 +587,8 @@ def main():
             continue
         print(f"\n>>> {k}  ({time.strftime('%H:%M')})", flush=True)
         r = run(base, task, dtask, mode, g, s, d_ff[mode], args.device, args.steps, args.batch_size,
-                log=lambda *m: print(*m, flush=True))
+                log=lambda *m: print(*m, flush=True),
+                save_path=os.path.join(args.save_dir, f"{mode}_g{g}_seed{s}.pt") if args.save_dir else None)
         r["sig"] = sig
         res["runs"][k] = r
         bl.save_results(args.out, res)

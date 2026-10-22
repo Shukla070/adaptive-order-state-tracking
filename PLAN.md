@@ -1728,6 +1728,24 @@ and collapses towards 1 at γ 0.1.
 
 *Cost.* Probe: 11 runs × ~33–35 min ≈ 6.3 h (one night). Final: 5 runs ≈ 3 h.
 
+*Amendment, 22 October, after the 300-step smoke test and before any full run*
+(`results/boxes_gate_smoke.json`; no accuracy is readable at 300 steps — every
+E ≤ 0.12). **The order bar is raised from 1.5 to 1.6.** Reason: the hand rule's
+order is fixed by the data, not by training, and on the test split it is
+**1.508** — the test split spreads examples evenly over 0–8 operations, so
+operation tokens are about half of all tokens. The 1.5 bar was set expecting
+1.1–1.3 without measuring this; it would have called the reference allocation
+itself "no saving". 1.6 = at least 40% of second factors skipped. Our error,
+corrected before results. Also added: the order on test examples with 0–2
+operations (like training data) is reported beside the overall order, and
+every trained model is saved (`checkpoints/boxes_gate/`) for timing later.
+Self-tests updated (bar boundary; per-bucket order; save and reload).
+Smoke observations, not evidence: in 300 steps the gate had already dropped
+to 1.71–1.92 at every γ (penalty still ≤ 0.0075 then), and gave operation
+tokens fewer factors than description tokens. Adam moves the gate at full
+speed under any consistent push, which is what made the A₅ gate collapse;
+whether the task pushes back here is what the probe measures.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
