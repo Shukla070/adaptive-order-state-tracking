@@ -43,12 +43,37 @@ Restarts are not used: the adopted rule's threshold (1.20 at step 500) belongs
 to the S5 allocation, and Boxes has no known target allocation. Every run logs
 its order and task loss at step 500 so a Boxes signal can be defined later.
 
+Follow-up, pre-registered 23 October after the final stage lost accuracy (PLAN.md);
+amended the same day, before any follow-up run
+  Scores are LATE AVERAGES: E averaged over the last 4 quick evaluations (steps 10k-16k).
+  With a constant learning rate, final-step E swings by ~0.03 between evaluations; fixed
+  2's final-E median (0.915) is 0.04 above its late average (0.872), so the 0.885 bar
+  would fail fixed 2 itself in about 2 of 3 repeats. Bars are now relative to the fixed-2
+  reference's median late average: bar = median - 0.03.
+  layers21  fixed orders [2, 1]: 2 factors in the first layer, 1 in the second, the
+            second layer really built with one factor. No gate. 469,120 parameters
+            (MLP width 522). Seeds 0-7. Plus 3 more fixed-2 runs ('fixed22', seeds 5-7,
+            identical to the sweep's fixed 2: self-test G10), so the reference has 8.
+            Median late average >= bar -> [2,1] HOLDS: time it against fixed 2 next.
+            Otherwise -> [2,1] LOSES ACCURACY. Mann-Whitney p against fixed 1 and
+            fixed 2 is reported beside the decision, not used for it.
+  probe2    the learned gate at gamma 0.001 and 0.003, seeds 0-2; a hypothesis test (is
+            the penalty too strong for this task?), not a fix. gamma chosen on the DEV
+            late average by the usual rule; the final stage (5 runs, seeds 10-14) runs
+            only if that median reaches bar - 0.03, and is decided with late averages:
+            median >= bar and order <= 1.6 -> GATE WORKS (etc.).
+            Read-out: change in order over the last quarter of training (median
+            over runs); "settles" = falls by at most 0.02.
+
 Usage
   python work/exp_boxes_gate.py --selftest
   python -u work/exp_boxes_gate.py --stage probe --steps 300 --out results/boxes_gate_smoke.json   # smoke
   nohup python -u work/exp_boxes_gate.py --stage probe > results/boxes_gate_probe.log 2>&1 &
   python work/exp_boxes_gate.py --summary
   nohup python -u work/exp_boxes_gate.py --stage final --gamma <chosen> > results/boxes_gate_final.log 2>&1 &
+  python -u work/exp_boxes_gate.py --stage layers21 --steps 300 --out results/boxes_followup_smoke.json   # smoke
+  python -u work/exp_boxes_gate.py --stage probe2 --steps 300 --out results/boxes_followup_smoke.json     # smoke
+  nohup bash work/run_boxes_followup.sh > results/boxes_followup_driver.log 2>&1 &
 """
 
 import argparse
@@ -86,6 +111,19 @@ RAMP, GATE_BIAS, GATE_MLP = 4000, 4.0, 64
 KIND_NAMES = ["description", "operation", "query", "answer"]
 OPERATION = 1
 DEV_PER_BUCKET = 1000
+# Follow-up, 23 October (see the module docstring and PLAN.md)
+PROBE2_GAMMAS, PROBE2_SEEDS = (0.001, 0.003), (0, 1, 2)
+LAYER_ORDERS = (2, 1)
+FIXED_ORDERS = {"fixed21": LAYER_ORDERS, "fixed22": (2, 2)}
+# Amended 23 Oct before any follow-up run (PLAN.md): 8 runs of [2, 1], and 3 more fixed-2
+# runs (seeds 5-7, this code path) so the fixed-2 reference has 8 runs (5 from the sweep).
+LAYER_SEEDS, REF2_SEEDS = (0, 1, 2, 3, 4, 5, 6, 7), (5, 6, 7)
+LATE_ORDER_DROP = 0.02
+# Steadier score, 23 Oct: E averaged over the last LATE_N quick evaluations (steps 10k-16k
+# of 16k). Final-step E swings by ~0.03 between evaluations because the learning rate is
+# constant; fixed 2's final-E median (0.915) sits 0.04 above its late average (0.872).
+LATE_N, LATE_TOL = 4, 0.03
+SWEEP_JSON = os.path.join(REPO, "results", "boxes_order.json")
 
 
 # ----------------------------------------------------------------------------- model
@@ -133,14 +171,31 @@ def branches(model):
     return [blk.mix.delta for blk in model.blocks]
 
 
-def build_model(vocab, a, mode, d_ff):
-    """mode: 'learned' | 'rule' | 'open'. The LM is built exactly as boxes_lib builds
-    it; gates (learned mode only) are created afterwards."""
+def build_model(vocab, a, mode, d_ff, orders=None):
+    """mode: 'learned' | 'rule' | 'open' | 'fixed21' | 'fixed22'. The LM is built exactly as
+    boxes_lib builds it; gates (learned mode only) are created afterwards. 'fixed21' rebuilds
+    layer i's branch with orders[i] factors (really fewer parameters and less compute,
+    not factors multiplied by zero) and runs it with every gate open; 'fixed22' is fixed 2
+    built the same way (the reference)."""
     an = argparse.Namespace(**{**vars(a), "n_h": K})
     m = bl.build(vocab, an, "delta", None, d_ff)
+    if mode in FIXED_ORDERS:
+        orders = FIXED_ORDERS[mode] if orders is None else orders
+        if len(orders) != len(m.blocks):
+            raise ValueError(f"orders {orders} given for {len(m.blocks)} layers")
+        for blk, n in zip(m.blocks, orders):
+            if n != K:
+                blk.mix.delta = bl.DeltaProductBranch(an.d, an.heads, an.head_dim, n, an.chunk, an.conv_k)
+            blk.mix.delta = GatedBranch(blk.mix.delta, "open", an.d)
+        return m
     for blk in m.blocks:
         blk.mix.delta = GatedBranch(blk.mix.delta, mode, an.d)
     return m
+
+
+def layer_orders(model):
+    """Factors per layer as built (n_h of each branch)."""
+    return [br.base.n_h for br in branches(model)]
 
 
 def matched_d_ff(vocab, a, mode, target=TARGET_PARAMS):
@@ -241,6 +296,7 @@ def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print, s
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_at)
     gen = torch.Generator().manual_seed(seed * 7919 + 1)
     t0, curve_loss, curve_eval, run_l, run_o, diverged = time.time(), [], [], [], [], False
+    curve_order, curve_dev = [], []
     at500 = None
     for step in range(1, steps + 1):
         b = bl.Batch(*[t.to(device) for t in task.train_batch(bs, gen)])
@@ -270,7 +326,14 @@ def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print, s
         if a.eval_every and step % a.eval_every == 0:
             acc, o, _, _ = evaluate(model, task, mode, device, n=a.quick_n)
             curve_eval.append((step, acc))
-            log(f"  [{mode} g{gamma} seed{seed}]   quick-eval E {eo.extrap_score(acc):.3f}  order {o:.3f}")
+            curve_order.append((step, o))
+            msg = f"  [{mode} g{gamma} seed{seed}]   quick-eval E {eo.extrap_score(acc):.3f}  order {o:.3f}" if has_extrap(acc) else ""
+            if dtask is not None and step > steps - LATE_N * a.eval_every:   # dev at the evaluations the late average uses
+                dacc = evaluate(model, dtask, mode, device, n=a.quick_n)[0]
+                curve_dev.append((step, dacc))
+                msg += f"  dev E {eo.extrap_score(dacc):.3f}" if has_extrap(dacc) else ""
+            if msg:
+                log(msg)
     final, order, by_kind, by_group = evaluate(model, task, mode, device)
     dev, dev_order, _, _ = evaluate(model, dtask, mode, device) if dtask is not None else ({}, None, None, None)
     buckets = getattr(task, "bucket_of_group", None) or []
@@ -280,16 +343,67 @@ def run(a, task, dtask, mode, gamma, seed, d_ff, device, steps, bs, log=print, s
         os.makedirs(os.path.dirname(os.path.abspath(save_path)), exist_ok=True)
         torch.save({"state_dict": model.state_dict(), "mode": mode, "gamma": gamma, "seed": seed, "d_ff": d_ff,
                     "build": {k: getattr(a, k) for k in ("d", "layers", "heads", "head_dim", "chunk", "conv_k")},
-                    "vocab_size": task.vocab_size, "K": K}, save_path)
+                    "vocab_size": task.vocab_size, "K": K, "layer_orders": layer_orders(model)}, save_path)
     return {"mode": mode, "gamma": gamma, "seed": seed, "params": bl.n_params(model), "d_ff": d_ff, "steps": step,
             "diverged": diverged, "minutes": (time.time() - t0) / 60, "final": final,
             "extrap": eo.extrap_score(final) if all(c in final for c in eo.EXTRAP) else None, "order": order, "order_by_kind": by_kind,
             "order_by_group": by_group, "order_in_dist": order_in, "checkpoint": save_path,
             "dev": dev, "dev_extrap": eo.extrap_score(dev) if dev else None, "at500": at500,
-            "curve_loss": curve_loss, "curve_eval": curve_eval}
+            "curve_loss": curve_loss, "curve_eval": curve_eval, "curve_order": curve_order, "curve_dev": curve_dev,
+            "late_E": late_mean(curve_eval), "dev_late_E": late_mean(curve_dev),
+            "layer_orders": layer_orders(model)}
 
 
 # ----------------------------------------------------------------------------- decisions
+
+def has_extrap(acc):
+    return all(c in acc for c in eo.EXTRAP)
+
+
+def late_mean(curve, n=LATE_N):
+    """Mean E over the last n quick evaluations of one run; None if fewer than n.
+    curve: [(step, acc dict)] (lists after a JSON round trip)."""
+    if len(curve) < n or not all(has_extrap(acc) for _, acc in curve[-n:]):
+        return None
+    return sum(eo.extrap_score(acc) for _, acc in curve[-n:]) / n
+
+
+def mwu_p(a, b):
+    """Exact two-sided Mann-Whitney p (ties count 1/2) by enumerating every split of the
+    pooled values. Reported beside a decision, never used to make one."""
+    import itertools
+    pooled, na = list(a) + list(b), len(a)
+
+    def U(ia):
+        sa = set(ia)
+        xa = [pooled[i] for i in ia]
+        xb = [pooled[i] for i in range(len(pooled)) if i not in sa]
+        return sum((x > y) + 0.5 * (x == y) for x in xa for y in xb)
+
+    u0 = U(range(na))
+    us = [U(c) for c in itertools.combinations(range(len(pooled)), na)]
+    lo = sum(u <= u0 + 1e-12 for u in us) / len(us)
+    hi = sum(u >= u0 - 1e-12 for u in us) / len(us)
+    return min(1.0, 2 * min(lo, hi))
+
+
+def references(path=SWEEP_JSON, runs=()):
+    """Late averages of the references: fixed 1 and fixed 2 from the order sweep, plus
+    this script's fixed-2 runs ('fixed22', same code path; self-test G10)."""
+    ref = {1: [], 2: []}
+    if os.path.exists(path):
+        with open(path) as f:
+            for k, r in json.load(f)["runs"].items():
+                nh = int(k.split("|nh")[1].split("|")[0])
+                if nh in ref and late_mean(r["curve_eval"]) is not None:
+                    ref[nh].append(late_mean(r["curve_eval"]))
+    ref[2] += [r["late_E"] for r in runs if r["mode"] == "fixed22" and r.get("late_E") is not None]
+    return ref
+
+
+def late_bar(ref2):
+    return statistics.median(ref2) - LATE_TOL
+
 
 def choose_gamma(probe):
     """probe: {gamma: [dev E per run]} -> the largest gamma whose median dev E is within
@@ -312,6 +426,64 @@ def mechanism_ok(by_kinds):
     """At least 4 of 5 runs give operation tokens a higher order than description tokens."""
     hits = sum(bk["operation"] > bk["description"] for bk in by_kinds)
     return hits >= 4, hits
+
+
+def decide_layers(late21, ref2):
+    """Follow-up arm layers21 (amended 23 Oct): [2, 1] holds if its median late average is at
+    least the fixed-2 reference's median late average minus LATE_TOL."""
+    return "[2,1] HOLDS" if statistics.median(late21) >= late_bar(ref2) - 1e-12 else "[2,1] LOSES ACCURACY"
+
+
+def late_order_change(curve_order, steps):
+    """Order at the last quick evaluation minus order at the last evaluation at or
+    before 3/4 of training (one run). None if there is no such pair."""
+    early = [(s, o) for s, o in curve_order if s <= 0.75 * steps]
+    if not early or not curve_order or curve_order[-1][0] == early[-1][0]:
+        return None
+    return curve_order[-1][1] - early[-1][1]
+
+
+def order_settles(curves, steps):
+    """Median over runs of the late order change, and whether it falls by at most
+    LATE_ORDER_DROP. curves: list of curve_order lists."""
+    ch = [c for c in (late_order_change(cv, steps) for cv in curves) if c is not None]
+    if not ch:
+        return None, None
+    m = statistics.median(ch)
+    return m, m >= -LATE_ORDER_DROP - 1e-9   # inclusive; tolerance for float rounding of the difference
+
+
+def probe_seeds(gamma):
+    return PROBE2_SEEDS if gamma in PROBE2_GAMMAS else PROBE_SEEDS
+
+
+def followup_gamma(runs):
+    """gamma chosen on the dev late average among PROBE2_GAMMAS, once every probe2 run
+    exists; else None. Returns (gamma, its median dev late average)."""
+    probe = {}
+    for g in PROBE2_GAMMAS:
+        rs = [r for r in runs if r["mode"] == "learned" and r["gamma"] == g and r["seed"] in PROBE2_SEEDS
+              and r.get("dev_late_E") is not None]
+        if len(rs) < len(PROBE2_SEEDS):
+            return None
+        probe[g] = [r["dev_late_E"] for r in rs]
+    g = choose_gamma(probe)
+    return g, statistics.median(probe[g])
+
+
+def decide_gate_late(lateEs, orders, ref2):
+    """Final-stage rule for the follow-up gammas: as decide_gate, with late averages and the
+    late bar in place of final-step E and 0.885."""
+    mE, mO = statistics.median(lateEs), statistics.median(orders)
+    if mE >= late_bar(ref2) - 1e-12:
+        return "GATE WORKS" if mO <= ORDER_BAR else "ACCURACY, NO SAVING"
+    return "LOSES ACCURACY"
+
+
+def final_allowed(dev_median, ref2):
+    """The follow-up final stage runs only if the chosen gamma's median dev late average
+    reaches the late bar minus LATE_TOL."""
+    return dev_median >= late_bar(ref2) - LATE_TOL - 1e-12
 
 
 # ----------------------------------------------------------------------------- self-test
@@ -452,6 +624,100 @@ def selftest(device):
     m3 = build_model(tk.vocab_size, ab2, "learned", 32); m3.load_state_dict(ck["state_dict"]); m3.eval()
     check("saved model reloads and gives the same output; checkpoint path recorded",
           r3["checkpoint"] == tmp and torch.equal(a1, m3(xb.x)) and ck["d_ff"] == 32 and ck["mode"] == "learned")
+    print("G8  fixed orders [2, 1] (follow-up, 23 Oct)")
+    small = bl.make_args(d=32, heads=2, head_dim=16, layers=2)
+    mf = build_model(40, small, "fixed21", 32)
+    check("layer orders as built: [2, 1]", layer_orders(mf) == [2, 1], str(layer_orders(mf)))
+    check("control: orders (2, 2) build [2, 2]", layer_orders(build_model(40, small, "fixed21", 32, orders=(2, 2))) == [2, 2])
+    k1 = branches(mf)[1].base.k.weight.shape[0]
+    check("second layer really has one factor's projections (k: H*dh rows, not 2*H*dh)", k1 == 2 * 16, f"{k1} rows")
+    kinds = torch.tensor([[0, 1, 2, 3, -1]])
+    mf(torch.randint(0, 40, kinds.shape))
+    mo = mean_order(mf, kinds >= 0).item()
+    check("order reported for [2, 1] is 1.5 per token", abs(mo - 1.5) < 1e-9, f"{mo}")
+    dt = torch.get_default_dtype(); torch.set_default_dtype(torch.float64)
+    b1 = bl.DeltaProductBranch(32, 2, 16, 1, 16, 4)
+    xx = torch.randn(2, 20, 32)
+    check("a one-factor branch run with open gates = the plain one-factor branch, exactly",
+          (GatedBranch(b1, "open", 32)(xx) - b1(xx)).abs().max().item() == 0.0)
+    torch.set_default_dtype(dt)
+    f21 = matched_d_ff(vocab, ab, "fixed21")
+    p21 = bl.n_params(build_model(vocab, ab, "fixed21", f21))
+    check("[2, 1] at matched width within 0.2% of 469,120", abs(p21 - TARGET_PARAMS) / TARGET_PARAMS < 0.002, f"d_ff {f21}, {p21:,}")
+    check("control: at the same width [2, 1] has fewer parameters than [2, 2]",
+          bl.n_params(build_model(vocab, ab, "fixed21", f21)) < bl.n_params(build_model(vocab, ab, "fixed21", f21, orders=(2, 2))))
+    ab3 = bl.make_args(d=32, heads=2, head_dim=16, layers=2, log_every=1000, eval_every=2, warmup=2)
+    tmp2 = os.path.join(tempfile.mkdtemp(), "f.pt")
+    r4 = run(ab3, tk, None, "fixed21", 0.0, 0, 32, "cpu", 4, 4, log=lambda *_: None, save_path=tmp2)
+    check("fixed21 run: order 1.5 for every kind, layer orders recorded, quick-eval orders recorded",
+          all(abs(v - 1.5) < 1e-6 for v in r4["order_by_kind"].values()) and r4["layer_orders"] == [2, 1]
+          and [s for s, _ in r4["curve_order"]] == [2, 4], f"{r4['order_by_kind']} {r4['curve_order']}")
+    ck2 = torch.load(tmp2)
+    m4 = build_model(tk.vocab_size, ab3, "fixed21", 32); m4.load_state_dict(ck2["state_dict"]); m4.eval()
+    m5 = build_model(tk.vocab_size, ab3, "fixed21", 32); m5.load_state_dict(ck2["state_dict"]); m5.eval()
+    check("fixed21 checkpoint reloads with layer orders [2, 1] and the same output",
+          ck2["layer_orders"] == [2, 1] and torch.equal(m4(xb.x), m5(xb.x)))
+
+    print("G9  follow-up decisions and read-outs on known answers")
+    ref2_ = [0.853, 0.856, 0.872, 0.895, 0.902]          # fixed 2's late averages (sweep)
+    check("late bar = median fixed-2 late average - 0.03 (0.842 here)", abs(late_bar(ref2_) - 0.842) < 1e-12)
+    check("[2,1] bar inclusive", decide_layers([0.842] * 8, ref2_) == "[2,1] HOLDS" and decide_layers([0.8419] * 8, ref2_) == "[2,1] LOSES ACCURACY")
+    check("[2,1] decision uses the median", decide_layers([0.5, 0.6, 0.7, 0.85, 0.86, 0.9, 0.95, 0.99], ref2_) == "[2,1] HOLDS")
+    check("control: the old fixed bar 0.885 would fail fixed 2's own late averages", statistics.median(ref2_) < E_BAR)
+    check("gate rule with late averages: works / no saving / loses",
+          decide_gate_late([0.85] * 5, [1.2] * 5, ref2_) == "GATE WORKS" and decide_gate_late([0.85] * 5, [1.7] * 5, ref2_) == "ACCURACY, NO SAVING"
+          and decide_gate_late([0.83] * 5, [1.2] * 5, ref2_) == "LOSES ACCURACY")
+    check("final stage allowed at dev late >= bar - 0.03 (0.812 here)", final_allowed(0.812, ref2_) and not final_allowed(0.8119, ref2_))
+    f1_ = [0.614, 0.713, 0.799, 0.833, 0.881]
+    p_ = mwu_p(f1_, ref2_)
+    check("Mann-Whitney exact p: fixed 1 vs fixed 2 late averages = 2 x 7/252 = 0.0556", abs(p_ - 14 / 252) < 1e-9, f"{p_:.4f}")
+    check("Mann-Whitney: identical groups give p = 1", mwu_p([1, 2, 3], [1, 2, 3]) == 1.0)
+    acc_ = lambda e: {"ops=3": e, "ops=4": e, "ops>=5": e}
+    cur = [(s, acc_(e)) for s, e in zip(range(2000, 18000, 2000), (0.1, 0.2, 0.3, 0.4, 0.8, 0.9, 0.7, 0.6))]
+    check("late average = mean of the last 4 quick evaluations (0.75)", abs(late_mean(cur) - 0.75) < 1e-12, f"{late_mean(cur)}")
+    check("late average: None with fewer than 4 evaluations", late_mean(cur[:3]) is None)
+    check("late average survives a JSON round trip", abs(late_mean(json.loads(json.dumps(cur))) - 0.75) < 1e-12)
+    cv = [(2000, 1.5), (4000, 1.4), (12000, 1.3), (14000, 1.25), (16000, 1.2)]
+    ch = late_order_change(cv, 16000)
+    check("late order change: last eval minus the last eval at or before 3/4 (1.2 - 1.3)", abs(ch + 0.1) < 1e-12, f"{ch}")
+    check("late order change: None without an evaluation after 3/4", late_order_change([(2000, 1.5), (12000, 1.3)], 16000) is None)
+    mk = lambda d: [(12000, 1.5), (16000, 1.5 + d)]
+    m1_, ok1 = order_settles([mk(-0.01), mk(-0.02), mk(-0.05)], 16000)
+    m2_, ok2 = order_settles([mk(-0.03), mk(-0.03), mk(0.0)], 16000)
+    check("settles: median drop 0.02 counts (inclusive), 0.03 does not", ok1 is True and ok2 is False, f"{m1_:+.3f} {m2_:+.3f}")
+    check("follow-up gammas use 3 seeds, the first probe 2", probe_seeds(0.001) == (0, 1, 2) and probe_seeds(0.1) == (0, 1))
+    check("budget ramp reaches small gammas: 0.001 from step 4 000", budget_weight(4000, 0.001) == 0.001)
+    fr = lambda g, s, e: {"mode": "learned", "gamma": g, "seed": s, "dev_late_E": e, "dev_extrap": 0.0}
+    runs_ = [fr(0.001, s, e) for s, e in zip((0, 1, 2), (0.90, 0.91, 0.92))] + [fr(0.003, s, e) for s, e in zip((0, 1, 2), (0.89, 0.90, 0.905))]
+    check("follow-up gamma: largest within 0.02 of the best median dev late average (0.003 here, median 0.90)",
+          followup_gamma(runs_) == (0.003, 0.90))
+    check("follow-up gamma: no choice until every probe2 run exists", followup_gamma(runs_[:-1]) is None)
+    check("follow-up gamma: earlier probe gammas are not candidates",
+          followup_gamma(runs_ + [fr(0.1, s, 0.99) for s in (0, 1, 2)]) == (0.003, 0.90))
+
+    print("G10 the fixed-2 reference built here = the sweep's fixed 2; the run records late averages")
+    bl.set_seed(7); ma = bl.build(40, bl.make_args(d=32, heads=2, head_dim=16, layers=2, n_h=K), "delta", None, 32)
+    bl.set_seed(7); mb = build_model(40, small, "fixed22", 32)
+    sa, sb = ma.state_dict(), {k.replace(".base.", "."): v for k, v in mb.state_dict().items()}
+    check("fixed22: same parameters, same initial values as boxes_lib's fixed 2", sa.keys() == sb.keys() and all(torch.equal(sa[k], sb[k]) for k in sa))
+    xq = torch.randint(0, 40, (2, 9))
+    check("fixed22: same output as boxes_lib's fixed 2", torch.equal(ma(xq), mb(xq)))
+    check("fixed22 at the real size: d_ff 455, 469,120 parameters",
+          matched_d_ff(vocab, ab, "fixed22") == 455 and bl.n_params(build_model(vocab, ab, "fixed22", 455)) == TARGET_PARAMS)
+    ab4 = bl.make_args(d=32, heads=2, head_dim=16, layers=2, log_every=1000, eval_every=1, warmup=2)
+    r5 = run(ab4, tk, tk, "fixed22", 0.0, 0, 32, "cpu", 6, 4, log=lambda *_: None)
+    lm_ = late_mean(r5["curve_eval"])
+    check("run records the test late average and dev at the last 4 evaluations only",
+          r5["late_E"] is not None and abs(r5["late_E"] - lm_) < 1e-12 and [s for s, _ in r5["curve_dev"]] == [3, 4, 5, 6]
+          and r5["dev_late_E"] is not None, f"dev steps {[s for s, _ in r5['curve_dev']]}")
+    cv4 = [[s, {"ops=3": e, "ops=4": e, "ops>=5": e}] for s, e in zip(range(2000, 18000, 2000), (0, 0, 0, 0, 0.8, 0.8, 0.8, 0.8))]
+    sweep = {"runs": {f"boxes|delta|nh{n}|seed{s}": {"curve_eval": cv4} for n in (1, 2, 3) for s in (0, 1)}}
+    tmpj = os.path.join(tempfile.mkdtemp(), "sweep.json")
+    with open(tmpj, "w") as f:
+        json.dump(sweep, f)
+    rf = references(tmpj, runs=[{"mode": "fixed22", "late_E": 0.7}, {"mode": "fixed21", "late_E": 0.1}, {"mode": "learned", "late_E": 0.2}])
+    check("references: sweep fixed 1 and fixed 2 by n_h (fixed 3 left out), plus this script's fixed22 runs only",
+          sorted(round(x, 9) for x in rf[1]) == [0.8, 0.8] and sorted(round(x, 9) for x in rf[2]) == [0.7, 0.8, 0.8], str(rf))
     print("SELF-TEST", "PASSED" if ok else "FAILED")
     return ok
 
@@ -509,7 +775,7 @@ def summary(res):
     gammas = sorted({r["gamma"] for r in runs if r["mode"] == "learned"})
     probe = {}
     for g in gammas:
-        rs = [r for r in runs if r["mode"] == "learned" and r["gamma"] == g and r["seed"] in PROBE_SEEDS]
+        rs = [r for r in runs if r["mode"] == "learned" and r["gamma"] == g and r["seed"] in probe_seeds(g)]
         fin = [r for r in runs if r["mode"] == "learned" and r["gamma"] == g and r["seed"] in FINAL_SEEDS]
         for label, group in (("probe", rs), ("final", fin)):
             if not group:
@@ -521,17 +787,45 @@ def summary(res):
                 a5 = r.get("at500") or {}
                 oi = r.get("order_in_dist")
                 oi = f" (0-2 ops {oi:.3f})" if oi is not None else ""
-                print(f"     seed {r['seed']:>2}: test E {r['extrap']:.3f}  {dv}order {r['order']:.3f}{oi}  [{bk}]"
+                lm = late_mean(r.get("curve_eval") or [])
+                lm = f"(late {lm:.3f})  " if lm is not None else ""
+                dl = f"(dev late {r['dev_late_E']:.3f})  " if r.get("dev_late_E") is not None else ""
+                print(f"     seed {r['seed']:>2}: test E {r['extrap']:.3f} {lm}{dv}{dl}order {r['order']:.3f}{oi}  [{bk}]"
                       f"  step-500 order {a5.get('order', float('nan')):.3f}")
-        if rs and all(r.get("dev_extrap") is not None for r in rs):
+        if g in PROBE2_GAMMAS and rs:
+            m, ok = order_settles([r.get("curve_order") or [] for r in rs], rs[0]["steps"])
+            if m is not None:
+                print(f"     order change over the last quarter, median {m:+.3f} -> {'settles' if ok else 'still falling'}")
+        if g in PROBE_GAMMAS and rs and all(r.get("dev_extrap") is not None for r in rs):
             probe[g] = [r["dev_extrap"] for r in rs]
     if probe and all(len(v) == len(PROBE_SEEDS) for v in probe.values()) and len(probe) == len(PROBE_GAMMAS):
         print(f"\n  GAMMA CHOSEN ON DEV (largest within {SELECT_TOL} of the best median): {choose_gamma(probe)}")
+    ref = references(runs=runs)
+    fmt = lambda xs: "[" + " ".join(f"{x:.3f}" for x in sorted(xs)) + "]"
+    if ref[2]:
+        print(f"\n  FOLLOW-UP (amended 23 Oct): scores are late averages (mean E over the last {LATE_N} quick evaluations)")
+        print(f"     fixed 1 ({len(ref[1])} runs) {fmt(ref[1])} median {statistics.median(ref[1]):.3f}")
+        print(f"     fixed 2 ({len(ref[2])} runs, sweep + fixed22) {fmt(ref[2])} median {statistics.median(ref[2]):.3f}"
+              f"  -> bar {late_bar(ref[2]):.3f}")
+    g2 = followup_gamma(runs)
+    if g2 is not None and ref[2]:
+        print(f"  FOLLOW-UP GAMMA CHOSEN ON DEV LATE AVERAGE among {PROBE2_GAMMAS}: {g2[0]} (median dev late {g2[1]:.3f})"
+              f"  -> final stage {'runs' if final_allowed(g2[1], ref[2]) else 'not run: below bar - ' + str(LATE_TOL)}")
+    fx = [r for r in runs if r["mode"] == "fixed21" and r.get("late_E") is not None]
+    if fx and ref[2]:
+        L = [r["late_E"] for r in fx]
+        done = len(fx) >= len(LAYER_SEEDS) and len([r for r in runs if r["mode"] == "fixed22"]) >= len(REF2_SEEDS)
+        print(f"     fixed orders {list(LAYER_ORDERS)} ({len(fx)} runs, {fx[0]['params']:,} params) {fmt(L)} median {statistics.median(L):.3f}"
+              + (f"  -> {decide_layers(L, ref[2])}" if done else "  (incomplete)"))
+        print(f"       Mann-Whitney p (reported, not used): vs fixed 2 {mwu_p(L, ref[2]):.3f}, vs fixed 1 {mwu_p(L, ref[1]):.3f}")
     for g in gammas:
         fin = [r for r in runs if r["mode"] == "learned" and r["gamma"] == g and r["seed"] in FINAL_SEEDS]
         if len(fin) >= 5:
             rises = eo.late_rise([r["curve_eval"] for r in fin], fin[0]["steps"])
-            v = decide_gate([r["extrap"] for r in fin], [r["order"] for r in fin])
+            if g in PROBE2_GAMMAS:   # follow-up: late averages against the late bar (amended 23 Oct)
+                v = decide_gate_late([r["late_E"] for r in fin], [r["order"] for r in fin], ref[2])
+            else:
+                v = decide_gate([r["extrap"] for r in fin], [r["order"] for r in fin])
             v = "NOT CONVERGED" if rises == rises and rises > eo.LATE_RISE else v
             ok, hits = mechanism_ok([r["order_by_kind"] for r in fin])
             print(f"\n  DECISION (gamma {g}, {len(fin)} runs): {v}   median E {statistics.median(r['extrap'] for r in fin):.3f}, "
@@ -542,7 +836,7 @@ def summary(res):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stage", choices=("probe", "final"))
+    ap.add_argument("--stage", choices=("probe", "final", "probe2", "layers21"))
     ap.add_argument("--gamma", type=float, default=None, help="final stage: the gamma chosen on dev")
     ap.add_argument("--steps", type=int, default=eo.STEPS)
     ap.add_argument("--batch_size", type=int, default=64)
@@ -566,7 +860,7 @@ def main():
     task = bl.BoxesTask(base.boxes_dir, None, base.max_train_ops, base.train_n, base.eval_per_bucket)
     dtask = dev_task(task, base.boxes_dir)
     print(f"    {task.train_len_desc}; dev split {[len(v) for v in dtask.eval_sets.values()]}", flush=True)
-    d_ff = {m: matched_d_ff(task.vocab_size, base, m) for m in ("rule", "learned")}
+    d_ff = {m: matched_d_ff(task.vocab_size, base, m) for m in ("rule", "learned", "fixed21", "fixed22")}
     for m, f in d_ff.items():
         print(f"    {m}: d_ff {f}, params {bl.n_params(build_model(task.vocab_size, base, m, f)):,} (target {TARGET_PARAMS:,})", flush=True)
 
@@ -576,6 +870,14 @@ def main():
             plan.append(("rule", 0.0, s))
             if s in PROBE_SEEDS:
                 plan += [("learned", g, s) for g in PROBE_GAMMAS]
+    elif args.stage == "probe2":
+        plan = [("learned", g, s) for s in PROBE2_SEEDS for g in PROBE2_GAMMAS]
+    elif args.stage == "layers21":
+        plan = []
+        for s in LAYER_SEEDS:
+            plan.append(("fixed21", 0.0, s))
+            if s in REF2_SEEDS:
+                plan.append(("fixed22", 0.0, s))
     else:
         plan = [("learned", args.gamma, s) for s in FINAL_SEEDS]
 

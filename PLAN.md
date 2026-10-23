@@ -1803,6 +1803,114 @@ seeds 10–14, 16 000 steps.
   allocate by word type and nothing finer. Both are fixable; next experiment to be
   pre-registered before it runs.
 
+### Learned gate on Boxes — follow-up, pre-registered 23 October, before any run
+
+*Correction to the diagnosis above, first.* The result entry blamed mainly the
+one-way closing (closed logits at −6 to −70). Checking the order sweep's training
+losses points to a larger cause, also ours: **the penalty was mis-scaled for this
+task.** On the training data (0–2 operations) fixed 1 and fixed 2 end with task
+losses of 0.0042 and 0.0021 (medians, `results/boxes_order.json`) — a gap of about
+0.002 — while closing every second factor saves γ itself, 0.01 to 0.1, i.e. 5 to
+50 times the gap. The training objective therefore prefers one factor, and the
+gate did what it was asked; the second factor's value shows mostly on 3+
+operations, which training never sees. The γ grid was copied from S₅, where
+under-allocation makes the task unlearnable, without measuring this gap. The
+logit floor (the S₅ wall, which on 2 October removed saturation but did not
+change closure) is held back as the fallback: it can slow the closing but cannot
+change which allocation the objective prefers. One change at a time.
+
+*Arms* (`work/exp_boxes_gate.py --stage layers21 | probe2`; driver
+`work/run_boxes_followup.sh`; same data, model, optimiser, 16 000 steps).
+- **layers21 — fixed orders [2, 1]:** 2 factors in the first layer, 1 in the
+  second (the second layer really built with one factor's projections, not
+  multiplied by zero), no gate, MLP width 522 → 469,120 parameters. Seeds 0–4.
+  Tests the gate's one consistent finding (second layer closed in 7/7 runs).
+- **probe2 — the learned gate at γ 0.001 and 0.003** (below and above the 0.002
+  gap), seeds 0–2, otherwise the 22 October recipe.
+
+*Decisions, written before the runs.*
+- **layers21** (5 runs): median E ≥ 0.885 → **[2,1] HOLDS**: time [2, 1] against
+  fixed 2 (training step and inference, same GPU) next — the first measured
+  saving on a real task, with the order taken from the gate. Below → **[2,1]
+  LOSES ACCURACY**: the second layer's second factor matters, and the gate closed
+  it because of the penalty, not because it was unneeded.
+- **probe2:** γ chosen on dev among {0.001, 0.003} by the existing rule (largest γ
+  whose median dev E is within 0.02 of the best). The final stage (5 runs, seeds
+  10–14, decided by the 22 October rule: E ≥ 0.885 and order ≤ 1.6) runs only if
+  the chosen γ's median dev E is at least 0.855 (bar − 0.03); below that, the
+  probe already rules it out and the logit floor is next.
+- **Read-out:** median change in order over the last quarter of training;
+  "settles" = falls by at most 0.02.
+
+*Prediction (weakly held).* At γ 0.001 the order ends at 1.5 or above and
+settles; at γ 0.003 it ends between 1.1 and 1.5 and settles. **The scale
+explanation fails** if at γ 0.001 the order still ends below 1.2 or is still
+falling (late drop > 0.02): then the one-way closing is the cause and the logit
+floor is next. No prediction for [2, 1].
+
+*Self-tests* G8–G9 added (layer orders as built, the second layer's projections
+really one factor's, order 1.5 reported, a one-factor branch with open gates
+equals the plain branch exactly, 469,120 parameters, save and reload, decisions
+and read-outs on known answers); G1–G7 unchanged and passing. Each new check
+confirmed to fail on a broken version (layers built [1, 2]; second layer not
+rebuilt; bar exclusive; late change from the first evaluation; probe read with
+2 seeds; earlier γs allowed in the follow-up choice; quick-eval orders not
+recorded; settle threshold strict): 8/8 caught.
+
+*Cost.* Smoke (300 steps, both stages) ~20 min; layers21 ~2 h; probe2 ~3.4 h;
+one night. The 22 October decision (LOSES ACCURACY at γ 0.1) stands.
+
+*Amendment to the follow-up, 23 October, after a review and before any follow-up
+run.* Reason: Boxes scores are too noisy for the bars we set. With a constant
+learning rate, E swings by about 0.03 between evaluations within one run (e.g.
+fixed 2, seed 2, steps 8k–16k: 0.845, 0.803, 0.902, 0.893, 0.826), so final-step E
+depends on where training stops. The **late average** — E averaged over the last 4
+quick evaluations (steps 10k–16k, already logged, 500 examples per bucket) — is
+steadier. Recomputed from existing logs (post hoc; no decision is changed by it):
+
+| arm | median final E | median late average |
+|---|---|---|
+| fixed 1 | 0.810 | 0.799 |
+| fixed 2 | 0.915 | 0.872 |
+| fixed 3 | 0.889 | 0.897 |
+| gate γ 0.1, final | 0.835 | 0.842 |
+| hand rule | 0.793 | 0.785 |
+
+The 0.885 bar was fixed 2's final-E median − 0.03, and that median was the lucky end
+of its runs: resampling fixed 2's own runs, a 5-run median reaches 0.885 only 68% of
+the time on final E and 32% on the late average. Changes, all before running:
+- **All follow-up decisions use late averages.** Bar = median late average of the
+  fixed-2 reference − 0.03 (0.842 with the 5 sweep runs).
+- **layers21: 8 runs** of [2, 1] (seeds 0–7), **plus 3 fixed-2 runs** in this code
+  (seeds 5–7; self-test G10 shows the build is identical to the sweep's fixed 2), so
+  the reference has 8. [2,1] HOLDS if its median late average ≥ the bar. The exact
+  Mann–Whitney p against fixed 1 and fixed 2 is reported beside it, not used.
+- **probe2:** γ chosen on the dev late average (dev now evaluated at the same 4
+  late points); the final stage runs only if that median ≥ bar − 0.03, and is
+  decided with late averages (median ≥ bar and order ≤ 1.6 → GATE WORKS; ≥ bar and
+  order > 1.6 → ACCURACY, NO SAVING; else LOSES ACCURACY).
+- **The γ-scale explanation is a hypothesis, not a finding.** Against it: at γ 0.1
+  the gate kept the item words in 4 of 7 runs with logits still trainable (locally
+  the task valued them above the penalty), and γ 0.01 was not more accurate than
+  γ 0.1. The 0.002 gap is between separately trained models, not the value of a
+  factor inside the gated model. The prediction and its failure condition stand.
+
+*Corrections to earlier entries* (kept as written above; corrected here):
+- The 23 October result said the γ-0.1 gate's accuracy "is that of fixed 1". On
+  late averages it is **below fixed 2** (one-sided Mann–Whitney p = 0.014) and **not
+  distinguishable from fixed 1** (two-sided p = 0.69). The LOSES ACCURACY decision
+  stands, more firmly.
+- The order sweep's ORDER MATTERS rests on 5 runs per arm: fixed 2 above fixed 1 at
+  one-sided p = 0.028 (two-sided 0.056), on final E and on late averages alike.
+  Real but modest evidence.
+- The restart rule's 18/20 is not significantly better than 13/20 without restarts
+  (Fisher p = 0.13), and is on S₅ only.
+
+*Self-tests* G9–G10 extended (late average, bar, decisions, Mann–Whitney exact p
+against a known value, references, the fixed-2 build identical to the sweep's, dev
+evaluated only at the 4 late points). 17 deliberately broken versions, all caught.
+*Cost* ≈ 8.5 h (layers21 ≈ 5 h, probe2 ≈ 3.6 h).
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting

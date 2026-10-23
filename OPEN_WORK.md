@@ -1,7 +1,8 @@
 # Open work — adaptive-order state tracking
 
 Standing queue. Updated 1 October 2026, after the mid-semester report and
-presentation were finished.
+presentation were finished; queue entries dated through 23 October (the
+"Where the project stands" summary below is the 1 October one — see PLAN for later).
 
 ---
 
@@ -80,6 +81,17 @@ agreement) but T3 and the margin check show bf16 ties, not a bug;
 the 1-factor median; PLAN "Boxes order sweep") → next: the learned gate on
 Boxes — *built and pre-registered 22 Oct* (PLAN "Learned gate on Boxes": hand rule + γ probe on dev, then 5 final runs);
 (4) Boxes order sweep → gate on Boxes or chess; (5) A₅ written up as is.
+*23 Oct:* learned gate on Boxes — **LOSES ACCURACY** (γ 0.1, 5 runs: median E
+0.835, order 1.032; hand rule 0.793, below the bar). The second layer's second
+factor is closed in 7/7 γ-0.1 runs; the first layer keeps it on the 100 item words
+in 4/7. Review the same day: Boxes E is noisy (constant LR; final-step E swings
+~0.03), so decisions now use the **late average** (mean of the last 4 quick
+evaluations) and a bar relative to fixed 2's late average (0.872 − 0.03). Next,
+pre-registered and amended before running (PLAN "Learned gate on Boxes —
+follow-up"): **[2, 1] fixed orders, 8 runs + 3 more fixed-2 references**, then the
+gate at **γ 0.001 / 0.003** (3 runs each, a hypothesis test). ≈ 8.5 h, one night.
+If [2,1] holds → time it against fixed 2 (first measured saving on a real task).
+Still open from 13 Oct: (2b), the sequence-accuracy drop through the ragged path.
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;
