@@ -1773,6 +1773,36 @@ final stage* (`results/boxes_gate.json`, `results/boxes_gate_probe.log`).
   saving with existing kernels, timed) and to send layer 0 through the faster
   path. No decision rule is changed.
 
+### Learned gate on Boxes — result, 23 October (final stage, applied as pre-registered)
+
+`results/boxes_gate.json`, `results/boxes_gate_final.log`. γ 0.1 (chosen on dev),
+seeds 10–14, 16 000 steps.
+- **Test E** (sorted): [0.720 0.769 0.835 0.855 0.856], median **0.835**; order
+  [1.029 1.029 1.032 1.082 1.088], median **1.032**. Late rise −0.018 (converged).
+- **Decision: LOSES ACCURACY** (bar 0.885). Read against the hand rule, which also
+  missed the bar (0.793): by the pre-registered reading, the second factor's
+  value on Boxes is not concentrated in the operation sentences.
+- **Mechanism check:** operation > description in 1 of 5 runs → no.
+- **Added read-out (prediction of 22 Oct):** (a) layer 1 (the second layer) gives the second factor
+  to < 1% of tokens — **held, 5/5** (0.0000 in every run). (b) ≥ 90% of layer 0's (the first
+  layer's) second factors on item words — **failed, 2/5** (needed 4/5). Seeds 11 and 13
+  keep the item words (93 and 99 of 100); seed 10 keeps only "."; seeds 12 and
+  14 keep only "contains" and "is". In those three the remaining open logits are
+  0.06–0.3, on the edge of closing. Across all seven γ-0.1 runs (2 probe +
+  5 final) layer 1 is fully closed in 7/7, and the item-word allocation appears
+  in 4/7 (E 0.926, 0.888, 0.856, 0.769).
+- **What the numbers say, narrowly:** at γ 0.1 the gate ends at about one factor
+  per token, and its accuracy is that of fixed 1 (median 0.810), not fixed 2
+  (0.915). The order at step 500 (1.44–1.64) does not separate outcomes.
+- **Our setup first.** The gate's order keeps falling late in training (e.g.
+  seed 12: 1.096 → 1.029 after step 12 000) and rises by at most 0.002 between
+  evaluations: closed logits sit at −6 to −70 in the models inspected, where the gradient is effectively zero, so a factor closed by the
+  penalty cannot be reopened by the task. This is the same one-way pattern as the
+  A₅ collapse, and it comes from our training choices (an unbounded push under
+  Adam), not from DeltaProduct. Layer 0's gate also reads only the word, so it can
+  allocate by word type and nothing finer. Both are fixable; next experiment to be
+  pre-registered before it runs.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
