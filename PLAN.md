@@ -1746,6 +1746,33 @@ tokens fewer factors than description tokens. Adam moves the gate at full
 speed under any consistent push, which is what made the A₅ gate collapse;
 whether the task pushes back here is what the probe measures.
 
+*Probe result and an added read-out, 22 October, after the probe and before the
+final stage* (`results/boxes_gate.json`, `results/boxes_gate_probe.log`).
+- **Hand rule (5 runs; this arm is complete):** E [0.621 0.696 0.793 0.796 0.859],
+  median **0.793** at 1.508 factors per token. Below the bar, and not above
+  fixed 1 (0.810): giving the second factor to the operation sentences does not
+  recover fixed 2's accuracy.
+- **Learned gate, probe (2 runs per γ; not a decision):** γ 0.01: E 0.909 / 0.689
+  at 1.31; γ 0.03: 0.898 / 0.657 at 1.09 / 1.13; γ 0.1: 0.926 / 0.888 at 1.089
+  in both. γ chosen on dev by the pre-registered rule: **0.1**.
+- **Why three runs report the identical order 1.089.** Read from the saved models
+  (40 test examples per bucket; a diagnostic, not a new run). In layer 1 the gate
+  closes the second factor on every token. In layer 0 it opens it on exactly the
+  100 item words (the words that follow "the": glass, fig, ...) at every
+  occurrence, and on nothing else: 17.6% of tokens in one of two layers gives
+  1.088. Layer 0's gate reads only the token embedding, so an allocation by token
+  type is all it can express there. Open logits are 0.1–4.6 (still trainable);
+  closed logits are −6 to −70 (gradient effectively zero: a closed factor cannot
+  reopen). The pre-registered mechanism check (operation > description) is
+  therefore expected to fail — item words occur in descriptions as well as
+  operations. The check stays as written and is reported.
+- **Added read-out for the final stage; prediction written before it runs.** In
+  at least 4 of 5 final runs: (a) layer 1 gives the second factor to fewer than
+  1% of tokens, and (b) at least 90% of layer 0's second factors fall on item
+  words. If both hold, the next step is to rebuild layer 1 with one factor (a
+  saving with existing kernels, timed) and to send layer 0 through the faster
+  path. No decision rule is changed.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
