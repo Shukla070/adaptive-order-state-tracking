@@ -1962,6 +1962,50 @@ deliverable (order learned by the gate, layer built at that size, measured savin
 equal accuracy) has its first instance on a real task, pending a controlled timing
 benchmark (training step and inference) and with the noise caveats above.
 
+### Timing [2, 1] against fixed 2 — pre-registered 24 October, before any run
+
+*Question.* The whole training runs of [2, 1] took 23.6 min against 33.4 min, but whole
+runs include evaluation and logging. How much faster is the model itself, at training
+and at prediction time?
+
+*Setup.* `work/time_boxes_orders.py`. Models at 469,120 parameters: fixed 2 [2, 2]
+(d_ff 455, trained checkpoint `fixed22_g0.0_seed5.pt`), [2, 1] (d_ff 522,
+`fixed21_g0.0_seed0.pt`), fixed 1 [1, 1] (d_ff 589, untrained: the recurrence has no
+data-dependent control flow, so weights do not change its cost), and the gated model
+at γ 0.003 (`learned_g0.003_seed0.pt`) as a control. Workloads on real Boxes data, the
+same batches for every model (fingerprinted): **infer64** — inference, 12 test batches
+of 64, 2 per bucket; **infer1** — single-example latency, 24 test examples, 4 per
+bucket; **train64** — one full training step (forward, loss, backward, clipping,
+AdamW) on 8 training batches of 64. 3 warm-up passes, then 30 rounds with the models
+in a seeded random order each round. Ratio per round = time([2, 1]) / time(fixed 2);
+reported as the median with a bootstrap 95% interval of the median (2 000 resamples).
+The GPU must be idle (the script refuses to start while a training script runs).
+
+*Decision (per workload).* **MEASURED SAVING** if the interval lies entirely below
+0.95 — then the median saving is stated; **NO CLAIM** otherwise (a difference of a
+few percent can come from the harness). The gated control's ratio is reported: near 1
+shows its per-token saving is notional without the faster path.
+
+*Scope, stated in any claim.* The pure-PyTorch recurrence used in every Boxes run
+(`boxes_lib.deltaproduct`, a Python loop over chunks of T × n_h micro-steps), float32,
+RTX 4050 laptop GPU. Not the Triton kernels used on S₅; the ratio there may differ.
+
+*Prediction (weakly held).* infer64 and train64: ratio 0.65–0.85 (the second layer's
+recurrence halves; embeddings, MLPs and the head do not). infer1: no prediction — at
+batch 1 the cost is dominated by launching operations, not arithmetic. Gated control
+on infer64: 0.95–1.10.
+
+*Self-tests* B1–B5: widths 455 / 522 / 589 and 469,120 parameters each (fixed 1's width
+equals the sweep's); checkpoints loaded when present and a mismatched one refused;
+the harness on sleeps of known length (4 ms vs 8 ms → ratio 0.5 and a claim; 8 vs 8 →
+no claim); the round order varies and is reproducible; the interval is of the median
+(not of single rounds); the 0.95 threshold; inference changes no weights, a training
+step does. 9 deliberately broken versions, all caught. End-to-end smoke on CPU
+(2 rounds, not evidence) ran every workload and loaded all three checkpoints (exact
+match on the timed batches 0.884 / 0.947 / 0.941).
+
+*Cost.* About 5–10 minutes of GPU time, after the γ-0.003 final stage finishes.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
