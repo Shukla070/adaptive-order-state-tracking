@@ -1,0 +1,24 @@
+torch 2.6.0+cu126 | device: cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+boxes: vocab 123, train 78402, eval [2000, 2000, 2000, 2000, 2000, 1020], UNK tokens in eval: 0
+workloads: infer64 12 batches, infer1 24 examples, train64 8 batches; fingerprints {'infer64': 'a338ffa5bf80', 'infer1': 'ca2a27e8705e', 'train64': '8102d9d8370b'}
+  fixed2: orders [2, 2] d_ff 455 params 469,120 checkpoint /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/checkpoints/boxes_gate/fixed22_g0.0_seed5.pt  exact match on the timed batches 0.884
+  layers21: orders [2, 1] d_ff 522 params 469,120 checkpoint /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/checkpoints/boxes_gate/fixed21_g0.0_seed0.pt  exact match on the timed batches 0.947
+  fixed1: orders [1, 1] d_ff 589 params 469,120 checkpoint None  exact match on the timed batches 0.000
+  gated: orders None d_ff 422 params 468,996 checkpoint /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/checkpoints/boxes_gate/learned_g0.003_seed0.pt  exact match on the timed batches 0.941
+
+infer64: median ms per batch  fixed2 20.66  layers21 16.44  fixed1 12.21  gated 21.63
+  [2, 1] / fixed 2: median 0.793  95% interval 0.790-0.796  -> MEASURED SAVING
+  fixed1 / fixed 2: median 0.584  (0.580-0.590)
+  gated / fixed 2: median 1.046  (1.042-1.049)
+
+infer1: median ms per example  fixed2 8.18  layers21 7.16  fixed1 6.47  gated 9.10
+  [2, 1] / fixed 2: median 0.895  95% interval 0.859-0.936  -> MEASURED SAVING
+  fixed1 / fixed 2: median 0.794  (0.756-0.823)
+  gated / fixed 2: median 1.090  (1.054-1.135)
+
+train64: median ms per batch  fixed2 118.64  layers21 86.83  fixed1 50.30  gated 134.16
+  [2, 1] / fixed 2: median 0.725  95% interval 0.714-0.755  -> MEASURED SAVING
+  fixed1 / fixed 2: median 0.423  (0.414-0.438)
+  gated / fixed 2: median 1.112  (1.038-1.164)
+
+saved /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/results/boxes_timing.json
