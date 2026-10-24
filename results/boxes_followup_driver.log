@@ -1,0 +1,56 @@
+Fri Oct 23 21:08:22 UTC 2026 start layers21
+Sat Oct 24 01:59:36 UTC 2026 layers21 exit 0
+Sat Oct 24 01:59:36 UTC 2026 start probe2
+Sat Oct 24 05:24:35 UTC 2026 probe2 exit 0
+torch 2.6.0+cu126 | device: cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+
+==============================================================================
+LEARNED GATE ON BOXES  (E = exact match on 3+ operations; order = factors per token)
+==============================================================================
+  references (results/boxes_order.json): fixed 1 median E 0.81, fixed 2 median E 0.915
+
+  hand rule (5 runs): E [0.621 0.696 0.793 0.796 0.859] median 0.793, order 1.508  -> below the bar
+
+  learned gate, gamma 0.001, probe (3 runs)
+     seed  0: test E 0.868 (late 0.871)  dev E 0.867  (dev late 0.870)  order 1.516 (0-2 ops 1.518)  [description 1.53  operation 1.51  query 1.50  answer 1.54]  step-500 order 1.984
+     seed  1: test E 0.797 (late 0.784)  dev E 0.786  (dev late 0.767)  order 1.410 (0-2 ops 1.417)  [description 1.45  operation 1.37  query 1.27  answer 1.55]  step-500 order 1.911
+     seed  2: test E 0.948 (late 0.890)  dev E 0.949  (dev late 0.904)  order 1.472 (0-2 ops 1.476)  [description 1.50  operation 1.45  query 1.46  answer 1.53]  step-500 order 1.991
+     order change over the last quarter, median -0.033 -> still falling
+
+  learned gate, gamma 0.003, probe (3 runs)
+     seed  0: test E 0.897 (late 0.876)  dev E 0.889  (dev late 0.865)  order 1.432 (0-2 ops 1.436)  [description 1.44  operation 1.41  query 1.25  answer 1.65]  step-500 order 1.984
+     seed  1: test E 0.810 (late 0.767)  dev E 0.831  (dev late 0.775)  order 1.339 (0-2 ops 1.346)  [description 1.38  operation 1.30  query 1.25  answer 1.48]  step-500 order 1.917
+     seed  2: test E 0.922 (late 0.858)  dev E 0.915  (dev late 0.855)  order 1.404 (0-2 ops 1.407)  [description 1.42  operation 1.39  query 1.43  answer 1.40]  step-500 order 1.972
+     order change over the last quarter, median -0.003 -> settles
+
+  learned gate, gamma 0.01, probe (2 runs)
+     seed  0: test E 0.909 (late 0.842)  dev E 0.895  order 1.305 (0-2 ops 1.311)  [description 1.33  operation 1.28  query 1.25  answer 1.40]  step-500 order 1.944
+     seed  1: test E 0.689 (late 0.753)  dev E 0.696  order 1.317 (0-2 ops 1.321)  [description 1.33  operation 1.30  query 1.25  answer 1.47]  step-500 order 1.842
+
+  learned gate, gamma 0.03, probe (2 runs)
+     seed  0: test E 0.898 (late 0.883)  dev E 0.882  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.852
+     seed  1: test E 0.657 (late 0.719)  dev E 0.662  order 1.132 (0-2 ops 1.130)  [description 1.11  operation 1.15  query 1.00  answer 1.22]  step-500 order 1.701
+
+  learned gate, gamma 0.1, probe (2 runs)
+     seed  0: test E 0.926 (late 0.889)  dev E 0.935  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.557
+     seed  1: test E 0.888 (late 0.855)  dev E 0.883  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.600
+
+  learned gate, gamma 0.1, final (5 runs)
+     seed 10: test E 0.835 (late 0.842)  dev E 0.820  order 1.032 (0-2 ops 1.028)  [description 1.01  operation 1.06  query 1.00  answer 1.00]  step-500 order 1.561
+     seed 11: test E 0.856 (late 0.852)  dev E 0.849  order 1.082 (0-2 ops 1.085)  [description 1.10  operation 1.07  query 1.00  answer 1.14]  step-500 order 1.437
+     seed 12: test E 0.720 (late 0.683)  dev E 0.692  order 1.029 (0-2 ops 1.034)  [description 1.06  operation 1.00  query 1.00  answer 1.11]  step-500 order 1.606
+     seed 13: test E 0.769 (late 0.788)  dev E 0.771  order 1.088 (0-2 ops 1.091)  [description 1.10  operation 1.07  query 1.00  answer 1.14]  step-500 order 1.626
+     seed 14: test E 0.855 (late 0.856)  dev E 0.865  order 1.029 (0-2 ops 1.034)  [description 1.06  operation 1.00  query 1.00  answer 1.11]  step-500 order 1.642
+
+  GAMMA CHOSEN ON DEV (largest within 0.02 of the best median): 0.1
+
+  FOLLOW-UP (amended 23 Oct): scores are late averages (mean E over the last 4 quick evaluations)
+     fixed 1 (5 runs) [0.614 0.713 0.799 0.833 0.881] median 0.799
+     fixed 2 (8 runs, sweep + fixed22) [0.675 0.792 0.836 0.853 0.856 0.872 0.895 0.902] median 0.855  -> bar 0.825
+  FOLLOW-UP GAMMA CHOSEN ON DEV LATE AVERAGE among (0.001, 0.003): 0.003 (median dev late 0.855)  -> final stage runs
+     fixed orders [2, 1] (8 runs, 469,120 params) [0.716 0.851 0.876 0.877 0.877 0.879 0.881 0.908] median 0.877  -> [2,1] HOLDS
+       Mann-Whitney p (reported, not used): vs fixed 2 0.328, vs fixed 1 0.127
+
+  DECISION (gamma 0.1, 5 runs): LOSES ACCURACY   median E 0.835, median order 1.032, late rise -0.018
+  mechanism: operation > description in 1 of 5 runs -> no
+

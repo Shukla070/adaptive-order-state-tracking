@@ -92,6 +92,12 @@ follow-up"): **[2, 1] fixed orders, 8 runs + 3 more fixed-2 references**, then t
 gate at **γ 0.001 / 0.003** (3 runs each, a hypothesis test). ≈ 8.5 h, one night.
 If [2,1] holds → time it against fixed 2 (first measured saving on a real task).
 Still open from 13 Oct: (2b), the sequence-accuracy drop through the ragged path.
+*24 Oct:* **[2,1] HOLDS** (median late E 0.877 vs fixed 2's 0.855, 8 runs each;
+whole training runs 23.6 vs 33.4 min). Gate at γ 0.001 / 0.003: the γ-scale
+explanation fails its pre-registered condition (still falling at 0.001); γ 0.003
+chosen on dev → final stage (5 runs, ~3 h). At small γ the gate itself allocates
+≈ [2, 1] in 6/6 runs. Next: (i) controlled timing of [2, 1] vs fixed 2 (training
+step + inference); (ii) gate final stage at γ 0.003; (iii) (2b).
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;

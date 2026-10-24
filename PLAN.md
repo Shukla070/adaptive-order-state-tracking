@@ -1911,6 +1911,57 @@ against a known value, references, the fixed-2 build identical to the sweep's, d
 evaluated only at the 4 late points). 17 deliberately broken versions, all caught.
 *Cost* ≈ 8.5 h (layers21 ≈ 5 h, probe2 ≈ 3.6 h).
 
+### Learned gate on Boxes — follow-up — result, 24 October (applied as pre-registered)
+
+`results/boxes_gate.json`, `results/boxes_followup_{layers21,probe2,driver}.log`.
+Scores are late averages (mean E over the last 4 quick evaluations).
+
+**[2, 1] fixed orders — [2,1] HOLDS.**
+- [2, 1] (8 runs): [0.716 0.851 0.876 0.877 0.877 0.879 0.881 0.908], median **0.877**.
+- Fixed 2 (8 runs: 5 sweep + 3 new): [0.675 0.792 0.836 0.853 0.856 0.872 0.895
+  0.902], median **0.855** → bar 0.825. The three new fixed-2 runs were weak (0.792,
+  0.675, 0.836), which lowered the bar; [2, 1] also passes the 5-run bar (0.842) and
+  the old final-E bar (its final-E median is 0.898 ≥ 0.885), so the decision does not
+  depend on that.
+- Reported, not used: Mann–Whitney two-sided p = 0.33 against fixed 2, 0.13 against
+  fixed 1 (one-sided [2,1] > fixed 1: 0.064). Post hoc, runs with a late average
+  ≥ 0.85: fixed 1 1/5, fixed 2 5/8, [2, 1] 7/8.
+- In-distribution (0–2 operations) exact match, 2 operations: [2, 1] 0.932–0.971,
+  new fixed-2 runs 0.920–0.934.
+- **Time, measured on whole runs** (same GPU, same 16 000 steps, including the quick
+  evaluations): [2, 1] **23.6–23.7 min** per run (8 runs), fixed 2 **33.4–33.5 min**
+  (3 runs) — 29% less. Not yet a controlled benchmark; that is the next step.
+- **Caveat on the order sweep's ORDER MATTERS:** with the 3 new fixed-2 runs, fixed 2
+  above fixed 1 is one-sided p = 0.11 (was 0.028 with 5 runs). The effect of the
+  second factor on Boxes is real in direction but noisy.
+
+**Gate at γ 0.001 / 0.003 (probe, 3 runs each).**
+- γ 0.001: late E 0.871 / 0.784 / 0.890 at order 1.516 / 1.410 / 1.472; order change
+  over the last quarter, median −0.033 → **still falling**.
+- γ 0.003: late E 0.876 / 0.767 / 0.858 at order 1.432 / 1.339 / 1.404; median
+  change −0.003 → **settles**.
+- **Prediction:** γ 0.003 between 1.1 and 1.5 and settling — held. γ 0.001 at 1.5
+  or above and settling — **failed** (1 of 3 at ≥ 1.5, still falling). By the
+  pre-registered failure condition ("still falling at γ 0.001"), **the γ-scale
+  explanation fails as stated.** Noted, not used to rescue it: at γ 0.001 the order
+  moves both ways between evaluations (e.g. 1.614 → 1.438 → 1.540 → 1.472 → 1.409),
+  unlike the monotone fall at γ 0.1.
+- **γ chosen on the dev late average: 0.003** (median 0.855 ≥ bar − 0.03 = 0.795)
+  → **the final stage runs** (seeds 10–14, decided with late averages: median
+  ≥ 0.825 and order ≤ 1.6 → GATE WORKS).
+- **Where the gate puts the factors** (read from the 6 saved models, 40 test examples
+  per bucket; diagnostic): the second layer gives the second factor to 0.04–6.6% of
+  tokens; the first layer to 67–100% of tokens, always including all 100 item words.
+  At small γ the gate's own allocation is therefore approximately [2, 1] — in 6 of 6
+  runs — the order the fixed [2, 1] model was built at (chosen from the γ-0.1 runs).
+
+**What this is, narrowly:** on Boxes, a layer built at the order the gate chose —
+two factors in the first layer, one in the second — matches fixed 2 under the
+pre-registered rule and trained in 29% less time per run. The 8 October main
+deliverable (order learned by the gate, layer built at that size, measured saving at
+equal accuracy) has its first instance on a real task, pending a controlled timing
+benchmark (training step and inference) and with the noise caveats above.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
