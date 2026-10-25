@@ -2006,6 +2006,136 @@ match on the timed batches 0.884 / 0.947 / 0.941).
 
 *Cost.* About 5–10 minutes of GPU time, after the γ-0.003 final stage finishes.
 
+### Learned gate on Boxes, γ 0.003 final stage — result, 24 October (as pre-registered)
+
+`results/boxes_gate_final_g0.003.log`, `results/boxes_gate.json`. Seeds 10–14,
+late averages.
+- Late E (sorted): [0.697 0.850 0.851 0.862 0.876], median **0.851** (bar 0.825);
+  order [1.309 1.354 1.395 1.398 1.461], median **1.395** (≤ 1.6). Late rise +0.005
+  (converged); order settles (median change −0.003).
+- **Decision: GATE WORKS.** It also passes the 5-run bar (0.842). It would not pass
+  the old final-E bar (final-E median 0.871 < 0.885), which was replaced before these
+  runs because fixed 2 itself fails it in about 2 of 3 repeats.
+- Reported, not used: Mann–Whitney two-sided p = 0.83 against fixed 2, 0.42 against
+  fixed 1 — with 5 runs and this noise, not distinguishable from either.
+- Mechanism check (operation > description): 1 of 5 → no, as expected from 22 Oct.
+- **Notional, not measured:** the order 1.395 is factors per token with closed factors
+  multiplied by zero. Measured below: the gated model is *slower* than fixed 2. The
+  real saving comes from building the layer at the gate's order ([2, 1]).
+
+### Timing [2, 1] against fixed 2 — result, 24 October (as pre-registered)
+
+`results/boxes_timing.{log,json}`. RTX 4050 laptop GPU, float32, pure-PyTorch
+recurrence, 30 rounds, GPU idle (checked by the script).
+
+| workload | fixed 2 | [2, 1] | ratio [2, 1] / fixed 2 (95% interval) | decision |
+|---|---|---|---|---|
+| inference, batch 64 | 20.66 ms/batch | 16.44 | **0.793** (0.790–0.796) | MEASURED SAVING |
+| inference, batch 1 | 8.18 ms/example | 7.16 | **0.895** (0.859–0.936) | MEASURED SAVING |
+| training step, batch 64 | 118.64 ms/step | 86.83 | **0.725** (0.714–0.755) | MEASURED SAVING |
+
+- Floor, fixed 1: 0.584 / 0.794 / 0.423. Control, the gated model: **1.046 / 1.090 /
+  1.112** — 5–11% slower than fixed 2 (the gate's own cost, with no factor skipped).
+- Predictions: batch-64 inference and training in 0.65–0.85 — held (0.793, 0.725);
+  gated control 0.95–1.10 on batch-64 inference — held (1.046). Batch 1 had no
+  prediction; the saving there is smaller (launch-bound).
+- The training-step ratio (0.725) agrees with the whole-run ratio (23.6 / 33.4 = 0.71).
+
+**What is now established on Boxes, narrowly.** A layer built at the order the gate
+chose — two factors in the first layer, one in the second — keeps fixed 2's accuracy
+under the pre-registered rule (late averages, 8 runs each) and is **21% faster at
+prediction (batch 64), 10% at batch 1, and 27% faster per training step**, measured.
+Scope: this implementation (pure PyTorch, float32) on one laptop GPU; the ratios with
+the Triton kernels may differ. Accuracy comparisons rest on 5–8 noisy runs per arm.
+This is the 8 October main deliverable's first instance on a real task.
+
+### Sequence accuracy on the faster path — pre-registered 25 October, before any run
+
+*Question* (queue item 2b). On trained S₅ models the faster path keeps token accuracy
+(seed 12: 0.99979 → 0.99959) but whole-sequence accuracy drops (0.9795 → 0.9595). The
+paths compute the same mathematics and differ only in bf16 rounding inside the kernel.
+Is the drop (a) a flaw of the faster path — ours, to fix — or (b) sensitivity of the
+model's sequence accuracy to any change of recurrence rounding, with Path A looking
+better only because the model was trained through its rounding? Earlier evidence points
+both ways: equal distance of the two paths from a float64 recurrence (0.0188 vs 0.0181),
+but disagreeing tokens are not near-ties (median logit margin 2.3 vs 7.8 overall).
+
+*Method.* `work/check_seq_accuracy.py`. A third path X: the same model and weights with
+only the recurrence exact — fla's `chunk_gated_delta_rule` / `chunk_delta_rule` swapped,
+for the call, for a float64 sequential recurrence with fla's convention, on the same bf16
+inputs, output rounded once to bf16. Paths scored on each checkpoint's full test set:
+A (Path A, per-factor, the training path), R (fused + ragged, the timed faster path), X.
+Models: every saved S₅ checkpoint — `checkpoints/gate_B/*` (seeds 11–13) and
+`checkpoints/gate_restart/*` (the 20 restart-procedure runs).
+
+*Checks per model, on the GPU, before scoring.* G0 the checkpoint reloads (Path A token
+accuracy within 0.002 of the training record); G1 the swap is active and exact (on 8 test
+sequences, X's recurrence output within 5e-3 relative L2 of the validated float64
+reference, and at most half of Path A's error); G2 G1 can fail (Path A's own error
+exceeds 5e-3). A model failing a check is excluded from the decision and reported.
+
+*Decision* (pooled over models that learned the task — Path A token accuracy ≥ 0.99 —
+weighted by sequences):
+- **NO GENERAL DROP:** seq(A) − seq(R) ≤ 0.005 — the seed-12 drop does not generalise;
+  the per-model range is stated with the speed claim.
+- **FASTER-PATH FAULT:** seq(X) ≥ seq(R) + 0.01 and |seq(X) − seq(A)| ≤ 0.005 — fix the
+  faster path before the speed claim is used.
+- **ROUNDING SENSITIVITY:** seq(X) ≤ seq(A) − 0.01 — exact arithmetic also loses
+  sequences; the faster path is not at fault; the claim states how much sequence
+  accuracy moves between numerically equivalent paths.
+- **UNCLEAR:** anything else.
+Reported either way: per-model accuracies, discordant sequence counts for A/R, A/X, R/X,
+and Path A's logit margin where paths disagree.
+
+*Prediction (weakly held).* ROUNDING SENSITIVITY: X lands near R, not near A.
+
+*Self-tests* X1–X4 (CPU, float64): the exact recurrence equals the validated reference to
+0.0 with and without decay; the drop-in kernel returns the input dtype, equals the exact
+recurrence on the bf16 inputs rounded once, and refuses initial state, final state,
+packing and the un-normalised convention; the swap is always undone, also after an
+error; scoring, discordance, pooling and every decision branch on known answers. 10
+deliberately broken versions, all caught. G1–G2 run on the GPU with the real model.
+
+*Cost.* ~20–30 min of GPU time for 23 checkpoints (the exact path runs at batch 32).
+
+### Sequence accuracy on the faster path — result, 25 October (applied as pre-registered)
+
+`results/seq_accuracy.{log,json}`. 23 checkpoints; every per-model check passed (G0
+reload, G1 swap exact: X's recurrence error 1.5–1.7e-3 against Path A's 1.0–8.4e-2;
+G2). 20 learned the task (Path A token accuracy ≥ 0.99); seeds 11, 2036 and 4044 did not
+and are reported only. 2 000 test sequences per model.
+
+| pooled over 20 models | Path A (trained path) | R (faster path) | X (exact recurrence) |
+|---|---|---|---|
+| sequence accuracy | 0.9891 | 0.9706 | **0.9956** |
+
+- The drop is general: pooled A − R = 0.0185; per model, sorted: −0.0010 +0.0000 +0.0005
+  +0.0010 +0.0025 +0.0025 +0.0035 +0.0045 +0.0095 +0.0125 +0.0200 +0.0200 +0.0255 +0.0280
+  +0.0295 +0.0300 +0.0365 +0.0380 +0.0415 +0.0655.
+- **The exact recurrence beats both bf16 paths.** X > A in 19 of 20 models (pooled
+  +0.0065); X ≥ R in 20 of 20 (pooled +0.025). Discordant sequences, summed over the 20
+  models: A right / X wrong 35 vs X right / A wrong 294; R right / X wrong 37 vs X right /
+  R wrong 1 036; A right / R wrong 953 vs R right / A wrong 213.
+- Where A and X disagree the model was near a tie (median logit margin 0.0–0.9); where A
+  and R disagree it was not (median 0.4–5.6, typically 2–4).
+- **Decision: UNCLEAR.** FASTER-PATH FAULT needed |X − A| ≤ 0.005 (it is 0.0065, X above
+  A); ROUNDING SENSITIVITY needed X ≤ A − 0.01 (X is above A). **The prediction (rounding
+  sensitivity) failed:** exact arithmetic does not lose sequences — it gains them. The
+  rule did not anticipate the exact path being better than the training path.
+- **What the numbers say, narrowly (not a decision):** both bf16 paths lose sequences to
+  rounding, and the faster path loses about four times as many as Path A (−0.025 vs
+  −0.0065 against X). The faster path's mathematics is proven in float64; its larger loss
+  is numerical, in the bf16 kernel on packed sequences — so it is ours to fix, not a
+  property of the model. The earlier output-error check (8 sequences, first layer, mean
+  relative error) was too coarse to see it.
+- **Consequence for the S₅ speed claim:** "0.73–0.80 of the 4-factor time at equal token
+  accuracy" stands; at the sequence level the faster path is currently 1.85 points worse
+  (pooled; up to 6.6 on one model). The claim may not say "equal accuracy" without this.
+- **Next, to be pre-registered before running:** localise where the faster path's extra
+  error enters (per layer, per position, chunk boundaries of the packed sequences) and
+  try a more accurate kernel for the packed recurrence (fla's fused-recurrent form keeps
+  the state in float32), scored the same way against X.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting

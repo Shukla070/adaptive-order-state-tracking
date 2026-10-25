@@ -98,6 +98,22 @@ explanation fails its pre-registered condition (still falling at 0.001); γ 0.00
 chosen on dev → final stage (5 runs, ~3 h). At small γ the gate itself allocates
 ≈ [2, 1] in 6/6 runs. Next: (i) controlled timing of [2, 1] vs fixed 2 (training
 step + inference); (ii) gate final stage at γ 0.003; (iii) (2b).
+*24 Oct, done:* γ 0.003 final → **GATE WORKS** (median late E 0.851, order 1.395;
+notional — the gated model itself is 5–11% slower than fixed 2). Timing → **[2, 1]
+is 21% faster at batch-64 prediction, 10% at batch 1, 27% per training step**
+(MEASURED SAVING on all three; pure-PyTorch recurrence, RTX 4050). Next: (2b); cut
+the closed factor from a gated model and fine-tune briefly (instead of retraining);
+γ set from the task's own loss so it transfers; then the medical task (Synthea first,
+PhysioNet applications in parallel).
+*25 Oct:* (2b) built and pre-registered — `work/check_seq_accuracy.py`, a third, exact
+float64 recurrence path decides between a faster-path fault and rounding sensitivity
+(PLAN "Sequence accuracy on the faster path"). Run on the 23 saved S₅ models.
+*25 Oct, result:* **UNCLEAR** by the rule, prediction failed. Pooled sequence accuracy
+A 0.9891, faster path 0.9706, exact recurrence **0.9956**: exact arithmetic beats both;
+the faster path loses ~4x more sequences to bf16 rounding than Path A. Its maths is
+proven; the extra loss is numerical and ours to fix. Next: localise it and try a more
+accurate kernel for the packed recurrence. The S₅ speed claim must state the sequence-
+level gap until then.
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;
