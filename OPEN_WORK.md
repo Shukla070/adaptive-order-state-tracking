@@ -114,6 +114,14 @@ the faster path loses ~4x more sequences to bf16 rounding than Path A. Its maths
 proven; the extra loss is numerical and ours to fix. Next: localise it and try a more
 accurate kernel for the packed recurrence. The S₅ speed claim must state the sequence-
 level gap until then.
+*25 Oct:* fix built and pre-registered — `work/check_ragged_fix.py`: tests packing, fusion and
+gate flips on our side first, localises the error, and tries float16 and float32-state
+kernels (PLAN "Fixing the faster path's sequence accuracy").
+*25 Oct, result:* our side CLEAR (packing 100%, fusion 100%, 0 gate flips); the loss is the
+bf16 chunk kernel on packed sequences. **Rrec (float32-state recurrent kernel) ADOPTED:**
+pooled sequence 0.9956 (Path A 0.9891), 0.63–0.64 of the best 4-factor time. Before any
+claim: time a fixed-4 layer with the same recurrent kernel (fair baseline), batch-1 latency,
+more models; then make Rrec the faster path's default kernel.
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;

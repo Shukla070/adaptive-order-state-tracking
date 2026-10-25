@@ -2136,6 +2136,110 @@ and are reported only. 2 000 test sequences per model.
   try a more accurate kernel for the packed recurrence (fla's fused-recurrent form keeps
   the state in float32), scored the same way against X.
 
+### Fixing the faster path's sequence accuracy — pre-registered 25 October, before any run
+
+*Question.* Why does the faster path (fused factors + ragged packing, bf16 chunk kernel)
+lose ~4x more sequences to rounding than Path A, and does a different kernel fix it?
+
+*Suspects on our side, each tested on the real trained models* (`work/check_ragged_fix.py`):
+1. **Packing / indexing** — proven in float64 only on small CPU cases. Path R64 runs the
+   real packed recurrence with an exact float64 kernel that honours the sequence
+   boundaries; it must reproduce X (Path A, exact).
+2. **Fused projections** (our concatenated short convolution) — path F (fused Path A) must
+   reproduce Path A.
+3. **Gate decisions flipping** between paths — a discrete change: fraction of tokens whose
+   number of factors differs from Path A's, per layer, every path.
+4. **Chunk density** — fla's chunk kernel solves a 64x64 triangular system per chunk and
+   stores the inverse in bf16 (`solve_tril`, output dtype = input dtype). In Path A about
+   two thirds of a chunk's micro-steps are closed factors (beta 0); after packing every
+   micro-step is a real update, often near a reflection (beta ~ 2). Measured as the error
+   of each path's recurrence output against a float64 recurrence on the same inputs, per
+   layer and per quarter of the sequence.
+*Candidate kernels for the packed recurrence:* **R16** — the same chunk kernel with
+float16 inputs (10-bit mantissa instead of 7); **Rrec** — fla's
+`fused_recurrent_gated_delta_rule` (sequential, state in float32, accepts packed
+sequences). Paths scored on each learned model's full test set: A, F, X, R, R64, R16, Rrec.
+
+*Checks per model:* G0 reload (Path A token accuracy within 0.002 of the record); G1 both
+exact paths are exact (X's and R64's recurrence output within 5e-3 of float64 in every
+layer and position block — without this, a swap that failed to apply would make R64 equal
+R and read as a packing bug); G2 G1 can fail (Path A's error exceeds 5e-3 somewhere).
+
+*Decision* (pooled over learned models passing G0–G2):
+- **Step 1, our side, first.** PACKING BUG if agreement(R64, X) < 0.9999 or
+  |seq(R64) − seq(X)| > 0.002; FUSION BUG if agreement(F, A) < 0.9999 or
+  |seq(F) − seq(A)| > 0.002. Either → stop and fix our code; candidates are not judged.
+- **Step 2.** A candidate is ACCURATE if seq ≥ seq(A) − 0.002 and token ≥ token(A) − 0.0001.
+- **Step 3.** Timed on one model (seed 12) as in the 13 October claim (test sequences
+  joined to 32 x 512 and 32 x 2048, learned gate inside the forward, median of 30 after 5
+  warm-up): ADOPTED if ACCURATE and time / best fixed-4-factor time ≤ 0.90 at both sizes
+  (the original "at least 10% faster" rule); if several, the fastest. None → the S₅ speed
+  claim keeps its sequence-level caveat.
+
+*Prediction (weakly held).* Step 1 clear; the faster path's extra error grows along the
+sequence (chunk density); Rrec ACCURATE but slower than the bf16 chunk kernel, R16 in
+between. Whether either is adopted: no prediction.
+
+*Self-tests* P1–P4 (CPU, float64): the packed exact recurrence equals the validated
+reference with sequence boundaries (0.0 error, with and without decay) and differs if the
+boundaries are ignored; the swapped kernels' plumbing (fp16 receives float16 q, k, v, beta
+and the same g and boundaries; recurrent gets g = 0 for an ungated layer; refusals); the
+swap always undone; the exact reference from captured inputs equals Path A's maths via
+the sequential reference; flips, position errors, every decision branch on known answers.
+11 deliberately broken versions, all caught.
+
+*Cost.* ~30–40 min of GPU time (20 models x 7 paths, two of them float64), GPU idle.
+
+### Fixing the faster path's sequence accuracy — result, 25 October (applied as pre-registered)
+
+`results/ragged_fix.{log,json}`. 20 learned models (seeds 11, 2036, 4044 skipped as
+pre-registered); G0, G1, G2 passed on all 20.
+
+**Step 1, our side: CLEAR.**
+- Packing: R64 (the real packed path with an exact kernel) agrees with X on **100%** of
+  predictions in every model (pooled 1.000000); same sequence accuracy (0.9956).
+- Fusion: F agrees with Path A on **100%** of predictions (1.000000).
+- Gate flips: **0.0** in every layer, every path, every model.
+- So the faster path's sequence loss is not a bug in our packing, fusion or gating: it is
+  the bf16 chunk kernel's arithmetic on the packed sequences.
+
+**Where the error enters** (recurrence output against an exact recurrence on the same
+inputs, 16 sequences, by quarter of the sequence): R starts with *less* error than Path A
+(fewer chunk boundaries) but grows faster, and ends higher in the last quarter in 17 of 20
+models (e.g. seed 2038: Path A 3.5e-2 → 9.0e-2, R 2.1e-2 → 1.3e-1) — consistent with the
+chunk-density suspect. R16 is about ten times smaller (2–11e-3); **Rrec equals the exact
+path** (1.5–1.8e-3, the bf16 output rounding alone).
+
+**Accuracy, pooled over 20 models:**
+
+| | A | F | X | R | R64 | R16 | Rrec |
+|---|---|---|---|---|---|---|---|
+| sequence | 0.9891 | 0.9891 | 0.9956 | 0.9706 | 0.9956 | 0.9957 | **0.9956** |
+| token | 0.99984 | 0.99984 | 0.99993 | 0.99958 | 0.99993 | 0.99993 | **0.99993** |
+
+Step 2: R16 ACCURATE, Rrec ACCURATE (both above Path A).
+
+**Step 3, timing** (seed 12; time / best fixed-4-factor time):
+
+| | 32 x 512 | 32 x 2048 |
+|---|---|---|
+| R (bf16 chunk, as before) | 0.79 | 0.76 |
+| R16 | 0.87 | 0.85 |
+| **Rrec** | **0.64** | **0.63** |
+
+**ADOPTED: Rrec** (fla's `fused_recurrent_gated_delta_rule` for the packed recurrence).
+Predictions: step 1 clear — held; error growing along the sequence — held in 17/20;
+"Rrec accurate but slower" — **wrong: it is the fastest**; R16 in between — accurate, but
+the slowest.
+
+**What this changes, narrowly.** With the float32-state kernel, the faster S₅ path keeps
+the training path's accuracy — in fact exceeds it (sequence 0.9956 vs 0.9891; token
+0.99993 vs 0.99984), because Path A itself loses sequences to bf16 rounding — and runs at
+0.63–0.64 of the best fixed-4-factor time. **Not yet checked, before this enters any
+document:** (i) the baseline was the chunk kernel; a fixed-4-factor layer given the same
+recurrent kernel must be timed too, or the speed-up may partly be the kernel's, not the
+gate's; (ii) batch-1 latency and other batch sizes; (iii) timing on more than one model.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting
