@@ -2240,6 +2240,98 @@ document:** (i) the baseline was the chunk kernel; a fixed-4-factor layer given 
 recurrent kernel must be timed too, or the speed-up may partly be the kernel's, not the
 gate's; (ii) batch-1 latency and other batch sizes; (iii) timing on more than one model.
 
+### Fair-baseline timing on S5 — pre-registered 25 October, before any run
+
+*Question.* The faster path with the float32-state recurrent kernel ran at 0.63–0.64 of
+the best fixed-4-factor time — but that baseline only had the bf16 chunk kernel. How much
+of the speed-up is the gate's skipping, and how much the kernel's?
+
+*Setup.* `work/time_s5_kernels.py`. Fixed 4 gets every option the faster path has:
+per-factor or fused projections x chunk or recurrent kernel (4 configurations); its
+fastest at each size is the baseline. Also timed: fixed 1 (both kernels, the floor), the
+gated model with every factor computed (fused Path A, recurrent kernel: the gate's cost
+without skipping), and the faster path with each kernel. Sizes batch {1, 8, 32} x length
+{512, 2048}, test sequences joined end to end (timing only). Per size: 3 warm-up passes,
+then 20 rounds with the 9 configurations in a seeded random order; a pass = 3 forward
+calls; median and bootstrap 95% interval of the per-round ratio. Three trained models
+(seeds 12, 13, 31). GPU idle (the script refuses otherwise).
+
+*Decision* (per model and size). best4 = the fixed-4 configuration with the lowest
+median; ratio = time(faster path, recurrent kernel) / time(best4). **GATE SAVING** if the
+whole interval is at or below 0.90 (the original "at least 10% faster" rule); else NO GATE
+SAVING. The claim lists the sizes with GATE SAVING on all three models, with their
+ratios. Reported either way: the kernel's own effect on fixed 4 (best recurrent / best
+chunk), the gate's cost without skipping, the fixed-1 floor, and the 13 October path
+(chunk kernel) against the fair baseline.
+
+*Checks.* K1 every configuration labelled "recurrent" called the swapped kernel and
+every "chunk" one did not (a call counter) — otherwise a swap that silently failed would
+time the chunk kernel under the recurrent label; any K1 failure means no claim from the
+run. K2 the gate's mean factors per token on each timed batch (reported).
+
+*Prediction (weakly held).* The recurrent kernel also speeds up fixed 4 at some sizes, so
+the fair ratio is above 0.63; at batch 32 it is still GATE SAVING (0.55–0.80), because the
+recurrent kernel's work grows with the number of micro-steps (4 per token for fixed 4,
+~1.3 for the gate). Batch 1: no prediction (12 heads give the recurrent kernel little
+parallel work).
+
+*Self-tests* T1–T3 (CPU): the counted swap counts, reaches the right kernel, leaves the
+kernel alone for "chunk" and is always undone; on sleeps of known length, best4 is the
+fastest fixed-4 configuration (not a faster non-fixed-4 one), the ratio and its interval,
+the kernel effect and the gate's no-skip cost come out right, a 0.95 ratio is NO GATE
+SAVING, the 0.90 boundary, the varying and reproducible round order; joined inputs and
+their refusals. 10 deliberately broken versions, all caught.
+
+*Cost.* ~10–15 min of GPU time.
+
+### Fair-baseline timing on S5 — result, 25 October (applied as pre-registered)
+
+`results/s5_kernel_timing.{log,json}`. K1 passed at every size on every model (each
+"recurrent" configuration called the swapped kernel, each "chunk" one did not). Gate
+order on the timed batches 1.25–1.31.
+
+Ratio = faster path with the recurrent kernel / the best fixed-4 configuration (median;
+95% interval), seeds 12 / 13 / 31:
+
+| batch x length | seed 12 | seed 13 | seed 31 | best fixed 4 | decision |
+|---|---|---|---|---|---|
+| 1 x 512 | 1.55 | 1.53 | 1.56 | fused, recurrent | NO GATE SAVING (slower) |
+| 8 x 512 | 1.38 | 1.34 | 1.32 | fused, recurrent | NO GATE SAVING (slower) |
+| **32 x 512** | **0.74** (0.74–0.75) | **0.77** (0.73–0.81) | **0.76** (0.75–0.81) | fused, recurrent | **GATE SAVING** |
+| 1 x 2048 | 1.20 | 1.26 | 1.18 | fused, chunk | NO GATE SAVING (slower) |
+| **8 x 2048** | **0.75** (0.75–0.77) | **0.75** (0.74–0.76) | **0.76** (0.75–0.79) | fused, recurrent | **GATE SAVING** |
+| **32 x 2048** | **0.71** (0.70–0.72) | **0.72** (0.71–0.73) | **0.70** (0.69–0.71) | fused, recurrent | **GATE SAVING** |
+
+**Claim: GATE SAVING on all three models at 3 of 6 sizes** — the three with at least
+16 384 tokens per batch — at **0.70–0.77 of the best fixed-4 time (23–30% faster)**.
+- **The kernel's own share.** The recurrent kernel also speeds up fixed 4 (best recurrent
+  / best chunk 0.87–0.89 at these sizes), so the earlier 0.63 against the chunk-only
+  baseline was partly the kernel's: 0.63 ≈ 0.88 (kernel) × 0.72 (gate).
+- **Small batches are slower, by 18–56%.** There, even fixed 1 is about as slow as fixed
+  4 (floor 0.73–1.01 of best4): the forward pass is bound by overheads (kernel launches,
+  Python), not by the recurrence, so skipping factors cannot pay; and the faster path adds
+  its own fixed cost (packing, one host synchronisation, the gate: the gated model with no
+  skipping already costs 1.05–1.31x fixed 4). At batch 1 x 2048 the recurrent kernel is
+  slow (1.46–1.54x the chunk kernel on fixed 4: 12 heads give it little parallel work).
+- The 13 October path (chunk kernel) against the fair baseline: medians 0.86–1.02 at the
+  three large sizes (below 0.90 only at 32 x 2048) — the old kernel's speed-up was mostly
+  not the gate's against a fair baseline.
+- Prediction: fair ratio above 0.63 — held (0.70–0.77); batch 32 GATE SAVING in 0.55–0.80
+  — held.
+
+**Accuracy beside it** (results/ragged_fix.json; matched_compute_p0.1.json): the faster
+path with this kernel, pooled over 20 gated models, token 0.99993, sequence 0.9956. The
+trained fixed-4 model on the same task (one run, seed 666, evaluated with the bf16 chunk
+kernel): token 0.99992, sequence 0.9915. Equal at the token level; the sequence-level
+comparison is not like for like (fixed 4 was not evaluated with the float32-state kernel,
+and is a single run).
+
+**S₅ speed claim, as it may now be stated:** with the float32-state recurrent kernel, the
+learned gate's per-token skipping makes inference 23–30% faster than the best fixed-4
+layer given the same kernels, at 16k–65k tokens per batch, on three trained models, with
+token accuracy equal to fixed 4's; at 2k–4k tokens per batch it is 18–56% slower. RTX
+4050 laptop GPU, inference only.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting

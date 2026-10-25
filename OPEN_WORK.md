@@ -122,6 +122,14 @@ bf16 chunk kernel on packed sequences. **Rrec (float32-state recurrent kernel) A
 pooled sequence 0.9956 (Path A 0.9891), 0.63–0.64 of the best 4-factor time. Before any
 claim: time a fixed-4 layer with the same recurrent kernel (fair baseline), batch-1 latency,
 more models; then make Rrec the faster path's default kernel.
+*25 Oct:* fair-baseline timing built and pre-registered — `work/time_s5_kernels.py` (fixed 4
+with both kernels; 3 models; batch 1/8/32 x length 512/2048).
+*25 Oct, result:* GATE SAVING on all 3 models at the 3 large sizes (≥16k tokens per
+batch): 0.70–0.77 of the best fixed-4 time with the same kernels (the kernel itself gives
+fixed 4 ~0.88). Small batches (2k–4k tokens) are 18–56% slower: overhead-bound, plus the
+faster path's fixed cost. Next: make the recurrent kernel the faster path's default
+(+ re-run its correctness checks); optionally cut the small-batch overhead or dispatch
+by workload size; then the progress deck.
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;
