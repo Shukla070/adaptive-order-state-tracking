@@ -1,0 +1,39 @@
+# Output of `python work/check_ragged.py --selftest 2>&1 | grep -E "PASS|FAIL|info|skip" | tail -n 45`,
+# run 25 Oct 2026 on the RTX 4050 after the ragged-kernel default change; copied from the terminal.
+  [PASS] C9a default packed kernel is 'recurrent'
+  [PASS] C9b per-factor ragged, kernel 'recurrent': only that kernel is called   {'fused_recurrent_gated_delta_rule': 1}
+  [PASS] C9b per-factor ragged, kernel 'chunk': only that kernel is called   {'chunk_delta_rule': 1}
+  [PASS] C9c per-factor Path A still uses the chunk kernel   {'chunk_delta_rule': 1}
+  [PASS] C9b fused ragged, kernel 'recurrent': only that kernel is called   {'fused_recurrent_gated_delta_rule': 1}
+  [PASS] C9b fused ragged, kernel 'chunk': only that kernel is called   {'chunk_delta_rule': 1}
+  [PASS] C9c fused Path A still uses the chunk kernel   {'chunk_delta_rule': 1}
+  [PASS] C9d an unknown kernel name is refused
+  [info] Path A run-to-run: relative L2 0.00e+00, max 0.00e+00
+  [PASS] C1b float64 reference reproduces the kernel's Path A   Path A vs reference: relative L2 6.57e-03
+  [PASS] C1 [chunk] ragged == Path A, random orders 0-4   relative L2 7.60e-03 (max 8.72e-03), 4575 micro-steps instead of 8192
+  [PASS] C1c [chunk] ragged is as close to the reference as Path A is   ragged vs reference 7.05e-03, Path A vs reference 6.57e-03
+  [PASS] C2 [chunk] all gates open: ragged == Path A   relative L2 0.00e+00 (max 0.00e+00)
+  [PASS] C3 [chunk] mutant 'no_cu_seqlens' detected   relative L2 2.60e-01 (max 8.84e-01)
+  [PASS] C3 [chunk] mutant 'query_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [PASS] C3 [chunk] mutant 'read_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [skip] C3 decay_at_last: this model has no decay term (use_forget_gate=False)
+  [PASS] C6 [chunk] fused ragged == per-factor Path A   relative L2 7.60e-03 (max 8.72e-03)
+  [PASS] C6b [chunk] fused ragged is as close to the float64 reference as Path A is   fused ragged vs reference 7.05e-03, per-factor Path A 6.57e-03
+  [PASS] C7 [chunk] fused mutant 'no_cu_seqlens' detected   relative L2 2.60e-01 (max 8.84e-01)
+  [PASS] C7 [chunk] fused mutant 'query_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [PASS] C7 [chunk] fused mutant 'read_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [info] [recurrent] ragged vs Path A layer output: relative L2 7.43e-03
+  [PASS] C1r [recurrent] ragged == float64 reference, random orders 0-4   ragged vs reference 1.66e-03 (bf16 output rounding ~1.6e-3); Path A 6.57e-03
+  [PASS] C2r [recurrent] all gates open: ragged == float64 reference   ragged vs reference 1.66e-03; Path A 7.29e-03
+  [PASS] C3r [recurrent] mutant 'no_cu_seqlens' detected   relative L2 2.60e-01 (max 8.80e-01)
+  [PASS] C3r [recurrent] mutant 'query_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [PASS] C3r [recurrent] mutant 'read_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [skip] C3r decay_at_last: this model has no decay term (use_forget_gate=False)
+  [PASS] C6r [recurrent] fused ragged == float64 reference   fused ragged vs reference 1.66e-03; per-factor Path A 6.57e-03
+  [PASS] C7r [recurrent] fused mutant 'no_cu_seqlens' detected   relative L2 2.60e-01 (max 8.80e-01)
+  [PASS] C7r [recurrent] fused mutant 'query_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [PASS] C7r [recurrent] fused mutant 'read_at_first' detected   relative L2 7.83e-01 (max 1.00e+00)
+  [PASS] C5 fused Path A == per-factor Path A   relative L2 0.00e+00 (max 0.00e+00)
+  [PASS] C8 fixed n_h=4 layer: fused == per-factor   relative L2 0.00e+00 (max 0.00e+00)
+  [PASS] C4 timing harness sees 2x work   0.281 ms vs 0.523 ms, ratio 1.86
+PART 1: ALL PASS

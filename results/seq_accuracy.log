@@ -1,0 +1,212 @@
+check_seq_accuracy self-test (CPU, float64)
+  [PASS] X1 exact recurrence = the validated reference (with decay)   max err 0.0e+00
+  [PASS] X1 exact recurrence = the validated reference (without decay)   max err 0.0e+00
+  [PASS] X1b control: dropping the decay changes the result
+X2  drop-in kernel interface
+  [PASS] gated kernel returns (o in the input dtype, None)
+  [PASS] output = exact recurrence on the bf16 inputs, rounded once
+  [PASS] ungated kernel = exact recurrence without decay
+  [PASS] refuses initial state, final state, packing, and the un-normalised convention   [True, True, True, True]
+X3  the swap is applied and always undone
+  [PASS] swapped inside, restored after
+  [PASS] restored after an exception too
+X4  scoring and the decision on known answers
+  [PASS] sequence correct only if every token is
+  [PASS] discordant counts (a right & b wrong, a wrong & b right) = (1, 1)
+  [PASS] NO GENERAL DROP at a pooled drop of 0.005 (inclusive)
+  [PASS] FASTER-PATH FAULT: X with A, both above R
+  [PASS] ROUNDING SENSITIVITY: X also loses
+  [PASS] UNCLEAR: X between, closer to neither rule
+  [PASS] pooling weights models by their number of sequences (0.25)
+SELF-TEST PASSED
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed11.pt   trained: token 0.4218, order 1.1990
+  [PASS] G1 the swap is active and exact   X 1.71e-03, Path A 2.07e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.07e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.42184, recorded 0.42183
+  token  A 0.42184  R 0.42103  X 0.42227
+  seq    A 0.0000  R 0.0000  X 0.0005   discordant sequences A/R (0, 0)  A/X (0, 1)  R/X (0, 1)
+  Path A logit margin, median: all tokens 0.438; where A and R disagree 0.0625; where A and X disagree 0.03125
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed12.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.49e-03, Path A 1.81e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.81e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99979, recorded 0.99979
+  token  A 0.99979  R 0.99959  X 0.99992
+  seq    A 0.9795  R 0.9595  X 0.9925   discordant sequences A/R (68, 28)  A/X (2, 28)  R/X (5, 71)
+  Path A logit margin, median: all tokens 7.812; where A and R disagree 2.3125; where A and X disagree 0.6875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed13.pt   trained: token 1.0000, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.66e-03, Path A 2.14e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.14e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99997, recorded 0.99997
+  token  A 0.99997  R 0.99995  X 0.99997
+  seq    A 0.9965  R 0.9940  X 0.9960   discordant sequences A/R (6, 1)  A/X (4, 3)  R/X (2, 6)
+  Path A logit margin, median: all tokens 8.078; where A and R disagree 0.5625; where A and X disagree 0.5
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed1040.pt   trained: token 0.9993, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.59e-03, Path A 1.94e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.94e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99931, recorded 0.99931
+  token  A 0.99931  R 0.99852  X 0.99959
+  seq    A 0.9665  R 0.9250  X 0.9850   discordant sequences A/R (109, 26)  A/X (2, 39)  R/X (7, 127)
+  Path A logit margin, median: all tokens 7.969; where A and R disagree 1.90625; where A and X disagree 0.6875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed1046.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.68e-03, Path A 2.96e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.96e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99977, recorded 0.99977
+  token  A 0.99977  R 0.99937  X 0.99997
+  seq    A 0.9795  R 0.9495  X 0.9970   discordant sequences A/R (86, 26)  A/X (1, 36)  R/X (2, 97)
+  Path A logit margin, median: all tokens 7.750; where A and R disagree 3.4375; where A and X disagree 0.5625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed2036.pt   trained: token 0.8477, order 1.3649
+  [PASS] G1 the swap is active and exact   X 1.67e-03, Path A 4.57e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 4.57e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.84766, recorded 0.84766
+  token  A 0.84766  R 0.83473  X 0.85767
+  seq    A 0.2485  R 0.1850  X 0.3150   discordant sequences A/R (167, 40)  A/X (28, 161)  R/X (10, 270)
+  Path A logit margin, median: all tokens 5.500; where A and R disagree 0.3125; where A and X disagree 0.1875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed2038.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.62e-03, Path A 6.77e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 6.77e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99982, recorded 0.99982
+  token  A 0.99982  R 0.99922  X 0.99998
+  seq    A 0.9865  R 0.9500  X 0.9980   discordant sequences A/R (90, 17)  A/X (2, 25)  R/X (2, 98)
+  Path A logit margin, median: all tokens 7.656; where A and R disagree 5.3125; where A and X disagree 0.59375
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed2047.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.64e-03, Path A 1.96e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.96e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99994, recorded 0.99994
+  token  A 0.99994  R 0.99994  X 0.99996
+  seq    A 0.9925  R 0.9935  X 0.9960   discordant sequences A/R (6, 8)  A/X (2, 9)  R/X (1, 6)
+  Path A logit margin, median: all tokens 8.312; where A and R disagree 0.4375; where A and X disagree 0.15625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed31.pt   trained: token 0.9995, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.64e-03, Path A 1.49e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.49e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99948, recorded 0.99948
+  token  A 0.99948  R 0.99909  X 0.99966
+  seq    A 0.9750  R 0.9455  X 0.9865   discordant sequences A/R (77, 18)  A/X (4, 27)  R/X (5, 87)
+  Path A logit margin, median: all tokens 8.312; where A and R disagree 2.1875; where A and X disagree 0.625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed32.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.57e-03, Path A 2.02e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.02e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99988, recorded 0.99988
+  token  A 0.99988  R 0.99961  X 0.99995
+  seq    A 0.9855  R 0.9600  X 0.9935   discordant sequences A/R (65, 14)  A/X (7, 23)  R/X (4, 71)
+  Path A logit margin, median: all tokens 7.844; where A and R disagree 2.3125; where A and X disagree 0.5
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed34.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.63e-03, Path A 5.45e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 5.45e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99981, recorded 0.99981
+  token  A 0.99981  R 0.99954  X 0.99992
+  seq    A 0.9880  R 0.9600  X 0.9960   discordant sequences A/R (68, 12)  A/X (2, 18)  R/X (2, 74)
+  Path A logit margin, median: all tokens 7.656; where A and R disagree 3.375; where A and X disagree 0.625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed35.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.65e-03, Path A 1.97e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.97e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99993, recorded 0.99993
+  token  A 0.99993  R 0.99944  X 0.99998
+  seq    A 0.9955  R 0.9575  X 0.9985   discordant sequences A/R (81, 5)  A/X (0, 6)  R/X (1, 83)
+  Path A logit margin, median: all tokens 7.906; where A and R disagree 5.53125; where A and X disagree 0.75
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed37.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.61e-03, Path A 1.47e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.47e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99989, recorded 0.99989
+  token  A 0.99989  R 0.99880  X 1.00000
+  seq    A 0.9910  R 0.9255  X 0.9995   discordant sequences A/R (143, 12)  A/X (0, 17)  R/X (0, 148)
+  Path A logit margin, median: all tokens 7.906; where A and R disagree 5.625; where A and X disagree 0.375
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4033.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.66e-03, Path A 5.40e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 5.40e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99994, recorded 0.99994
+  token  A 0.99994  R 0.99991  X 0.99996
+  seq    A 0.9960  R 0.9935  X 0.9970   discordant sequences A/R (10, 5)  A/X (2, 4)  R/X (1, 8)
+  Path A logit margin, median: all tokens 8.344; where A and R disagree 0.5; where A and X disagree 0.25
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4039.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.57e-03, Path A 1.61e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.61e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99983, recorded 0.99983
+  token  A 0.99983  R 0.99966  X 0.99990
+  seq    A 0.9905  R 0.9810  X 0.9950   discordant sequences A/R (28, 9)  A/X (1, 10)  R/X (1, 29)
+  Path A logit margin, median: all tokens 8.312; where A and R disagree 2.8125; where A and X disagree 0.875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4042.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.60e-03, Path A 1.02e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.02e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99991, recorded 0.99991
+  token  A 0.99991  R 0.99972  X 0.99997
+  seq    A 0.9885  R 0.9760  X 0.9965   discordant sequences A/R (38, 13)  A/X (2, 18)  R/X (1, 42)
+  Path A logit margin, median: all tokens 7.875; where A and R disagree 1.875; where A and X disagree 0.625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4044.pt   trained: token 0.2744, order 1.0995
+  [PASS] G1 the swap is active and exact   X 1.72e-03, Path A 4.64e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 4.64e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.27445, recorded 0.27445
+  token  A 0.27445  R 0.27427  X 0.27474
+  seq    A 0.0000  R 0.0000  X 0.0000   discordant sequences A/R (0, 0)  A/X (0, 0)  R/X (0, 0)
+  Path A logit margin, median: all tokens 0.125; where A and R disagree 0.03125; where A and X disagree 0.03125
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed41.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.64e-03, Path A 8.25e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 8.25e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99986, recorded 0.99986
+  token  A 0.99986  R 0.99957  X 0.99996
+  seq    A 0.9880  R 0.9680  X 0.9955   discordant sequences A/R (49, 9)  A/X (0, 15)  R/X (1, 56)
+  Path A logit margin, median: all tokens 7.938; where A and R disagree 3.6875; where A and X disagree 0.625
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed43.pt   trained: token 1.0000, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.64e-03, Path A 2.69e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.69e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99996, recorded 0.99996
+  token  A 0.99996  R 0.99993  X 0.99998
+  seq    A 0.9960  R 0.9915  X 0.9980   discordant sequences A/R (10, 1)  A/X (0, 4)  R/X (0, 13)
+  Path A logit margin, median: all tokens 7.875; where A and R disagree 0.78125; where A and X disagree 0.53125
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed45.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.66e-03, Path A 4.04e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 4.04e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99988, recorded 0.99988
+  token  A 0.99988  R 0.99991  X 0.99990
+  seq    A 0.9940  R 0.9940  X 0.9945   discordant sequences A/R (4, 4)  A/X (3, 4)  R/X (2, 3)
+  Path A logit margin, median: all tokens 8.344; where A and R disagree 0.5625; where A and X disagree 0.1875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed48.pt   trained: token 0.9999, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.62e-03, Path A 2.05e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.05e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99995, recorded 0.99995
+  token  A 0.99995  R 0.99989  X 0.99996
+  seq    A 0.9985  R 0.9950  X 0.9990   discordant sequences A/R (8, 1)  A/X (1, 2)  R/X (0, 8)
+  Path A logit margin, median: all tokens 8.281; where A and R disagree 0.75; where A and X disagree 0.4375
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed49.pt   trained: token 1.0000, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.66e-03, Path A 6.86e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 6.86e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99996, recorded 0.99996
+  token  A 0.99996  R 0.99996  X 0.99998
+  seq    A 0.9965  R 0.9960  X 0.9985   discordant sequences A/R (4, 3)  A/X (0, 4)  R/X (0, 5)
+  Path A logit margin, median: all tokens 7.781; where A and R disagree 0.4375; where A and X disagree 0.4375
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed50.pt   trained: token 1.0000, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.68e-03, Path A 8.40e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 8.40e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99998, recorded 0.99998
+  token  A 0.99998  R 0.99997  X 1.00000
+  seq    A 0.9985  R 0.9975  X 0.9995   discordant sequences A/R (3, 1)  A/X (0, 2)  R/X (0, 4)
+  Path A logit margin, median: all tokens 7.781; where A and R disagree 3.0; where A and X disagree 0.0
+
+==============================================================================
+POOLED over 20 models that learned the task (Path A token accuracy >= 0.99):
+  sequence accuracy  A 0.9891   R 0.9706   X 0.9956
+  per-model drop A - R, sorted: -0.0010 +0.0000 +0.0005 +0.0010 +0.0025 +0.0025 +0.0035 +0.0045 +0.0095 +0.0125 +0.0200 +0.0200 +0.0255 +0.0280 +0.0295 +0.0300 +0.0365 +0.0380 +0.0415 +0.0655
+  DECISION: UNCLEAR
+saved /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/results/seq_accuracy.json

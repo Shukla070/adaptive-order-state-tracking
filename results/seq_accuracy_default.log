@@ -1,0 +1,52 @@
+check_seq_accuracy self-test (CPU, float64)
+  [PASS] X1 exact recurrence = the validated reference (with decay)   max err 0.0e+00
+  [PASS] X1 exact recurrence = the validated reference (without decay)   max err 0.0e+00
+  [PASS] X1b control: dropping the decay changes the result
+X2  drop-in kernel interface
+  [PASS] gated kernel returns (o in the input dtype, None)
+  [PASS] output = exact recurrence on the bf16 inputs, rounded once
+  [PASS] ungated kernel = exact recurrence without decay
+  [PASS] refuses initial state, final state, packing, and the un-normalised convention   [True, True, True, True]
+X3  the swap is applied and always undone
+  [PASS] swapped inside, restored after
+  [PASS] restored after an exception too
+X4  scoring and the decision on known answers
+  [PASS] sequence correct only if every token is
+  [PASS] discordant counts (a right & b wrong, a wrong & b right) = (1, 1)
+  [PASS] NO GENERAL DROP at a pooled drop of 0.005 (inclusive)
+  [PASS] FASTER-PATH FAULT: X with A, both above R
+  [PASS] ROUNDING SENSITIVITY: X also loses
+  [PASS] UNCLEAR: X between, closer to neither rule
+  [PASS] pooling weights models by their number of sequences (0.25)
+SELF-TEST PASSED
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed12.pt   trained: token 0.9998, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.49e-03, Path A 1.81e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.81e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99979, recorded 0.99979
+  token  A 0.99979  R 0.99992  X 0.99992
+  seq    A 0.9795  R 0.9925  X 0.9925   discordant sequences A/R (2, 28)  A/X (2, 28)  R/X (0, 0)
+  Path A logit margin, median: all tokens 7.812; where A and R disagree 0.6875; where A and X disagree 0.6875
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed13.pt   trained: token 1.0000, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.66e-03, Path A 2.14e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 2.14e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99997, recorded 0.99997
+  token  A 0.99997  R 0.99997  X 0.99997
+  seq    A 0.9965  R 0.9960  X 0.9960   discordant sequences A/R (4, 3)  A/X (4, 3)  R/X (0, 0)
+  Path A logit margin, median: all tokens 8.078; where A and R disagree 0.5; where A and X disagree 0.5
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed1040.pt   trained: token 0.9993, order 1.2985
+  [PASS] G1 the swap is active and exact   X 1.59e-03, Path A 1.94e-02
+  [PASS] G2 G1 can fail: Path A's own error exceeds G1's tolerance   Path A 1.94e-02 > 5e-03
+  [PASS] G0 checkpoint reloads: Path A token accuracy matches the training record   now 0.99931, recorded 0.99931
+  token  A 0.99931  R 0.99959  X 0.99959
+  seq    A 0.9665  R 0.9850  X 0.9850   discordant sequences A/R (2, 39)  A/X (2, 39)  R/X (0, 0)
+  Path A logit margin, median: all tokens 7.969; where A and R disagree 0.6875; where A and X disagree 0.6875
+
+==============================================================================
+POOLED over 3 models that learned the task (Path A token accuracy >= 0.99):
+  sequence accuracy  A 0.9808   R 0.9912   X 0.9912
+  per-model drop A - R, sorted: -0.0185 -0.0130 +0.0005
+  DECISION: NO GENERAL DROP
+saved results/seq_accuracy_default.json

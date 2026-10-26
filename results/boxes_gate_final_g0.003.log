@@ -1,0 +1,283 @@
+torch 2.6.0+cu126 | device: cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+boxes: vocab 123, train 78402, eval [2000, 2000, 2000, 2000, 2000, 1020], UNK tokens in eval: 0
+    train on ops<=2 (78402 ex), eval on ops 0..8 (ops>2 = extrapolation); dev split [1000, 1000, 1000, 1000, 609, 200]
+    rule: d_ff 455, params 469,120 (target 469,120)
+    learned: d_ff 422, params 468,996 (target 469,120)
+    fixed21: d_ff 522, params 469,120 (target 469,120)
+    fixed22: d_ff 455, params 469,120 (target 469,120)
+
+>>> boxes_gate|learned|g0.003|seed10  (11:02)
+  [learned g0.003 seed10] step    500  task 1.5023  order 1.986  gamma_eff 0.0004  1.1 min
+  [learned g0.003 seed10] step   1000  task 0.8540  order 1.921  gamma_eff 0.0008  2.2 min
+  [learned g0.003 seed10] step   1500  task 0.2583  order 1.852  gamma_eff 0.0011  3.3 min
+  [learned g0.003 seed10] step   2000  task 0.0954  order 1.780  gamma_eff 0.0015  4.3 min
+  [learned g0.003 seed10]   quick-eval E 0.595  order 1.724
+  [learned g0.003 seed10] step   2500  task 0.0486  order 1.675  gamma_eff 0.0019  5.4 min
+  [learned g0.003 seed10] step   3000  task 0.0304  order 1.610  gamma_eff 0.0023  6.5 min
+  [learned g0.003 seed10] step   3500  task 0.0208  order 1.560  gamma_eff 0.0026  7.6 min
+  [learned g0.003 seed10] step   4000  task 0.0152  order 1.535  gamma_eff 0.0030  8.6 min
+  [learned g0.003 seed10]   quick-eval E 0.799  order 1.503
+  [learned g0.003 seed10] step   4500  task 0.0129  order 1.523  gamma_eff 0.0030  9.7 min
+  [learned g0.003 seed10] step   5000  task 0.0108  order 1.516  gamma_eff 0.0030  10.8 min
+  [learned g0.003 seed10] step   5500  task 0.0093  order 1.507  gamma_eff 0.0030  11.8 min
+  [learned g0.003 seed10] step   6000  task 0.0082  order 1.496  gamma_eff 0.0030  12.9 min
+  [learned g0.003 seed10]   quick-eval E 0.825  order 1.499
+  [learned g0.003 seed10] step   6500  task 0.0083  order 1.500  gamma_eff 0.0030  14.0 min
+  [learned g0.003 seed10] step   7000  task 0.0074  order 1.497  gamma_eff 0.0030  15.1 min
+  [learned g0.003 seed10] step   7500  task 0.0064  order 1.485  gamma_eff 0.0030  16.1 min
+  [learned g0.003 seed10] step   8000  task 0.0059  order 1.489  gamma_eff 0.0030  17.2 min
+  [learned g0.003 seed10]   quick-eval E 0.741  order 1.481
+  [learned g0.003 seed10] step   8500  task 0.0053  order 1.478  gamma_eff 0.0030  18.3 min
+  [learned g0.003 seed10] step   9000  task 0.0085  order 1.484  gamma_eff 0.0030  19.3 min
+  [learned g0.003 seed10] step   9500  task 0.0046  order 1.475  gamma_eff 0.0030  20.4 min
+  [learned g0.003 seed10] step  10000  task 0.0083  order 1.467  gamma_eff 0.0030  21.5 min
+  [learned g0.003 seed10]   quick-eval E 0.821  order 1.471  dev E 0.824
+  [learned g0.003 seed10] step  10500  task 0.0073  order 1.466  gamma_eff 0.0030  22.6 min
+  [learned g0.003 seed10] step  11000  task 0.0051  order 1.461  gamma_eff 0.0030  23.7 min
+  [learned g0.003 seed10] step  11500  task 0.0051  order 1.465  gamma_eff 0.0030  24.8 min
+  [learned g0.003 seed10] step  12000  task 0.0043  order 1.452  gamma_eff 0.0030  25.8 min
+  [learned g0.003 seed10]   quick-eval E 0.863  order 1.396  dev E 0.875
+  [learned g0.003 seed10] step  12500  task 0.0049  order 1.454  gamma_eff 0.0030  27.0 min
+  [learned g0.003 seed10] step  13000  task 0.0036  order 1.453  gamma_eff 0.0030  28.0 min
+  [learned g0.003 seed10] step  13500  task 0.0052  order 1.452  gamma_eff 0.0030  29.1 min
+  [learned g0.003 seed10] step  14000  task 0.0050  order 1.458  gamma_eff 0.0030  30.2 min
+  [learned g0.003 seed10]   quick-eval E 0.869  order 1.465  dev E 0.857
+  [learned g0.003 seed10] step  14500  task 0.0034  order 1.466  gamma_eff 0.0030  31.3 min
+  [learned g0.003 seed10] step  15000  task 0.0031  order 1.460  gamma_eff 0.0030  32.4 min
+  [learned g0.003 seed10] step  15500  task 0.0029  order 1.453  gamma_eff 0.0030  33.4 min
+  [learned g0.003 seed10] step  16000  task 0.0055  order 1.444  gamma_eff 0.0030  34.5 min
+  [learned g0.003 seed10]   quick-eval E 0.895  order 1.460  dev E 0.914
+<<< boxes_gate|learned|g0.003|seed10  test E 0.897  dev E 0.912  order 1.461  description 1.49  operation 1.43  query 1.50  answer 1.52  (34.7 min)
+
+>>> boxes_gate|learned|g0.003|seed11  (11:38)
+  [learned g0.003 seed11] step    500  task 1.5083  order 1.997  gamma_eff 0.0004  1.1 min
+  [learned g0.003 seed11] step   1000  task 0.8786  order 1.936  gamma_eff 0.0008  2.1 min
+  [learned g0.003 seed11] step   1500  task 0.2375  order 1.887  gamma_eff 0.0011  3.2 min
+  [learned g0.003 seed11] step   2000  task 0.0593  order 1.808  gamma_eff 0.0015  4.3 min
+  [learned g0.003 seed11]   quick-eval E 0.617  order 1.730
+  [learned g0.003 seed11] step   2500  task 0.0332  order 1.745  gamma_eff 0.0019  5.4 min
+  [learned g0.003 seed11] step   3000  task 0.0232  order 1.646  gamma_eff 0.0023  6.5 min
+  [learned g0.003 seed11] step   3500  task 0.0191  order 1.596  gamma_eff 0.0026  7.5 min
+  [learned g0.003 seed11] step   4000  task 0.0154  order 1.577  gamma_eff 0.0030  8.6 min
+  [learned g0.003 seed11]   quick-eval E 0.761  order 1.527
+  [learned g0.003 seed11] step   4500  task 0.0139  order 1.530  gamma_eff 0.0030  9.7 min
+  [learned g0.003 seed11] step   5000  task 0.0117  order 1.511  gamma_eff 0.0030  10.8 min
+  [learned g0.003 seed11] step   5500  task 0.0110  order 1.510  gamma_eff 0.0030  11.9 min
+  [learned g0.003 seed11] step   6000  task 0.0091  order 1.509  gamma_eff 0.0030  13.0 min
+  [learned g0.003 seed11]   quick-eval E 0.767  order 1.488
+  [learned g0.003 seed11] step   6500  task 0.0080  order 1.509  gamma_eff 0.0030  14.1 min
+  [learned g0.003 seed11] step   7000  task 0.0079  order 1.503  gamma_eff 0.0030  15.1 min
+  [learned g0.003 seed11] step   7500  task 0.0068  order 1.480  gamma_eff 0.0030  16.1 min
+  [learned g0.003 seed11] step   8000  task 0.0064  order 1.483  gamma_eff 0.0030  17.2 min
+  [learned g0.003 seed11]   quick-eval E 0.851  order 1.489
+  [learned g0.003 seed11] step   8500  task 0.0058  order 1.479  gamma_eff 0.0030  18.3 min
+  [learned g0.003 seed11] step   9000  task 0.0046  order 1.475  gamma_eff 0.0030  19.4 min
+  [learned g0.003 seed11] step   9500  task 0.0041  order 1.471  gamma_eff 0.0030  20.4 min
+  [learned g0.003 seed11] step  10000  task 0.0048  order 1.456  gamma_eff 0.0030  21.5 min
+  [learned g0.003 seed11]   quick-eval E 0.773  order 1.487  dev E 0.796
+  [learned g0.003 seed11] step  10500  task 0.0044  order 1.464  gamma_eff 0.0030  22.6 min
+  [learned g0.003 seed11] step  11000  task 0.0035  order 1.457  gamma_eff 0.0030  23.7 min
+  [learned g0.003 seed11] step  11500  task 0.0038  order 1.461  gamma_eff 0.0030  24.8 min
+  [learned g0.003 seed11] step  12000  task 0.0039  order 1.451  gamma_eff 0.0030  25.8 min
+  [learned g0.003 seed11]   quick-eval E 0.888  order 1.380  dev E 0.851
+  [learned g0.003 seed11] step  12500  task 0.0035  order 1.433  gamma_eff 0.0030  27.0 min
+  [learned g0.003 seed11] step  13000  task 0.0030  order 1.433  gamma_eff 0.0030  28.0 min
+  [learned g0.003 seed11] step  13500  task 0.0035  order 1.433  gamma_eff 0.0030  29.1 min
+  [learned g0.003 seed11] step  14000  task 0.0035  order 1.428  gamma_eff 0.0030  30.2 min
+  [learned g0.003 seed11]   quick-eval E 0.873  order 1.446  dev E 0.887
+  [learned g0.003 seed11] step  14500  task 0.0030  order 1.408  gamma_eff 0.0030  31.3 min
+  [learned g0.003 seed11] step  15000  task 0.0024  order 1.398  gamma_eff 0.0030  32.4 min
+  [learned g0.003 seed11] step  15500  task 0.0025  order 1.428  gamma_eff 0.0030  33.5 min
+  [learned g0.003 seed11] step  16000  task 0.0028  order 1.419  gamma_eff 0.0030  34.5 min
+  [learned g0.003 seed11]   quick-eval E 0.868  order 1.353  dev E 0.868
+<<< boxes_gate|learned|g0.003|seed11  test E 0.869  dev E 0.865  order 1.354  description 1.38  operation 1.32  query 1.21  answer 1.46  (34.7 min)
+
+>>> boxes_gate|learned|g0.003|seed12  (12:13)
+  [learned g0.003 seed12] step    500  task 1.5141  order 1.943  gamma_eff 0.0004  1.1 min
+  [learned g0.003 seed12] step   1000  task 1.0141  order 1.862  gamma_eff 0.0008  2.1 min
+  [learned g0.003 seed12] step   1500  task 0.4957  order 1.858  gamma_eff 0.0011  3.2 min
+  [learned g0.003 seed12] step   2000  task 0.1038  order 1.832  gamma_eff 0.0015  4.3 min
+  [learned g0.003 seed12]   quick-eval E 0.595  order 1.735
+  [learned g0.003 seed12] step   2500  task 0.0442  order 1.739  gamma_eff 0.0019  5.4 min
+  [learned g0.003 seed12] step   3000  task 0.0296  order 1.674  gamma_eff 0.0023  6.4 min
+  [learned g0.003 seed12] step   3500  task 0.0211  order 1.612  gamma_eff 0.0026  7.5 min
+  [learned g0.003 seed12] step   4000  task 0.0173  order 1.553  gamma_eff 0.0030  8.6 min
+  [learned g0.003 seed12]   quick-eval E 0.767  order 1.677
+  [learned g0.003 seed12] step   4500  task 0.0136  order 1.506  gamma_eff 0.0030  9.7 min
+  [learned g0.003 seed12] step   5000  task 0.0098  order 1.439  gamma_eff 0.0030  10.7 min
+  [learned g0.003 seed12] step   5500  task 0.0082  order 1.429  gamma_eff 0.0030  11.8 min
+  [learned g0.003 seed12] step   6000  task 0.0071  order 1.419  gamma_eff 0.0030  12.9 min
+  [learned g0.003 seed12]   quick-eval E 0.833  order 1.376
+  [learned g0.003 seed12] step   6500  task 0.0062  order 1.408  gamma_eff 0.0030  14.0 min
+  [learned g0.003 seed12] step   7000  task 0.0065  order 1.402  gamma_eff 0.0030  15.0 min
+  [learned g0.003 seed12] step   7500  task 0.0063  order 1.387  gamma_eff 0.0030  16.1 min
+  [learned g0.003 seed12] step   8000  task 0.0060  order 1.393  gamma_eff 0.0030  17.2 min
+  [learned g0.003 seed12]   quick-eval E 0.887  order 1.385
+  [learned g0.003 seed12] step   8500  task 0.0051  order 1.391  gamma_eff 0.0030  18.3 min
+  [learned g0.003 seed12] step   9000  task 0.0066  order 1.377  gamma_eff 0.0030  19.3 min
+  [learned g0.003 seed12] step   9500  task 0.0053  order 1.363  gamma_eff 0.0030  20.4 min
+  [learned g0.003 seed12] step  10000  task 0.0045  order 1.360  gamma_eff 0.0030  21.5 min
+  [learned g0.003 seed12]   quick-eval E 0.846  order 1.337  dev E 0.840
+  [learned g0.003 seed12] step  10500  task 0.0045  order 1.345  gamma_eff 0.0030  22.6 min
+  [learned g0.003 seed12] step  11000  task 0.0053  order 1.337  gamma_eff 0.0030  23.7 min
+  [learned g0.003 seed12] step  11500  task 0.0047  order 1.335  gamma_eff 0.0030  24.7 min
+  [learned g0.003 seed12] step  12000  task 0.0038  order 1.336  gamma_eff 0.0030  25.8 min
+  [learned g0.003 seed12]   quick-eval E 0.875  order 1.323  dev E 0.860
+  [learned g0.003 seed12] step  12500  task 0.0043  order 1.320  gamma_eff 0.0030  26.9 min
+  [learned g0.003 seed12] step  13000  task 0.0038  order 1.327  gamma_eff 0.0030  28.0 min
+  [learned g0.003 seed12] step  13500  task 0.0039  order 1.318  gamma_eff 0.0030  29.1 min
+  [learned g0.003 seed12] step  14000  task 0.0037  order 1.323  gamma_eff 0.0030  30.1 min
+  [learned g0.003 seed12]   quick-eval E 0.919  order 1.297  dev E 0.922
+  [learned g0.003 seed12] step  14500  task 0.0026  order 1.317  gamma_eff 0.0030  31.3 min
+  [learned g0.003 seed12] step  15000  task 0.0041  order 1.307  gamma_eff 0.0030  32.3 min
+  [learned g0.003 seed12] step  15500  task 0.0030  order 1.305  gamma_eff 0.0030  33.4 min
+  [learned g0.003 seed12] step  16000  task 0.0026  order 1.318  gamma_eff 0.0030  34.5 min
+  [learned g0.003 seed12]   quick-eval E 0.865  order 1.310  dev E 0.872
+<<< boxes_gate|learned|g0.003|seed12  test E 0.871  dev E 0.874  order 1.309  description 1.28  operation 1.33  query 1.50  answer 1.18  (34.7 min)
+
+>>> boxes_gate|learned|g0.003|seed13  (12:48)
+  [learned g0.003 seed13] step    500  task 1.5099  order 1.973  gamma_eff 0.0004  1.1 min
+  [learned g0.003 seed13] step   1000  task 0.6574  order 1.912  gamma_eff 0.0008  2.1 min
+  [learned g0.003 seed13] step   1500  task 0.1199  order 1.837  gamma_eff 0.0011  3.2 min
+  [learned g0.003 seed13] step   2000  task 0.0586  order 1.753  gamma_eff 0.0015  4.3 min
+  [learned g0.003 seed13]   quick-eval E 0.641  order 1.745
+  [learned g0.003 seed13] step   2500  task 0.0391  order 1.675  gamma_eff 0.0019  5.4 min
+  [learned g0.003 seed13] step   3000  task 0.0294  order 1.587  gamma_eff 0.0023  6.4 min
+  [learned g0.003 seed13] step   3500  task 0.0253  order 1.553  gamma_eff 0.0026  7.5 min
+  [learned g0.003 seed13] step   4000  task 0.0205  order 1.516  gamma_eff 0.0030  8.6 min
+  [learned g0.003 seed13]   quick-eval E 0.704  order 1.503
+  [learned g0.003 seed13] step   4500  task 0.0170  order 1.494  gamma_eff 0.0030  9.7 min
+  [learned g0.003 seed13] step   5000  task 0.0155  order 1.488  gamma_eff 0.0030  10.7 min
+  [learned g0.003 seed13] step   5500  task 0.0130  order 1.470  gamma_eff 0.0030  11.8 min
+  [learned g0.003 seed13] step   6000  task 0.0135  order 1.471  gamma_eff 0.0030  12.8 min
+  [learned g0.003 seed13]   quick-eval E 0.681  order 1.456
+  [learned g0.003 seed13] step   6500  task 0.0121  order 1.456  gamma_eff 0.0030  14.0 min
+  [learned g0.003 seed13] step   7000  task 0.0111  order 1.445  gamma_eff 0.0030  15.0 min
+  [learned g0.003 seed13] step   7500  task 0.0108  order 1.447  gamma_eff 0.0030  16.1 min
+  [learned g0.003 seed13] step   8000  task 0.0090  order 1.447  gamma_eff 0.0030  17.2 min
+  [learned g0.003 seed13]   quick-eval E 0.727  order 1.412
+  [learned g0.003 seed13] step   8500  task 0.0102  order 1.430  gamma_eff 0.0030  18.3 min
+  [learned g0.003 seed13] step   9000  task 0.0079  order 1.438  gamma_eff 0.0030  19.4 min
+  [learned g0.003 seed13] step   9500  task 0.0080  order 1.437  gamma_eff 0.0030  20.4 min
+  [learned g0.003 seed13] step  10000  task 0.0069  order 1.421  gamma_eff 0.0030  21.5 min
+  [learned g0.003 seed13]   quick-eval E 0.691  order 1.390  dev E 0.663
+  [learned g0.003 seed13] step  10500  task 0.0062  order 1.420  gamma_eff 0.0030  22.6 min
+  [learned g0.003 seed13] step  11000  task 0.0074  order 1.414  gamma_eff 0.0030  23.7 min
+  [learned g0.003 seed13] step  11500  task 0.0058  order 1.415  gamma_eff 0.0030  24.7 min
+  [learned g0.003 seed13] step  12000  task 0.0069  order 1.413  gamma_eff 0.0030  25.8 min
+  [learned g0.003 seed13]   quick-eval E 0.697  order 1.405  dev E 0.738
+  [learned g0.003 seed13] step  12500  task 0.0058  order 1.406  gamma_eff 0.0030  26.9 min
+  [learned g0.003 seed13] step  13000  task 0.0050  order 1.406  gamma_eff 0.0030  28.0 min
+  [learned g0.003 seed13] step  13500  task 0.0057  order 1.410  gamma_eff 0.0030  29.0 min
+  [learned g0.003 seed13] step  14000  task 0.0056  order 1.407  gamma_eff 0.0030  30.1 min
+  [learned g0.003 seed13]   quick-eval E 0.679  order 1.379  dev E 0.714
+  [learned g0.003 seed13] step  14500  task 0.0060  order 1.399  gamma_eff 0.0030  31.2 min
+  [learned g0.003 seed13] step  15000  task 0.0037  order 1.395  gamma_eff 0.0030  32.3 min
+  [learned g0.003 seed13] step  15500  task 0.0061  order 1.400  gamma_eff 0.0030  33.4 min
+  [learned g0.003 seed13] step  16000  task 0.0037  order 1.392  gamma_eff 0.0030  34.5 min
+  [learned g0.003 seed13]   quick-eval E 0.721  order 1.397  dev E 0.754
+<<< boxes_gate|learned|g0.003|seed13  test E 0.726  dev E 0.747  order 1.398  description 1.43  operation 1.35  query 1.52  answer 1.61  (34.7 min)
+
+>>> boxes_gate|learned|g0.003|seed14  (13:22)
+  [learned g0.003 seed14] step    500  task 1.4989  order 1.970  gamma_eff 0.0004  1.1 min
+  [learned g0.003 seed14] step   1000  task 0.9747  order 1.901  gamma_eff 0.0008  2.1 min
+  [learned g0.003 seed14] step   1500  task 0.4406  order 1.874  gamma_eff 0.0011  3.2 min
+  [learned g0.003 seed14] step   2000  task 0.1517  order 1.835  gamma_eff 0.0015  4.3 min
+  [learned g0.003 seed14]   quick-eval E 0.493  order 1.853
+  [learned g0.003 seed14] step   2500  task 0.0726  order 1.751  gamma_eff 0.0019  5.4 min
+  [learned g0.003 seed14] step   3000  task 0.0451  order 1.682  gamma_eff 0.0023  6.4 min
+  [learned g0.003 seed14] step   3500  task 0.0318  order 1.620  gamma_eff 0.0026  7.5 min
+  [learned g0.003 seed14] step   4000  task 0.0249  order 1.592  gamma_eff 0.0030  8.6 min
+  [learned g0.003 seed14]   quick-eval E 0.690  order 1.536
+  [learned g0.003 seed14] step   4500  task 0.0188  order 1.535  gamma_eff 0.0030  9.7 min
+  [learned g0.003 seed14] step   5000  task 0.0142  order 1.505  gamma_eff 0.0030  10.7 min
+  [learned g0.003 seed14] step   5500  task 0.0107  order 1.496  gamma_eff 0.0030  11.8 min
+  [learned g0.003 seed14] step   6000  task 0.0094  order 1.487  gamma_eff 0.0030  12.9 min
+  [learned g0.003 seed14]   quick-eval E 0.765  order 1.466
+  [learned g0.003 seed14] step   6500  task 0.0079  order 1.480  gamma_eff 0.0030  14.0 min
+  [learned g0.003 seed14] step   7000  task 0.0072  order 1.471  gamma_eff 0.0030  15.0 min
+  [learned g0.003 seed14] step   7500  task 0.0060  order 1.473  gamma_eff 0.0030  16.1 min
+  [learned g0.003 seed14] step   8000  task 0.0054  order 1.471  gamma_eff 0.0030  17.2 min
+  [learned g0.003 seed14]   quick-eval E 0.859  order 1.465
+  [learned g0.003 seed14] step   8500  task 0.0049  order 1.459  gamma_eff 0.0030  18.3 min
+  [learned g0.003 seed14] step   9000  task 0.0040  order 1.454  gamma_eff 0.0030  19.4 min
+  [learned g0.003 seed14] step   9500  task 0.0046  order 1.467  gamma_eff 0.0030  20.4 min
+  [learned g0.003 seed14] step  10000  task 0.0041  order 1.440  gamma_eff 0.0030  21.5 min
+  [learned g0.003 seed14]   quick-eval E 0.810  order 1.415  dev E 0.803
+  [learned g0.003 seed14] step  10500  task 0.0038  order 1.409  gamma_eff 0.0030  22.6 min
+  [learned g0.003 seed14] step  11000  task 0.0040  order 1.411  gamma_eff 0.0030  23.7 min
+  [learned g0.003 seed14] step  11500  task 0.0036  order 1.404  gamma_eff 0.0030  24.8 min
+  [learned g0.003 seed14] step  12000  task 0.0032  order 1.406  gamma_eff 0.0030  25.8 min
+  [learned g0.003 seed14]   quick-eval E 0.832  order 1.408  dev E 0.831
+  [learned g0.003 seed14] step  12500  task 0.0028  order 1.402  gamma_eff 0.0030  26.9 min
+  [learned g0.003 seed14] step  13000  task 0.0031  order 1.406  gamma_eff 0.0030  28.0 min
+  [learned g0.003 seed14] step  13500  task 0.0032  order 1.387  gamma_eff 0.0030  29.1 min
+  [learned g0.003 seed14] step  14000  task 0.0030  order 1.391  gamma_eff 0.0030  30.1 min
+  [learned g0.003 seed14]   quick-eval E 0.884  order 1.399  dev E 0.890
+  [learned g0.003 seed14] step  14500  task 0.0030  order 1.384  gamma_eff 0.0030  31.3 min
+  [learned g0.003 seed14] step  15000  task 0.0029  order 1.395  gamma_eff 0.0030  32.3 min
+  [learned g0.003 seed14] step  15500  task 0.0027  order 1.392  gamma_eff 0.0030  33.4 min
+  [learned g0.003 seed14] step  16000  task 0.0024  order 1.394  gamma_eff 0.0030  34.5 min
+  [learned g0.003 seed14]   quick-eval E 0.873  order 1.394  dev E 0.888
+<<< boxes_gate|learned|g0.003|seed14  test E 0.882  dev E 0.889  order 1.395  description 1.44  operation 1.35  query 1.25  answer 1.48  (34.7 min)
+
+==============================================================================
+LEARNED GATE ON BOXES  (E = exact match on 3+ operations; order = factors per token)
+==============================================================================
+  references (results/boxes_order.json): fixed 1 median E 0.81, fixed 2 median E 0.915
+
+  hand rule (5 runs): E [0.621 0.696 0.793 0.796 0.859] median 0.793, order 1.508  -> below the bar
+
+  learned gate, gamma 0.001, probe (3 runs)
+     seed  0: test E 0.868 (late 0.871)  dev E 0.867  (dev late 0.870)  order 1.516 (0-2 ops 1.518)  [description 1.53  operation 1.51  query 1.50  answer 1.54]  step-500 order 1.984
+     seed  1: test E 0.797 (late 0.784)  dev E 0.786  (dev late 0.767)  order 1.410 (0-2 ops 1.417)  [description 1.45  operation 1.37  query 1.27  answer 1.55]  step-500 order 1.911
+     seed  2: test E 0.948 (late 0.890)  dev E 0.949  (dev late 0.904)  order 1.472 (0-2 ops 1.476)  [description 1.50  operation 1.45  query 1.46  answer 1.53]  step-500 order 1.991
+     order change over the last quarter, median -0.033 -> still falling
+
+  learned gate, gamma 0.003, probe (3 runs)
+     seed  0: test E 0.897 (late 0.876)  dev E 0.889  (dev late 0.865)  order 1.432 (0-2 ops 1.436)  [description 1.44  operation 1.41  query 1.25  answer 1.65]  step-500 order 1.984
+     seed  1: test E 0.810 (late 0.767)  dev E 0.831  (dev late 0.775)  order 1.339 (0-2 ops 1.346)  [description 1.38  operation 1.30  query 1.25  answer 1.48]  step-500 order 1.917
+     seed  2: test E 0.922 (late 0.858)  dev E 0.915  (dev late 0.855)  order 1.404 (0-2 ops 1.407)  [description 1.42  operation 1.39  query 1.43  answer 1.40]  step-500 order 1.972
+
+  learned gate, gamma 0.003, final (5 runs)
+     seed 10: test E 0.897 (late 0.862)  dev E 0.912  (dev late 0.868)  order 1.461 (0-2 ops 1.467)  [description 1.49  operation 1.43  query 1.50  answer 1.52]  step-500 order 1.965
+     seed 11: test E 0.869 (late 0.851)  dev E 0.865  (dev late 0.851)  order 1.354 (0-2 ops 1.359)  [description 1.38  operation 1.32  query 1.21  answer 1.46]  step-500 order 1.976
+     seed 12: test E 0.871 (late 0.876)  dev E 0.874  (dev late 0.874)  order 1.309 (0-2 ops 1.305)  [description 1.28  operation 1.33  query 1.50  answer 1.18]  step-500 order 1.893
+     seed 13: test E 0.726 (late 0.697)  dev E 0.747  (dev late 0.717)  order 1.398 (0-2 ops 1.406)  [description 1.43  operation 1.35  query 1.52  answer 1.61]  step-500 order 1.944
+     seed 14: test E 0.882 (late 0.850)  dev E 0.889  (dev late 0.853)  order 1.395 (0-2 ops 1.404)  [description 1.44  operation 1.35  query 1.25  answer 1.48]  step-500 order 1.919
+     order change over the last quarter, median -0.003 -> settles
+
+  learned gate, gamma 0.01, probe (2 runs)
+     seed  0: test E 0.909 (late 0.842)  dev E 0.895  order 1.305 (0-2 ops 1.311)  [description 1.33  operation 1.28  query 1.25  answer 1.40]  step-500 order 1.944
+     seed  1: test E 0.689 (late 0.753)  dev E 0.696  order 1.317 (0-2 ops 1.321)  [description 1.33  operation 1.30  query 1.25  answer 1.47]  step-500 order 1.842
+
+  learned gate, gamma 0.03, probe (2 runs)
+     seed  0: test E 0.898 (late 0.883)  dev E 0.882  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.852
+     seed  1: test E 0.657 (late 0.719)  dev E 0.662  order 1.132 (0-2 ops 1.130)  [description 1.11  operation 1.15  query 1.00  answer 1.22]  step-500 order 1.701
+
+  learned gate, gamma 0.1, probe (2 runs)
+     seed  0: test E 0.926 (late 0.889)  dev E 0.935  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.557
+     seed  1: test E 0.888 (late 0.855)  dev E 0.883  order 1.089 (0-2 ops 1.092)  [description 1.10  operation 1.07  query 1.00  answer 1.15]  step-500 order 1.600
+
+  learned gate, gamma 0.1, final (5 runs)
+     seed 10: test E 0.835 (late 0.842)  dev E 0.820  order 1.032 (0-2 ops 1.028)  [description 1.01  operation 1.06  query 1.00  answer 1.00]  step-500 order 1.561
+     seed 11: test E 0.856 (late 0.852)  dev E 0.849  order 1.082 (0-2 ops 1.085)  [description 1.10  operation 1.07  query 1.00  answer 1.14]  step-500 order 1.437
+     seed 12: test E 0.720 (late 0.683)  dev E 0.692  order 1.029 (0-2 ops 1.034)  [description 1.06  operation 1.00  query 1.00  answer 1.11]  step-500 order 1.606
+     seed 13: test E 0.769 (late 0.788)  dev E 0.771  order 1.088 (0-2 ops 1.091)  [description 1.10  operation 1.07  query 1.00  answer 1.14]  step-500 order 1.626
+     seed 14: test E 0.855 (late 0.856)  dev E 0.865  order 1.029 (0-2 ops 1.034)  [description 1.06  operation 1.00  query 1.00  answer 1.11]  step-500 order 1.642
+
+  GAMMA CHOSEN ON DEV (largest within 0.02 of the best median): 0.1
+
+  FOLLOW-UP (amended 23 Oct): scores are late averages (mean E over the last 4 quick evaluations)
+     fixed 1 (5 runs) [0.614 0.713 0.799 0.833 0.881] median 0.799
+     fixed 2 (8 runs, sweep + fixed22) [0.675 0.792 0.836 0.853 0.856 0.872 0.895 0.902] median 0.855  -> bar 0.825
+  FOLLOW-UP GAMMA CHOSEN ON DEV LATE AVERAGE among (0.001, 0.003): 0.003 (median dev late 0.855)  -> final stage runs
+     fixed orders [2, 1] (8 runs, 469,120 params) [0.716 0.851 0.876 0.877 0.877 0.879 0.881 0.908] median 0.877  -> [2,1] HOLDS
+       Mann-Whitney p (reported, not used): vs fixed 2 0.328, vs fixed 1 0.127
+
+  DECISION (gamma 0.003, 5 runs): GATE WORKS   median E 0.871, median order 1.395, late rise +0.005
+  mechanism: operation > description in 1 of 5 runs -> no
+
+  DECISION (gamma 0.1, 5 runs): LOSES ACCURACY   median E 0.835, median order 1.032, late rise -0.018
+  mechanism: operation > description in 1 of 5 runs -> no
+

@@ -11,6 +11,7 @@ from einops import rearrange
 from fla.modules import FusedRMSNormSwishGate, RMSNorm, ShortConvolution
 from fla.ops.delta_rule import chunk_delta_rule
 from fla.ops.gated_delta_rule import chunk_gated_delta_rule
+from fla.ops.gated_delta_rule import fused_recurrent_gated_delta_rule  # PATCH(ragged-kernel)
 
 # --- PATCH(adaptive-order) -------------------------------------------------
 # The halting gate lives in this project's src/, not inside fla, so that
@@ -31,6 +32,26 @@ if TYPE_CHECKING:
     from transformers.processing_utils import Unpack
 
     from fla.models.utils import Cache
+
+
+def _ragged_kernel_kind(layer):
+    """PATCH(ragged-kernel): the packed recurrence's kernel, validated."""
+    kind = getattr(layer, "ragged_kernel", "recurrent")
+    if kind not in ("recurrent", "chunk"):
+        raise ValueError(f"ragged_kernel must be 'recurrent' or 'chunk', got {kind!r}")
+    return kind
+
+
+def _packed_recurrent(pq, pk, pv, pg, pb, cu):
+    """PATCH(ragged-kernel): packed recurrence with the float32-state recurrent kernel.
+    Same call as work/check_ragged_fix.py's 'recurrent' swap (path Rrec): for a layer
+    without a forget gate, g = 0 (no decay)."""
+    if pg is None:
+        pg = pq.new_zeros(pq.shape[:3], dtype=torch.float32)
+    return fused_recurrent_gated_delta_rule(
+        q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,
+        output_final_state=False, cu_seqlens=cu,
+        use_qk_l2norm_in_kernel=True)[0]
 
 
 def elu_p1(x):
@@ -110,6 +131,17 @@ class GatedDeltaProduct(nn.Module):
         # n_t = L(g_t) from ground truth, so the oracle and learned arms differ
         # only in where the gates come from. See src/oracle_order.py.
         self.external_gates = None
+        # PATCH(ragged-expansion): inference-time switch, off by default.
+        self.ragged = False
+        self.ragged_mutant = ""   # self-tests only
+        # PATCH(ragged-kernel), 25 Oct: the kernel for the PACKED (ragged) recurrence.
+        # "recurrent" (default): fla's fused_recurrent_gated_delta_rule, state kept in
+        # float32 -- on 20 trained S5 models it matches an exact float64 recurrence
+        # (sequence accuracy 0.9956) where the bf16 chunk kernel on packed sequences lost
+        # 2.5 points, and it is faster (results/ragged_fix.json, s5_kernel_timing.json).
+        # "chunk": the bf16 chunk kernel, the 13 Oct behaviour, kept for comparison.
+        # Path A (training and the non-ragged inference path) is unchanged.
+        self.ragged_kernel = "recurrent"
         if adaptive_order:
             if _HaltingGate is None:
                 raise ImportError(
@@ -301,6 +333,64 @@ class GatedDeltaProduct(nn.Module):
             self.last_n_t = n_t
         # --- END PATCH ---
 
+        # --- PATCH(fused-factors) ---
+        # Inference-only alternative to the per-factor loop below: the K
+        # factors' projections and convolutions run as one matmul / one
+        # depthwise convolution on concatenated weights, giving all factors
+        # already interleaved (B, T, K, H, D). Used by Path A (no copies) and by
+        # ragged expansion (one gather of the kept rows). Off by default; see
+        # src/ragged_expansion.py and work/check_ragged.py.
+        if getattr(self, "fused_factors", False):
+            if self.training:
+                raise RuntimeError("fused_factors is inference-only")
+            if past_key_values is not None or use_cache or attention_mask is not None:
+                raise RuntimeError(
+                    "fused_factors does not support a recurrent cache or a padding mask")
+            import ragged_expansion as _rx
+
+            def _kern_packed(pq, pk, pv, pg, pb, cu):
+                if cu is not None and _ragged_kernel_kind(self) == "recurrent":
+                    return _packed_recurrent(pq, pk, pv, pg, pb, cu)
+                if pg is not None:
+                    return chunk_gated_delta_rule(
+                        q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,
+                        output_final_state=False, cu_seqlens=cu,
+                        use_qk_l2norm_in_kernel=True)[0]
+                return chunk_delta_rule(
+                    q=pq, k=pk, v=pv, beta=pb, initial_state=None,
+                    output_final_state=False, cu_seqlens=cu,
+                    use_qk_l2norm_in_kernel=True)[0]
+
+            def _kern_batched(pq, pk, pv, pg, pb):
+                return _kern_packed(pq, pk, pv, pg, pb, None)
+
+            _q, _k, _v, _b, _g = _rx.fused_factor_inputs(self, hidden_states, gates)
+            if getattr(self, "ragged", False):
+                if gates is None:
+                    raise RuntimeError("ragged expansion needs gates (adaptive_order=True)")
+                o = _rx.ragged_stacked(_q, _k, _v, _b, _g, gates, _kern_packed,
+                                       _mutant=getattr(self, "ragged_mutant", ""))
+            else:
+                o = _rx.path_a_stacked(_q, _k, _v, _b, _g, _kern_batched)
+            _cap = getattr(self, "capture", None)
+            if _cap is not None:
+                _B, _T = hidden_states.shape[:2]
+                _cap.append(dict(q=_q.reshape(_B, _T, -1),
+                                 ks=[_k[:, :, i].reshape(_B, _T, -1) for i in range(_k.shape[2])],
+                                 vs=[_v[:, :, i].reshape(_B, _T, -1) for i in range(_v.shape[2])],
+                                 betas=[_b[:, :, i] for i in range(_b.shape[2])],
+                                 gates=gates, num_heads=self.num_heads, g=_g, o=o))
+            if self.use_gate:
+                _gg = rearrange(self.g_proj(hidden_states), "... (h d) -> ... h d",
+                                h=self.num_heads)
+                o = self.o_norm(o, _gg)
+            else:
+                o = self.o_norm(o)
+            o = rearrange(o, "b t h d -> b t (h d)")
+            o = self.o_proj(o)
+            return o, None, past_key_values
+        # --- END PATCH ---
+
         for i in range(self.num_householder):
             if self.use_short_conv:
                 conv_state_q, conv_state_k, conv_state_v = None, None, None
@@ -371,63 +461,117 @@ class GatedDeltaProduct(nn.Module):
             )
         else:
             q = self.silu(self.q_proj(hidden_states))
-        q = interleave_multiple_sequences(
-            [torch.zeros_like(q)] * (self.num_householder - 1) + [q]
-        )
-        # Interleave all sequences
-        k = interleave_multiple_sequences(ks)
-        v = interleave_multiple_sequences(vs)
-        beta = interleave_multiple_sequences(betas)
-
-        q, k, v = (
-            rearrange(x, "b t (h d) -> b t h d", h=self.num_heads) for x in (q, k, v)
-        )
-
-        recurrent_state = (
-            last_state["recurrent_state"] if last_state is not None else None
-        )
-        offsets = kwargs.get("offsets")
-
-        if mode == "chunk":
+        # --- PATCH(ragged-expansion) ---
+        # Path B, inference only: factors whose hard gate is 0 (beta exactly 0,
+        # an identity step) are dropped before the kernel and sequences are
+        # packed with cu_seqlens. Same output as Path A; see
+        # src/ragged_expansion.py for the argument and its tests, and
+        # work/check_ragged.py for the check against this kernel.
+        # Optional capture of the recurrence's inputs and output, for checks
+        # against a float64 reference (work/check_ragged.py). Off unless a
+        # list is assigned to self.capture.
+        _cap = getattr(self, "capture", None)
+        if _cap is not None:
+            _cap.append(dict(q=q, ks=list(ks), vs=list(vs), betas=list(betas),
+                             gates=gates, num_heads=self.num_heads,
+                             g=(-self.A_log.float().exp() * F.softplus(
+                                 self.a_proj(hidden_states).float() + self.dt_bias)
+                                if self.use_forget_gate else None)))
+        if getattr(self, "ragged", False):
+            if self.training:
+                raise RuntimeError("ragged expansion is inference-only; train with Path A")
+            if not self.adaptive_order or gates is None:
+                raise RuntimeError("ragged expansion needs adaptive_order=True and gates")
+            if past_key_values is not None or use_cache or attention_mask is not None:
+                raise RuntimeError(
+                    "ragged expansion does not support a recurrent cache or a padding mask")
+            from ragged_expansion import ragged_core as _ragged_core
+            _H = self.num_heads
+            _q = rearrange(q, "b t (h d) -> b t h d", h=_H)
+            _ks = [rearrange(x, "b t (h d) -> b t h d", h=_H) for x in ks]
+            _vs = [rearrange(x, "b t (h d) -> b t h d", h=_H) for x in vs]
+            _g = None
             if self.use_forget_gate:
-                g = -self.A_log.float().exp() * F.softplus(
-                    self.a_proj(hidden_states).float() + self.dt_bias
-                )
-                if attention_mask is not None:
-                    g = g.mul(attention_mask[:, -g.shape[-2]:, None])
+                _g = -self.A_log.float().exp() * F.softplus(
+                    self.a_proj(hidden_states).float() + self.dt_bias)
 
-                # Interleave g with zeros for non-first transformations
-                g = interleave_multiple_sequences(
-                    [g] + [torch.zeros_like(g)] * (self.num_householder - 1)
-                )
+            def _kernel(pq, pk, pv, pg, pb, cu):
+                if _ragged_kernel_kind(self) == "recurrent":
+                    return _packed_recurrent(pq, pk, pv, pg, pb, cu)
+                if pg is not None:
+                    return chunk_gated_delta_rule(
+                        q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,
+                        output_final_state=False, cu_seqlens=cu,
+                        use_qk_l2norm_in_kernel=True)[0]
+                return chunk_delta_rule(
+                    q=pq, k=pk, v=pv, beta=pb, initial_state=None,
+                    output_final_state=False, cu_seqlens=cu,
+                    use_qk_l2norm_in_kernel=True)[0]
 
-                o, recurrent_state = chunk_gated_delta_rule(
-                    q=q,
-                    k=k,
-                    v=v,
-                    g=g,
-                    beta=beta,
-                    initial_state=recurrent_state,
-                    output_final_state=use_cache,
-                    cu_seqlens=offsets,
-                    use_qk_l2norm_in_kernel=True
-                )
-            else:
-                o, recurrent_state = chunk_delta_rule(
-                    q=q,
-                    k=k,
-                    v=v,
-                    beta=beta,
-                    initial_state=recurrent_state,
-                    output_final_state=use_cache,
-                    cu_seqlens=offsets,
-                    use_qk_l2norm_in_kernel=True
-                )
+            o = _ragged_core(_q, _ks, _vs, betas, _g, gates, _kernel,
+                             _mutant=getattr(self, "ragged_mutant", ""))
+            recurrent_state = None
         else:
-            raise NotImplementedError(f"Not supported mode `{mode}`.")
+            q = interleave_multiple_sequences(
+                [torch.zeros_like(q)] * (self.num_householder - 1) + [q]
+            )
+            # Interleave all sequences
+            k = interleave_multiple_sequences(ks)
+            v = interleave_multiple_sequences(vs)
+            beta = interleave_multiple_sequences(betas)
 
-        # Take every nth element for n householder transformations
-        o = o[:, self.num_householder - 1:: self.num_householder, :]
+            q, k, v = (
+                rearrange(x, "b t (h d) -> b t h d", h=self.num_heads) for x in (q, k, v)
+            )
+
+            recurrent_state = (
+                last_state["recurrent_state"] if last_state is not None else None
+            )
+            offsets = kwargs.get("offsets")
+
+            if mode == "chunk":
+                if self.use_forget_gate:
+                    g = -self.A_log.float().exp() * F.softplus(
+                        self.a_proj(hidden_states).float() + self.dt_bias
+                    )
+                    if attention_mask is not None:
+                        g = g.mul(attention_mask[:, -g.shape[-2]:, None])
+
+                    # Interleave g with zeros for non-first transformations
+                    g = interleave_multiple_sequences(
+                        [g] + [torch.zeros_like(g)] * (self.num_householder - 1)
+                    )
+
+                    o, recurrent_state = chunk_gated_delta_rule(
+                        q=q,
+                        k=k,
+                        v=v,
+                        g=g,
+                        beta=beta,
+                        initial_state=recurrent_state,
+                        output_final_state=use_cache,
+                        cu_seqlens=offsets,
+                        use_qk_l2norm_in_kernel=True
+                    )
+                else:
+                    o, recurrent_state = chunk_delta_rule(
+                        q=q,
+                        k=k,
+                        v=v,
+                        beta=beta,
+                        initial_state=recurrent_state,
+                        output_final_state=use_cache,
+                        cu_seqlens=offsets,
+                        use_qk_l2norm_in_kernel=True
+                    )
+            else:
+                raise NotImplementedError(f"Not supported mode `{mode}`.")
+
+            # Take every nth element for n householder transformations
+            o = o[:, self.num_householder - 1:: self.num_householder, :]
+        # --- END PATCH ---
+        if _cap is not None:
+            _cap[-1]["o"] = o
 
         if past_key_values is not None:
             past_key_values.update(

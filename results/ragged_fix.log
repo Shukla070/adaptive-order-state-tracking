@@ -1,0 +1,358 @@
+check_ragged_fix self-test (CPU, float64)
+P1  exact recurrence on packed sequences
+  [PASS] = the validated reference with sequence boundaries (with decay)   max err 0.0e+00
+  [PASS] = the validated reference with sequence boundaries (without decay)   max err 0.0e+00
+  [PASS] control: ignoring the boundaries gives a different result
+  [PASS] unpack index: sequence ids, positions and the longest length
+P2  swapped kernels: plumbing
+  [PASS] exact kernel honours cu_seqlens and returns the input dtype
+  [PASS] exact kernel without cu_seqlens = the batched exact recurrence
+  [PASS] fp16 kernel: the original kernel receives float16 q, k, v, beta, the same g and cu_seqlens; output back in bf16
+  [PASS] fp16 kernel, ungated layer: no g is passed
+  [PASS] recurrent kernel, ungated layer: g = 0 (no decay), cu_seqlens and L2 norm passed on
+  [PASS] refuses initial state, final state and the un-normalised convention
+P3  the swap is applied and always undone
+  [PASS] swapped inside, restored after
+  [PASS] restored after an exception
+  [PASS] kind None leaves the kernel alone
+P3b exact reference from captured per-factor inputs
+  [PASS] = Path A's maths via the validated sequential reference (with decay)   max err 0.0e+00
+P4  measurements and decisions on known answers
+  [PASS] gate flips: 1 of 4 tokens differ
+  [PASS] position errors: only the last block is off, by 10%   [0.0, 0.0, 0.0, 0.10000000000000009]
+  [PASS] step 1 clear
+  [PASS] step 1: low R64/X agreement -> PACKING BUG
+  [PASS] step 1: R64 sequence accuracy off by 0.003 -> PACKING BUG
+  [PASS] step 1: fused path differs -> FUSION BUG
+  [PASS] accurate: within 0.002 of Path A (inclusive), token within 0.0001
+  [PASS] adopt: accurate and <= 0.90 at both sizes; fastest of several
+  [PASS] pooling weights by sequences (0.25)
+SELF-TEST PASSED
+learned_g_0_1_hard_1_g0.1_seed11.pt: skipped (not adaptive, or recorded token accuracy 0.4218 < 0.99)
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed12.pt   trained: token 0.99979
+In file included from /home/hp/.pyenv/versions/3.12.7/include/python3.12/Python.h:12,
+                 from /home/hp/tmp/tmp74zgx5pc/main.c:4:
+/home/hp/.pyenv/versions/3.12.7/include/python3.12/pyconfig.h:1875:9: warning: ‘_POSIX_C_SOURCE’ redefined
+ 1875 | #define _POSIX_C_SOURCE 200809L
+      |         ^~~~~~~~~~~~~~~
+In file included from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,
+                 from /usr/include/stdlib.h:26,
+                 from /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/.venv/lib/python3.12/site-packages/triton/backends/nvidia/include/cuda.h:56,
+                 from /home/hp/tmp/tmp74zgx5pc/main.c:2:
+/usr/include/features.h:319:10: note: this is the location of the previous definition
+  319 | # define _POSIX_C_SOURCE        202405L
+      |          ^~~~~~~~~~~~~~~
+  [PASS] G0 reload: Path A token 0.99979, recorded 0.99979
+  A 0.9795  F 0.9795  X 0.9925  R 0.9595  R64 0.9925  R16 0.9915  Rrec 0.9925   (sequence accuracy)
+  A 0.99979  F 0.99979  X 0.99992  R 0.99959  R64 0.99992  R16 0.99991  Rrec 0.99992   (token accuracy)
+  agreement with A: F 1.00000  X 0.99985  R 0.99951  R64 0.99985  R16 0.99985  Rrec 0.99985   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.6e-03, R64 1.6e-03
+  [PASS] G2 G1 can fail: Path A max error 2.5e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.5e-02 1.9e-02 2.2e-02 2.5e-02
+  recurrence error vs exact,    R: layer 0: 1.1e-02 1.1e-02 2.3e-02 2.3e-02
+  recurrence error vs exact,  R16: layer 0: 2.0e-03 2.0e-03 2.8e-03 3.4e-03
+  recurrence error vs exact, Rrec: layer 0: 1.6e-03 1.6e-03 1.5e-03 1.5e-03
+  recurrence error vs exact,    X: layer 0: 1.6e-03 1.6e-03 1.5e-03 1.5e-03
+  recurrence error vs exact,  R64: layer 0: 1.6e-03 1.6e-03 1.5e-03 1.5e-03
+  timing 32 x 512: best 4-factor 13.54 ms; R 10.68 ms (0.79)  R16 11.78 ms (0.87)  Rrec 8.64 ms (0.64)
+  timing 32 x 2048: best 4-factor 54.94 ms; R 41.94 ms (0.76)  R16 46.47 ms (0.85)  Rrec 34.40 ms (0.63)
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed13.pt   trained: token 0.99997
+  [PASS] G0 reload: Path A token 0.99997, recorded 0.99997
+  A 0.9965  F 0.9965  X 0.9960  R 0.9940  R64 0.9960  R16 0.9970  Rrec 0.9960   (sequence accuracy)
+  A 0.99997  F 0.99997  X 0.99997  R 0.99995  R64 0.99997  R16 0.99998  Rrec 0.99997   (token accuracy)
+  agreement with A: F 1.00000  X 0.99997  R 0.99997  R64 0.99997  R16 0.99997  Rrec 0.99997   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.6e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.5e-02 2.6e-02 2.6e-02 2.4e-02
+  recurrence error vs exact,    R: layer 0: 1.1e-02 1.3e-02 2.0e-02 3.2e-02
+  recurrence error vs exact,  R16: layer 0: 2.3e-03 2.3e-03 3.2e-03 3.9e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.7e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed1040.pt   trained: token 0.99931
+  [PASS] G0 reload: Path A token 0.99931, recorded 0.99931
+  A 0.9665  F 0.9665  X 0.9850  R 0.9245  R64 0.9850  R16 0.9850  Rrec 0.9850   (sequence accuracy)
+  A 0.99931  F 0.99931  X 0.99959  R 0.99852  R64 0.99959  R16 0.99959  Rrec 0.99959   (token accuracy)
+  agreement with A: F 1.00000  X 0.99948  R 0.99852  R64 0.99948  R16 0.99946  Rrec 0.99948   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.5e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 8.9e-03 1.4e-02 1.8e-02 2.5e-02
+  recurrence error vs exact,    R: layer 0: 8.6e-03 1.1e-02 1.8e-02 2.5e-02
+  recurrence error vs exact,  R16: layer 0: 2.0e-03 2.1e-03 2.8e-03 3.5e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed1046.pt   trained: token 0.99977
+  [PASS] G0 reload: Path A token 0.99977, recorded 0.99977
+  A 0.9795  F 0.9795  X 0.9970  R 0.9495  R64 0.9970  R16 0.9960  Rrec 0.9965   (sequence accuracy)
+  A 0.99977  F 0.99977  X 0.99997  R 0.99937  R64 0.99997  R16 0.99996  Rrec 0.99996   (token accuracy)
+  agreement with A: F 1.00000  X 0.99978  R 0.99924  R64 0.99978  R16 0.99977  Rrec 0.99978   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.8e-03, R64 1.8e-03
+  [PASS] G2 G1 can fail: Path A max error 3.5e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.7e-02 2.3e-02 2.9e-02 3.5e-02
+  recurrence error vs exact,    R: layer 0: 1.5e-02 2.0e-02 3.4e-02 4.4e-02
+  recurrence error vs exact,  R16: layer 0: 2.4e-03 2.9e-03 4.2e-03 5.2e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.8e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.8e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.8e-03
+learned_g_0_1_hard_1_g0.1_seed2036.pt: skipped (not adaptive, or recorded token accuracy 0.8477 < 0.99)
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed2038.pt   trained: token 0.99982
+  [PASS] G0 reload: Path A token 0.99982, recorded 0.99982
+  A 0.9865  F 0.9865  X 0.9980  R 0.9500  R64 0.9980  R16 0.9985  Rrec 0.9980   (sequence accuracy)
+  A 0.99982  F 0.99982  X 0.99998  R 0.99922  R64 0.99998  R16 0.99999  Rrec 0.99998   (token accuracy)
+  agreement with A: F 1.00000  X 0.99982  R 0.99913  R64 0.99982  R16 0.99982  Rrec 0.99982   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 9.0e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 3.5e-02 6.3e-02 7.7e-02 9.0e-02
+  recurrence error vs exact,    R: layer 0: 2.1e-02 2.9e-02 8.9e-02 1.3e-01
+  recurrence error vs exact,  R16: layer 0: 2.8e-03 3.4e-03 6.1e-03 8.7e-03
+  recurrence error vs exact, Rrec: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed2047.pt   trained: token 0.99994
+  [PASS] G0 reload: Path A token 0.99994, recorded 0.99994
+  A 0.9925  F 0.9925  X 0.9960  R 0.9935  R64 0.9960  R16 0.9965  Rrec 0.9960   (sequence accuracy)
+  A 0.99994  F 0.99994  X 0.99996  R 0.99994  R64 0.99996  R16 0.99997  Rrec 0.99996   (token accuracy)
+  agreement with A: F 1.00000  X 0.99995  R 0.99994  R64 0.99995  R16 0.99995  Rrec 0.99995   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 1.8e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.3e-02 1.7e-02 1.8e-02 1.7e-02
+  recurrence error vs exact,    R: layer 0: 1.3e-02 1.4e-02 1.7e-02 1.9e-02
+  recurrence error vs exact,  R16: layer 0: 2.3e-03 2.2e-03 2.4e-03 2.7e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed31.pt   trained: token 0.99948
+  [PASS] G0 reload: Path A token 0.99948, recorded 0.99948
+  A 0.9750  F 0.9750  X 0.9865  R 0.9455  R64 0.9865  R16 0.9875  Rrec 0.9865   (sequence accuracy)
+  A 0.99948  F 0.99948  X 0.99966  R 0.99909  R64 0.99966  R16 0.99969  Rrec 0.99966   (token accuracy)
+  agreement with A: F 1.00000  X 0.99971  R 0.99913  R64 0.99971  R16 0.99971  Rrec 0.99971   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 1.7e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 8.9e-03 1.2e-02 1.5e-02 1.7e-02
+  recurrence error vs exact,    R: layer 0: 8.0e-03 1.0e-02 1.6e-02 2.1e-02
+  recurrence error vs exact,  R16: layer 0: 2.0e-03 2.1e-03 2.5e-03 3.0e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed32.pt   trained: token 0.99988
+  [PASS] G0 reload: Path A token 0.99988, recorded 0.99988
+  A 0.9855  F 0.9855  X 0.9935  R 0.9600  R64 0.9935  R16 0.9950  Rrec 0.9935   (sequence accuracy)
+  A 0.99988  F 0.99988  X 0.99995  R 0.99961  R64 0.99995  R16 0.99996  Rrec 0.99995   (token accuracy)
+  agreement with A: F 1.00000  X 0.99988  R 0.99957  R64 0.99988  R16 0.99988  Rrec 0.99987   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.2e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.2e-02 1.8e-02 1.9e-02 2.2e-02
+  recurrence error vs exact,    R: layer 0: 1.1e-02 1.4e-02 2.2e-02 3.1e-02
+  recurrence error vs exact,  R16: layer 0: 4.0e-03 3.0e-03 3.2e-03 3.8e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.5e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.5e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.5e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed34.pt   trained: token 0.99981
+  [PASS] G0 reload: Path A token 0.99981, recorded 0.99981
+  A 0.9880  F 0.9880  X 0.9960  R 0.9600  R64 0.9960  R16 0.9965  Rrec 0.9960   (sequence accuracy)
+  A 0.99981  F 0.99981  X 0.99992  R 0.99954  R64 0.99992  R16 0.99993  Rrec 0.99993   (token accuracy)
+  agreement with A: F 1.00000  X 0.99984  R 0.99946  R64 0.99984  R16 0.99984  Rrec 0.99984   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 5.5e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 2.4e-02 4.6e-02 5.2e-02 5.5e-02
+  recurrence error vs exact,    R: layer 0: 2.0e-02 2.9e-02 5.4e-02 7.2e-02
+  recurrence error vs exact,  R16: layer 0: 2.9e-03 3.6e-03 6.5e-03 8.3e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.7e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed35.pt   trained: token 0.99993
+  [PASS] G0 reload: Path A token 0.99993, recorded 0.99993
+  A 0.9955  F 0.9955  X 0.9985  R 0.9575  R64 0.9985  R16 0.9990  Rrec 0.9985   (sequence accuracy)
+  A 0.99993  F 0.99993  X 0.99998  R 0.99944  R64 0.99998  R16 0.99999  Rrec 0.99998   (token accuracy)
+  agreement with A: F 1.00000  X 0.99994  R 0.99939  R64 0.99994  R16 0.99993  Rrec 0.99994   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.3e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.2e-02 1.6e-02 2.0e-02 2.3e-02
+  recurrence error vs exact,    R: layer 0: 1.1e-02 1.4e-02 2.2e-02 2.9e-02
+  recurrence error vs exact,  R16: layer 0: 2.1e-03 2.4e-03 3.2e-03 3.8e-03
+  recurrence error vs exact, Rrec: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.6e-03 1.7e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed37.pt   trained: token 0.99989
+  [PASS] G0 reload: Path A token 0.99989, recorded 0.99989
+  A 0.9910  F 0.9910  X 0.9995  R 0.9255  R64 0.9995  R16 0.9990  Rrec 0.9995   (sequence accuracy)
+  A 0.99989  F 0.99989  X 1.00000  R 0.99880  R64 1.00000  R16 0.99999  Rrec 1.00000   (token accuracy)
+  agreement with A: F 1.00000  X 0.99989  R 0.99873  R64 0.99989  R16 0.99990  Rrec 0.99989   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 1.7e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 8.8e-03 1.4e-02 1.5e-02 1.7e-02
+  recurrence error vs exact,    R: layer 0: 7.9e-03 1.4e-02 1.6e-02 2.0e-02
+  recurrence error vs exact,  R16: layer 0: 2.0e-03 2.3e-03 2.4e-03 2.6e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4033.pt   trained: token 0.99994
+  [PASS] G0 reload: Path A token 0.99994, recorded 0.99994
+  A 0.9960  F 0.9960  X 0.9970  R 0.9935  R64 0.9970  R16 0.9970  Rrec 0.9970   (sequence accuracy)
+  A 0.99994  F 0.99994  X 0.99996  R 0.99991  R64 0.99996  R16 0.99996  Rrec 0.99996   (token accuracy)
+  agreement with A: F 1.00000  X 0.99997  R 0.99991  R64 0.99997  R16 0.99997  Rrec 0.99997   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 6.3e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.6e-02 3.1e-02 5.1e-02 6.3e-02
+  recurrence error vs exact,    R: layer 0: 1.4e-02 2.2e-02 5.6e-02 7.0e-02
+  recurrence error vs exact,  R16: layer 0: 2.2e-03 2.8e-03 5.1e-03 8.4e-03
+  recurrence error vs exact, Rrec: layer 0: 1.6e-03 1.6e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.6e-03 1.6e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.6e-03 1.6e-03 1.7e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4039.pt   trained: token 0.99983
+  [PASS] G0 reload: Path A token 0.99983, recorded 0.99983
+  A 0.9905  F 0.9905  X 0.9950  R 0.9810  R64 0.9950  R16 0.9945  Rrec 0.9950   (sequence accuracy)
+  A 0.99983  F 0.99983  X 0.99990  R 0.99966  R64 0.99990  R16 0.99988  Rrec 0.99990   (token accuracy)
+  agreement with A: F 1.00000  X 0.99989  R 0.99968  R64 0.99989  R16 0.99989  Rrec 0.99989   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.1e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.0e-02 1.4e-02 1.7e-02 2.1e-02
+  recurrence error vs exact,    R: layer 0: 9.6e-03 1.2e-02 2.0e-02 2.5e-02
+  recurrence error vs exact,  R16: layer 0: 2.1e-03 2.3e-03 3.0e-03 3.4e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.5e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed4042.pt   trained: token 0.99991
+  [PASS] G0 reload: Path A token 0.99991, recorded 0.99991
+  A 0.9885  F 0.9885  X 0.9965  R 0.9760  R64 0.9965  R16 0.9960  Rrec 0.9965   (sequence accuracy)
+  A 0.99991  F 0.99991  X 0.99997  R 0.99972  R64 0.99997  R16 0.99996  Rrec 0.99997   (token accuracy)
+  agreement with A: F 1.00000  X 0.99991  R 0.99970  R64 0.99991  R16 0.99991  Rrec 0.99991   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 1.1e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 7.1e-03 8.8e-03 1.0e-02 1.1e-02
+  recurrence error vs exact,    R: layer 0: 8.1e-03 1.0e-02 1.4e-02 1.5e-02
+  recurrence error vs exact,  R16: layer 0: 2.0e-03 2.1e-03 2.2e-03 2.4e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+learned_g_0_1_hard_1_g0.1_seed4044.pt: skipped (not adaptive, or recorded token accuracy 0.2744 < 0.99)
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed41.pt   trained: token 0.99986
+  [PASS] G0 reload: Path A token 0.99986, recorded 0.99986
+  A 0.9880  F 0.9880  X 0.9955  R 0.9680  R64 0.9955  R16 0.9950  Rrec 0.9950   (sequence accuracy)
+  A 0.99986  F 0.99986  X 0.99996  R 0.99957  R64 0.99996  R16 0.99996  Rrec 0.99996   (token accuracy)
+  agreement with A: F 1.00000  X 0.99990  R 0.99955  R64 0.99990  R16 0.99990  Rrec 0.99990   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 9.5e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.8e-02 3.8e-02 6.8e-02 9.5e-02
+  recurrence error vs exact,    R: layer 0: 1.7e-02 3.4e-02 5.8e-02 7.8e-02
+  recurrence error vs exact,  R16: layer 0: 2.3e-03 3.0e-03 5.2e-03 7.5e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed43.pt   trained: token 0.99996
+  [PASS] G0 reload: Path A token 0.99996, recorded 0.99996
+  A 0.9960  F 0.9960  X 0.9980  R 0.9915  R64 0.9980  R16 0.9980  Rrec 0.9980   (sequence accuracy)
+  A 0.99996  F 0.99996  X 0.99998  R 0.99993  R64 0.99998  R16 0.99998  Rrec 0.99998   (token accuracy)
+  agreement with A: F 1.00000  X 0.99998  R 0.99996  R64 0.99998  R16 0.99998  Rrec 0.99998   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.8e-03, R64 1.8e-03
+  [PASS] G2 G1 can fail: Path A max error 3.1e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.5e-02 2.4e-02 3.1e-02 2.8e-02
+  recurrence error vs exact,    R: layer 0: 1.3e-02 1.7e-02 3.1e-02 4.0e-02
+  recurrence error vs exact,  R16: layer 0: 2.4e-03 3.0e-03 3.5e-03 3.9e-03
+  recurrence error vs exact, Rrec: layer 0: 1.6e-03 1.8e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.6e-03 1.8e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.6e-03 1.8e-03 1.7e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed45.pt   trained: token 0.99988
+  [PASS] G0 reload: Path A token 0.99988, recorded 0.99988
+  A 0.9940  F 0.9940  X 0.9945  R 0.9940  R64 0.9945  R16 0.9940  Rrec 0.9945   (sequence accuracy)
+  A 0.99988  F 0.99988  X 0.99990  R 0.99991  R64 0.99990  R16 0.99990  Rrec 0.99990   (token accuracy)
+  agreement with A: F 1.00000  X 0.99993  R 0.99991  R64 0.99993  R16 0.99993  Rrec 0.99993   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 4.7e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.8e-02 3.1e-02 4.5e-02 4.7e-02
+  recurrence error vs exact,    R: layer 0: 1.6e-02 2.5e-02 6.1e-02 6.6e-02
+  recurrence error vs exact,  R16: layer 0: 2.4e-03 3.0e-03 5.1e-03 9.3e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed48.pt   trained: token 0.99995
+  [PASS] G0 reload: Path A token 0.99995, recorded 0.99995
+  A 0.9985  F 0.9985  X 0.9990  R 0.9950  R64 0.9990  R16 0.9995  Rrec 0.9990   (sequence accuracy)
+  A 0.99995  F 0.99995  X 0.99996  R 0.99989  R64 0.99996  R16 0.99997  Rrec 0.99996   (token accuracy)
+  agreement with A: F 1.00000  X 0.99996  R 0.99991  R64 0.99996  R16 0.99996  Rrec 0.99996   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 2.4e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 1.3e-02 1.8e-02 2.0e-02 2.4e-02
+  recurrence error vs exact,    R: layer 0: 1.2e-02 1.5e-02 2.5e-02 3.4e-02
+  recurrence error vs exact,  R16: layer 0: 2.2e-03 2.4e-03 3.5e-03 4.3e-03
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.6e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed49.pt   trained: token 0.99996
+  [PASS] G0 reload: Path A token 0.99996, recorded 0.99996
+  A 0.9965  F 0.9965  X 0.9985  R 0.9960  R64 0.9985  R16 0.9985  Rrec 0.9985   (sequence accuracy)
+  A 0.99996  F 0.99996  X 0.99998  R 0.99996  R64 0.99998  R16 0.99998  Rrec 0.99998   (token accuracy)
+  agreement with A: F 1.00000  X 0.99997  R 0.99996  R64 0.99997  R16 0.99997  Rrec 0.99997   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 7.8e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 2.6e-02 3.9e-02 5.5e-02 7.8e-02
+  recurrence error vs exact,    R: layer 0: 2.5e-02 4.4e-02 6.1e-02 9.1e-02
+  recurrence error vs exact,  R16: layer 0: 3.0e-03 5.1e-03 8.4e-03 1.2e-02
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.6e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.6e-03 1.7e-03 1.6e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.6e-03 1.7e-03 1.6e-03
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed50.pt   trained: token 0.99998
+  [PASS] G0 reload: Path A token 0.99998, recorded 0.99998
+  A 0.9985  F 0.9985  X 0.9995  R 0.9975  R64 0.9995  R16 0.9995  Rrec 0.9995   (sequence accuracy)
+  A 0.99998  F 0.99998  X 1.00000  R 0.99997  R64 1.00000  R16 1.00000  Rrec 1.00000   (token accuracy)
+  agreement with A: F 1.00000  X 0.99998  R 0.99998  R64 0.99998  R16 0.99998  Rrec 0.99998   R64 with X 1.00000
+  gate flips vs A (per layer): F [0.0]  X [0.0]  R [0.0]  R64 [0.0]  R16 [0.0]  Rrec [0.0]
+  [PASS] G1 exact paths are exact: max error X 1.7e-03, R64 1.7e-03
+  [PASS] G2 G1 can fail: Path A max error 9.1e-02 > 5e-03
+  recurrence error vs exact,    A: layer 0: 3.1e-02 5.5e-02 6.8e-02 9.1e-02
+  recurrence error vs exact,    R: layer 0: 3.0e-02 5.0e-02 1.2e-01 1.6e-01
+  recurrence error vs exact,  R16: layer 0: 3.7e-03 5.4e-03 9.5e-03 1.1e-02
+  recurrence error vs exact, Rrec: layer 0: 1.7e-03 1.7e-03 1.7e-03 1.7e-03
+  recurrence error vs exact,    X: layer 0: 1.7e-03 1.7e-03 1.7e-03 1.7e-03
+  recurrence error vs exact,  R64: layer 0: 1.7e-03 1.7e-03 1.7e-03 1.7e-03
+
+==============================================================================
+POOLED over 20 models:
+  sequence A 0.9891  F 0.9891  X 0.9956  R 0.9706  R64 0.9956  R16 0.9957  Rrec 0.9956
+  token    A 0.99984  F 0.99984  X 0.99993  R 0.99958  R64 0.99993  R16 0.99993  Rrec 0.99993
+  agreement R64 with X 1.000000; F with A 1.000000
+  STEP 1 (our side): OUR SIDE CLEAR
+  STEP 2 (accurate): R16 yes  Rrec yes
+  STEP 3 (time / best 4-factor at 32x512, 32x2048): R16 [0.8698893627582795, 0.8457465186923229]  Rrec [0.6379997596924852, 0.6260437066903143]
+  ADOPTED: Rrec
+saved /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/results/ragged_fix.json

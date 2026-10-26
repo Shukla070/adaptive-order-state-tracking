@@ -477,9 +477,11 @@ def fig9():
     import matplotlib.pyplot as plt
     import numpy as np
     runs = [
-        ("gate_train_p10.json",   "initial configuration"),
+        # chronological. Both pre-repair files started the gate at n_t ~0.94
+        # (post_init's bias 0), whatever their headers say; see PLAN Part 3e.
+        ("gate_train_p10.json",   "pre-repair init, seeds 1-3"),
+        ("gate_bias40_more.json", "pre-repair init, seeds 4-10"),
         ("gate_fixedinit.json",   "gate re-initialised"),
-        ("gate_bias40_more.json", "initial-bias sweep"),
         ("gate_fp32gate.json",    "float32 halting"),
         ("gate_gamma_sweep.json", "penalty-weight sweep"),
     ]
@@ -523,7 +525,7 @@ def fig9():
     a2.set_xticks(x); a2.set_xticklabels(labs, rotation=18, ha="right", fontsize=9)
     note(a2, "'Usable' = the run also kept token accuracy >= 0.99, so a low cost bought by "
              "breaking the task does not count. The first attempt reached the oracle allocation "
-             "exactly and nothing since has matched it - that regression is unexplained.")
+             "exactly, on one seed; no later run reached it, and no later run used that seed with that init.")
     fig.tight_layout()
     save(fig, "fig9_gate_history")
 

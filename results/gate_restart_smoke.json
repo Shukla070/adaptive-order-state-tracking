@@ -1,0 +1,152 @@
+{
+  "config": {
+    "p": 0.1,
+    "k": 128,
+    "data_dir": "state_tracking/data",
+    "n_train": 100000,
+    "n_test": 2000,
+    "steps": 1000,
+    "batch": 128,
+    "lr": 0.001,
+    "n_heads": 12,
+    "head_dim": 32,
+    "hidden": 128,
+    "n_layers": 1,
+    "max_order": 4,
+    "gammas": "0.1",
+    "seeds": "31",
+    "budget_warmup": 0,
+    "budget_ramp": 4000,
+    "gate_lr": null,
+    "gate_init_bias": 4.0,
+    "gate_init": "repaired",
+    "logit_walls": "0",
+    "demand": "ell",
+    "min_order": 1,
+    "hard_froms": "1",
+    "logit_wall_weight": 1.0,
+    "fingerprint": null,
+    "arms": "learned",
+    "log_every": 2000,
+    "log_dense_until": 1000,
+    "out": "results/gate_restart_smoke.json",
+    "save_dir": null,
+    "restart_below": 9.0,
+    "restart_at": 500,
+    "max_attempts": 2,
+    "selftest": false,
+    "vocab": 127
+  },
+  "results": [
+    {
+      "arm": "learned(g=0.1,hard@1)",
+      "mode": "learned",
+      "n_h": 4,
+      "gamma": 0.1,
+      "seed": 1031,
+      "token_acc": 0.96075,
+      "seq_acc": 0.293,
+      "train_s": 50.39075976100867,
+      "gate_lr": null,
+      "gate_init": "repaired",
+      "gate_init_bias": 4.0,
+      "fingerprint": null,
+      "logit_wall": 0.0,
+      "min_order": 1,
+      "hard_from": 1,
+      "demand_rule": "ell",
+      "soft_eval": {
+        "token_acc": 0.9563125,
+        "seq_acc": 0.277,
+        "mean_n_t_all": 1.2975305709838867
+      },
+      "logit_wall_weight": null,
+      "gate_w_final": 47.82109451293945,
+      "order_at_check": 1.2927,
+      "restart_rule": {
+        "at": 500,
+        "below": 9.0,
+        "max_attempts": 2
+      },
+      "loss_trace": [
+        [
+          1,
+          4.8733,
+          4.0,
+          0.186291,
+          4.0,
+          0.0
+        ],
+        [
+          250,
+          4.6879,
+          1.3714,
+          15.958019,
+          4.1848,
+          0.0
+        ],
+        [
+          500,
+          4.2634,
+          1.2927,
+          18.955254,
+          4.2945,
+          0.0
+        ],
+        [
+          750,
+          0.6277,
+          1.2924,
+          38.194553,
+          6.086,
+          0.0
+        ],
+        [
+          1000,
+          0.1753,
+          1.295,
+          47.821095,
+          6.7821,
+          0.0
+        ]
+      ],
+      "alloc": {
+        "n_eval": 256000,
+        "n_special_excluded": 0,
+        "mean_n_t": 1.2984648447036744,
+        "mean_demand": 1.2984648447036744,
+        "by_demand": {
+          "1": {
+            "n": 230531,
+            "mean_n_t": 0.999999984753605
+          },
+          "4": {
+            "n": 25469,
+            "mean_n_t": 3.9999999542240823
+          }
+        },
+        "mae": 0.0,
+        "under_frac": 0.0,
+        "over_frac": 0.0,
+        "corr": 1.000000029542182
+      },
+      "base_seed": 31,
+      "n_attempts": 2,
+      "attempts": [
+        {
+          "attempt": 1,
+          "seed": 31,
+          "restarted_at": 500,
+          "order": 1.3115
+        },
+        {
+          "attempt": 2,
+          "seed": 1031,
+          "restarted_at": null,
+          "order": 1.2927,
+          "check_applied": false
+        }
+      ]
+    }
+  ]
+}

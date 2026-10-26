@@ -1,0 +1,115 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p100=128.csv   p = 0.1
+  demand      E[D] = 1.300   fixed order must provision 4
+  budget      20000 steps x batch 128, lr 0.001
+  gammas      0   (0 = gate present, never penalised)
+  schedule    penalty off for 4000 steps, then ramped over 4000
+  gate        init hf_default: bias 0 and N(0, 0.02) weights left by post_init (n_t ~0.94 at init), bf16;
+              --gate_init_bias IGNORED.   lr = model lr
+  logit wall  c in {5}  (0 = off), weight 1, from step 1
+  seeds       11, 12, 13
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+learned  gamma 0  wall 5  seed 11
+------------------------------------------------------------------------------
+      step      1  task 4.8688  gamma_eff 0.0000  mean n_t 0.937  gate |W| 6.699e+00  zmax 0.09  sat 0.000
+      step    250  task 4.6742  gamma_eff 0.0000  mean n_t 2.200  gate |W| 1.054e+01  zmax 4.31  sat 0.000
+      step    500  task 4.0230  gamma_eff 0.0000  mean n_t 3.331  gate |W| 1.342e+01  zmax 5.38  sat 0.000
+      step    750  task 2.0440  gamma_eff 0.0000  mean n_t 3.933  gate |W| 1.887e+01  zmax 5.25  sat 0.000
+      step   1000  task 0.4165  gamma_eff 0.0000  mean n_t 3.932  gate |W| 1.925e+01  zmax 5.19  sat 0.000
+      step   1250  task 0.0961  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.942e+01  zmax 5.12  sat 0.000
+      step   1500  task 0.0601  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.937e+01  zmax 5.12  sat 0.000
+      step   1750  task 0.0374  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.941e+01  zmax 5.09  sat 0.000
+      step   2000  task 0.0296  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.944e+01  zmax 5.06  sat 0.000
+      step   2250  task 0.0216  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.940e+01  zmax 5.09  sat 0.000
+      step   2500  task 0.0168  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.946e+01  zmax 5.06  sat 0.000
+      step   2750  task 0.0148  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.943e+01  zmax 5.06  sat 0.000
+      step   3000  task 0.0197  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.941e+01  zmax 5.06  sat 0.000
+      step   3250  task 0.0137  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.940e+01  zmax 5.06  sat 0.000
+      step   3500  task 0.0155  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.939e+01  zmax 5.06  sat 0.000
+      step   3750  task 0.0132  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.939e+01  zmax 5.03  sat 0.000
+      step   4000  task 0.0102  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.935e+01  zmax 5.03  sat 0.000
+      step   6000  task 0.0065  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.933e+01  zmax 5.03  sat 0.000
+      step   8000  task 0.0073  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.925e+01  zmax 5.03  sat 0.000
+      step  10000  task 0.0058  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.912e+01  zmax 5.03  sat 0.000
+      step  12000  task 0.0061  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.908e+01  zmax 5.03  sat 0.000
+      step  14000  task 0.0070  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.910e+01  zmax 5.03  sat 0.000
+      step  16000  task 0.0087  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.912e+01  zmax 5.03  sat 0.000
+      step  18000  task 0.0062  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.912e+01  zmax 5.03  sat 0.000
+      step  20000  task 0.0065  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.902e+01  zmax 5.03  sat 0.000
+------------------------------------------------------------------------------
+learned  gamma 0  wall 5  seed 12
+------------------------------------------------------------------------------
+      step      1  task 4.8710  gamma_eff 0.0000  mean n_t 0.936  gate |W| 6.806e+00  zmax 0.07  sat 0.000
+      step    250  task 4.6764  gamma_eff 0.0000  mean n_t 2.403  gate |W| 1.277e+01  zmax 4.81  sat 0.000
+      step    500  task 3.8424  gamma_eff 0.0000  mean n_t 3.479  gate |W| 1.553e+01  zmax 5.38  sat 0.000
+      step    750  task 2.5321  gamma_eff 0.0000  mean n_t 3.930  gate |W| 2.260e+01  zmax 5.28  sat 0.000
+      step   1000  task 0.8543  gamma_eff 0.0000  mean n_t 3.930  gate |W| 2.260e+01  zmax 5.25  sat 0.000
+      step   1250  task 0.3619  gamma_eff 0.0000  mean n_t 3.934  gate |W| 2.255e+01  zmax 5.22  sat 0.000
+      step   1500  task 0.2506  gamma_eff 0.0000  mean n_t 3.926  gate |W| 2.256e+01  zmax 5.19  sat 0.000
+      step   1750  task 0.1531  gamma_eff 0.0000  mean n_t 3.924  gate |W| 2.254e+01  zmax 5.16  sat 0.000
+      step   2000  task 0.0915  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.255e+01  zmax 5.19  sat 0.000
+      step   2250  task 0.1199  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.263e+01  zmax 5.16  sat 0.000
+      step   2500  task 0.0600  gamma_eff 0.0000  mean n_t 3.923  gate |W| 2.262e+01  zmax 5.16  sat 0.000
+      step   2750  task 0.0590  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.257e+01  zmax 5.16  sat 0.000
+      step   3000  task 0.0719  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.263e+01  zmax 5.16  sat 0.000
+      step   3250  task 0.0417  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.263e+01  zmax 5.16  sat 0.000
+      step   3500  task 0.0624  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.262e+01  zmax 5.16  sat 0.000
+      step   3750  task 0.0452  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.265e+01  zmax 5.12  sat 0.000
+      step   4000  task 0.0514  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.271e+01  zmax 5.12  sat 0.000
+      step   6000  task 0.0362  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.285e+01  zmax 5.09  sat 0.000
+      step   8000  task 0.0147  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.280e+01  zmax 5.06  sat 0.000
+      step  10000  task 0.0154  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.279e+01  zmax 5.06  sat 0.000
+      step  12000  task 0.0159  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.278e+01  zmax 5.06  sat 0.000
+      step  14000  task 0.0173  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.283e+01  zmax 5.06  sat 0.000
+      step  16000  task 0.0116  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.285e+01  zmax 5.06  sat 0.000
+      step  18000  task 0.0168  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.284e+01  zmax 5.06  sat 0.000
+      step  20000  task 0.0127  gamma_eff 0.0000  mean n_t 3.922  gate |W| 2.282e+01  zmax 5.06  sat 0.000
+------------------------------------------------------------------------------
+learned  gamma 0  wall 5  seed 13
+------------------------------------------------------------------------------
+      step      1  task 4.8668  gamma_eff 0.0000  mean n_t 0.938  gate |W| 6.940e+00  zmax 0.07  sat 0.000
+      step    250  task 4.6786  gamma_eff 0.0000  mean n_t 1.891  gate |W| 1.192e+01  zmax 3.55  sat 0.000
+      step    500  task 3.9619  gamma_eff 0.0000  mean n_t 3.233  gate |W| 1.557e+01  zmax 5.09  sat 0.000
+      step    750  task 2.4511  gamma_eff 0.0000  mean n_t 3.931  gate |W| 1.878e+01  zmax 5.25  sat 0.000
+      step   1000  task 0.0145  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.907e+01  zmax 5.09  sat 0.000
+      step   1250  task 0.0096  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.914e+01  zmax 5.03  sat 0.000
+      step   1500  task 0.0117  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.916e+01  zmax 5.03  sat 0.000
+      step   1750  task 0.0067  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.919e+01  zmax 5.03  sat 0.000
+      step   2000  task 0.0088  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.917e+01  zmax 5.03  sat 0.000
+      step   2250  task 0.0042  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.919e+01  zmax 5.03  sat 0.000
+      step   2500  task 0.0059  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.918e+01  zmax 5.03  sat 0.000
+      step   2750  task 0.0046  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.919e+01  zmax 5.03  sat 0.000
+      step   3000  task 0.0032  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.920e+01  zmax 5.03  sat 0.000
+      step   3250  task 0.0036  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+      step   3500  task 0.0033  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.926e+01  zmax 5.03  sat 0.000
+      step   3750  task 0.0028  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.925e+01  zmax 5.03  sat 0.000
+      step   4000  task 0.0036  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.926e+01  zmax 5.03  sat 0.000
+      step   6000  task 0.0032  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.925e+01  zmax 5.03  sat 0.000
+      step   8000  task 0.0028  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.925e+01  zmax 5.03  sat 0.000
+      step  10000  task 0.0021  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.924e+01  zmax 5.03  sat 0.000
+      step  12000  task 0.0023  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+      step  14000  task 0.0023  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+      step  16000  task 0.0026  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+      step  18000  task 0.0022  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+      step  20000  task 0.0023  gamma_eff 0.0000  mean n_t 3.922  gate |W| 1.923e+01  zmax 5.03  sat 0.000
+==============================================================================
+arm                     seed    token     seq    cost    mae   under   corr
+------------------------------------------------------------------------------
+learned(g=0,wall=5)       11   0.9949  0.7495   4.000   2.70    0.00   0.00
+learned(g=0,wall=5)       12   0.9842  0.5570   4.000   2.70    0.00   0.00
+learned(g=0,wall=5)       13   0.9999  0.9920   4.000   2.70    0.00   0.00
+==============================================================================
+  LEARNED-GATE ARMS  (separated = corr >= 0.99 and token >= 0.99;
+                      exact = every class gets min(D, K), token >= 0.99)
+  gamma 0  wall 5   separated 0/3 [0.00, 0.56]   exact 0/3 [0.00, 0.56]
+      costs, sorted: 4.0000 4.0000 4.0000
+
+  NO VERDICT: no oracle arm in this run to compare against.
+
+written: results/gate_wall_nobudget.json

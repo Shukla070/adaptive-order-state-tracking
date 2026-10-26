@@ -1,0 +1,118 @@
+{
+  "rows": [
+    {
+      "checkpoint": "learned_g_0_1_hard_1_g0.1_seed11.pt",
+      "trained": {
+        "token_acc": 0.42183203125,
+        "seq_acc": 0.0,
+        "mean_n_t": 1.1989765615463257,
+        "gamma": 0.1
+      },
+      "pathA": {
+        "token_acc": 0.4218359589576721,
+        "seq_acc": 0.0,
+        "mean_n_t": 1.1987213119864464,
+        "ref_err": 0.020690461416300064
+      },
+      "fused_Path_A": {
+        "token_acc": 0.4218359589576721,
+        "seq_acc": 0.0,
+        "mean_n_t": 1.1987213119864464,
+        "agreement": 1.0
+      },
+      "per-factor_ragged": {
+        "token_acc": 0.42103126645088196,
+        "seq_acc": 0.0,
+        "mean_n_t": 1.1987213119864464,
+        "agreement": 0.9003164768218994,
+        "ref_err": 0.026490010201129087
+      },
+      "fused_ragged": {
+        "token_acc": 0.42103126645088196,
+        "seq_acc": 0.0,
+        "mean_n_t": 1.1987213119864464,
+        "agreement": 0.9003164768218994,
+        "ref_err": 0.026490010201129087
+      },
+      "margin_median_all": 0.4375,
+      "margin_median_disagree": 0.0625,
+      "checks_pass": false
+    },
+    {
+      "checkpoint": "learned_g_0_1_hard_1_g0.1_seed12.pt",
+      "trained": {
+        "token_acc": 0.9997890625,
+        "seq_acc": 0.9795,
+        "mean_n_t": 1.2984648447036744,
+        "gamma": 0.1
+      },
+      "pathA": {
+        "token_acc": 0.9997891187667847,
+        "seq_acc": 0.9795000553131104,
+        "mean_n_t": 1.2980819717049599,
+        "ref_err": 0.018114139668128283
+      },
+      "fused_Path_A": {
+        "token_acc": 0.9997891187667847,
+        "seq_acc": 0.9795000553131104,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 1.0
+      },
+      "per-factor_ragged": {
+        "token_acc": 0.9995937943458557,
+        "seq_acc": 0.9595000743865967,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 0.9995117783546448,
+        "ref_err": 0.018846149633562428
+      },
+      "fused_ragged": {
+        "token_acc": 0.9995937943458557,
+        "seq_acc": 0.9595000743865967,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 0.9995117783546448,
+        "ref_err": 0.018846149633562428
+      },
+      "margin_median_all": 7.8125,
+      "margin_median_disagree": 2.3125,
+      "checks_pass": true
+    },
+    {
+      "checkpoint": "learned_g_0_1_hard_1_g0.1_seed13.pt",
+      "trained": {
+        "token_acc": 0.99996875,
+        "seq_acc": 0.9965,
+        "mean_n_t": 1.2984648447036744,
+        "gamma": 0.1
+      },
+      "pathA": {
+        "token_acc": 0.9999688267707825,
+        "seq_acc": 0.9965000748634338,
+        "mean_n_t": 1.2980819717049599,
+        "ref_err": 0.02143534974664493
+      },
+      "fused_Path_A": {
+        "token_acc": 0.9999688267707825,
+        "seq_acc": 0.9965000748634338,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 1.0
+      },
+      "per-factor_ragged": {
+        "token_acc": 0.9999492764472961,
+        "seq_acc": 0.9940000176429749,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 0.9999727010726929,
+        "ref_err": 0.023157027512473838
+      },
+      "fused_ragged": {
+        "token_acc": 0.9999492764472961,
+        "seq_acc": 0.9940000176429749,
+        "mean_n_t": 1.2980819717049599,
+        "agreement": 0.9999727010726929,
+        "ref_err": 0.023157027512473838
+      },
+      "margin_median_all": 8.078125,
+      "margin_median_disagree": 0.5625,
+      "checks_pass": true
+    }
+  ]
+}

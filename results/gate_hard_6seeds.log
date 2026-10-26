@@ -1,0 +1,411 @@
+==============================================================================
+OBJECTIVE O4 — the halting gate, trained end-to-end
+==============================================================================
+  data        S5_limit_to_het_p100=128.csv   p = 0.1
+  demand      E[D] = 1.300   fixed order must provision 4
+  budget      20000 steps x batch 128, lr 0.001
+  gammas      0.1   (0 = gate present, never penalised)
+  schedule    penalty off for 4000 steps, then ramped over 4000
+  gate        init hf_default: bias 0 and N(0, 0.02) weights left by post_init (n_t ~0.94 at init), bf16;
+              --gate_init_bias IGNORED.   lr = model lr
+  hard gates  from step {never, 12000}  (straight-through; soft before)
+  fingerprint step 1 compared against results/gate_wall_seeds.json
+  seeds       12, 13, 15, 25, 29, 30
+
+  Gates are soft while training and hard at evaluation, so the
+  reported cost is an integer factor count.
+
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 12
+------------------------------------------------------------------------------
+      step      1  task 4.8710  gamma_eff 0.0000  mean n_t 0.936  gate |W| 6.805e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8710 vs 4.8710  n_t 0.9362 vs 0.9362  |W| 6.8047 vs 6.8048
+      step    250  task 4.6769  gamma_eff 0.0000  mean n_t 2.378  gate |W| 1.276e+01  zmax 5.59  sat 0.000
+      step    500  task 3.7637  gamma_eff 0.0000  mean n_t 3.320  gate |W| 1.713e+01  zmax 14.00  sat 0.499
+      step    750  task 0.3950  gamma_eff 0.0000  mean n_t 3.975  gate |W| 1.916e+01  zmax 19.62  sat 0.775
+      step   1000  task 0.0206  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.958e+01  zmax 19.50  sat 0.954
+      step   1250  task 0.0117  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 0.978
+      step   1500  task 0.0074  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   1750  task 0.0056  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step   2000  task 0.0047  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   2250  task 0.0058  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   2500  task 0.0048  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   2750  task 0.0040  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   3000  task 0.0050  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   3250  task 0.0039  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   3500  task 0.0049  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step   3750  task 0.0041  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   4000  task 0.0035  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   6000  task 0.0034  gamma_eff 0.0500  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.50  sat 1.000
+      step   8000  task 0.0033  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  10000  task 0.0031  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  12000  task 0.0030  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  14000  task 0.0028  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  16000  task 0.0024  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  18000  task 0.0023  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      step  20000  task 0.0022  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.959e+01  zmax 19.38  sat 1.000
+      eval   hard gates: token 0.9999   |   soft gates: token 0.9999, seq 0.9955, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 12
+------------------------------------------------------------------------------
+      step      1  task 4.8710  gamma_eff 0.0000  mean n_t 0.936  gate |W| 6.805e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8710 vs 4.8710  n_t 0.9362 vs 0.9362  |W| 6.8047 vs 6.8048
+      step    250  task 4.6770  gamma_eff 0.0000  mean n_t 2.376  gate |W| 1.276e+01  zmax 5.62  sat 0.000
+      step    500  task 3.7599  gamma_eff 0.0000  mean n_t 3.505  gate |W| 1.715e+01  zmax 13.56  sat 0.494
+      step    750  task 0.5159  gamma_eff 0.0000  mean n_t 3.928  gate |W| 1.884e+01  zmax 17.12  sat 0.618
+      step   1000  task 0.0240  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.917e+01  zmax 16.88  sat 0.775
+      step   1250  task 0.0104  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.929e+01  zmax 16.88  sat 0.774
+      step   1500  task 0.0076  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.910
+      step   1750  task 0.0054  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.909
+      step   2000  task 0.0051  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.908
+      step   2250  task 0.0056  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.910
+      step   2500  task 0.0046  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.908
+      step   2750  task 0.0034  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.911
+      step   3000  task 0.0050  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.910
+      step   3250  task 0.0033  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.910
+      step   3500  task 0.0038  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.909
+      step   3750  task 0.0030  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.911
+      step   4000  task 0.0031  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.930e+01  zmax 16.88  sat 0.907
+      step   6000  task 0.0204  gamma_eff 0.0500  mean n_t 1.821  gate |W| 1.972e+01  zmax 20.25  sat 0.347
+      step   8000  task 0.0063  gamma_eff 0.1000  mean n_t 1.648  gate |W| 2.274e+01  zmax 19.75  sat 0.322
+      step  10000  task 0.0050  gamma_eff 0.1000  mean n_t 1.634  gate |W| 2.298e+01  zmax 18.62  sat 0.325
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.1229  gamma_eff 0.1000  mean n_t 1.304  gate |W| 2.416e+01  zmax 18.62  sat 0.326
+      step  14000  task 0.0069  gamma_eff 0.1000  mean n_t 1.748  gate |W| 2.691e+01  zmax 20.50  sat 0.408
+      step  16000  task 0.0058  gamma_eff 0.1000  mean n_t 1.748  gate |W| 2.693e+01  zmax 20.62  sat 0.408
+      step  18000  task 0.0060  gamma_eff 0.1000  mean n_t 1.760  gate |W| 2.693e+01  zmax 20.75  sat 0.413
+      step  20000  task 0.0064  gamma_eff 0.1000  mean n_t 1.664  gate |W| 2.726e+01  zmax 20.75  sat 0.342
+      eval   hard gates: token 0.9996   |   soft gates: token 0.9995, seq 0.9565, mean n_t 1.668
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 13
+------------------------------------------------------------------------------
+      step      1  task 4.8668  gamma_eff 0.0000  mean n_t 0.938  gate |W| 6.940e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8668 vs 4.8668  n_t 0.9381 vs 0.9381  |W| 6.9400 vs 6.9400
+      step    250  task 4.6784  gamma_eff 0.0000  mean n_t 1.887  gate |W| 1.212e+01  zmax 3.47  sat 0.000
+      step    500  task 3.9644  gamma_eff 0.0000  mean n_t 3.416  gate |W| 1.778e+01  zmax 14.19  sat 0.500
+      step    750  task 0.7444  gamma_eff 0.0000  mean n_t 3.966  gate |W| 2.009e+01  zmax 19.62  sat 0.775
+      step   1000  task 0.0183  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.009e+01  zmax 19.75  sat 0.773
+      step   1250  task 0.0084  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.009e+01  zmax 19.75  sat 0.774
+      step   1500  task 0.0093  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.75  sat 0.776
+      step   1750  task 0.0052  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.774
+      step   2000  task 0.0052  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.777
+      step   2250  task 0.0048  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.774
+      step   2500  task 0.0051  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.75  sat 0.774
+      step   2750  task 0.0041  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.75  sat 0.775
+      step   3000  task 0.0034  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.775
+      step   3250  task 0.0032  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.774
+      step   3500  task 0.0040  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.775
+      step   3750  task 0.0031  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.775
+      step   4000  task 0.0030  gamma_eff 0.0000  mean n_t 3.989  gate |W| 2.008e+01  zmax 19.88  sat 0.774
+      step   6000  task 0.0087  gamma_eff 0.0500  mean n_t 3.862  gate |W| 2.004e+01  zmax 19.75  sat 0.775
+      step   8000  task 0.0091  gamma_eff 0.1000  mean n_t 3.742  gate |W| 1.982e+01  zmax 18.50  sat 0.549
+      step  10000  task 0.0055  gamma_eff 0.1000  mean n_t 3.178  gate |W| 2.018e+01  zmax 18.00  sat 0.774
+      step  12000  task 0.0050  gamma_eff 0.1000  mean n_t 3.147  gate |W| 2.027e+01  zmax 17.50  sat 0.775
+      step  14000  task 0.0048  gamma_eff 0.1000  mean n_t 3.127  gate |W| 2.047e+01  zmax 17.00  sat 0.775
+      step  16000  task 0.0041  gamma_eff 0.1000  mean n_t 3.122  gate |W| 2.064e+01  zmax 16.88  sat 0.776
+      step  18000  task 0.0040  gamma_eff 0.1000  mean n_t 3.117  gate |W| 2.072e+01  zmax 16.62  sat 0.775
+      step  20000  task 0.0040  gamma_eff 0.1000  mean n_t 3.114  gate |W| 2.079e+01  zmax 16.75  sat 0.775
+      eval   hard gates: token 0.9990   |   soft gates: token 0.9997, seq 0.9745, mean n_t 3.114
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 13
+------------------------------------------------------------------------------
+      step      1  task 4.8668  gamma_eff 0.0000  mean n_t 0.938  gate |W| 6.940e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8668 vs 4.8668  n_t 0.9381 vs 0.9381  |W| 6.9400 vs 6.9400
+      step    250  task 4.6782  gamma_eff 0.0000  mean n_t 1.889  gate |W| 1.208e+01  zmax 3.48  sat 0.000
+      step    500  task 3.9645  gamma_eff 0.0000  mean n_t 3.395  gate |W| 1.768e+01  zmax 12.88  sat 0.500
+      step    750  task 2.7094  gamma_eff 0.0000  mean n_t 3.939  gate |W| 1.883e+01  zmax 16.12  sat 0.750
+      step   1000  task 0.0804  gamma_eff 0.0000  mean n_t 3.999  gate |W| 1.905e+01  zmax 17.25  sat 0.761
+      step   1250  task 0.0306  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.910e+01  zmax 17.25  sat 0.772
+      step   1500  task 0.0219  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.910e+01  zmax 17.25  sat 0.775
+      step   1750  task 0.0169  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.910e+01  zmax 17.25  sat 0.773
+      step   2000  task 0.0153  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.910e+01  zmax 17.25  sat 0.777
+      step   2250  task 0.0182  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.911e+01  zmax 17.25  sat 0.774
+      step   2500  task 0.0120  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.911e+01  zmax 17.25  sat 0.774
+      step   2750  task 0.0108  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.911e+01  zmax 17.25  sat 0.775
+      step   3000  task 0.0082  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.911e+01  zmax 17.12  sat 0.775
+      step   3250  task 0.0061  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.912e+01  zmax 17.12  sat 0.774
+      step   3500  task 0.0071  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.912e+01  zmax 17.12  sat 0.775
+      step   3750  task 0.0060  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.912e+01  zmax 17.12  sat 0.775
+      step   4000  task 0.0058  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.912e+01  zmax 17.12  sat 0.774
+      step   6000  task 0.0072  gamma_eff 0.0500  mean n_t 3.986  gate |W| 1.917e+01  zmax 16.75  sat 0.755
+      step   8000  task 0.0055  gamma_eff 0.1000  mean n_t 3.970  gate |W| 1.915e+01  zmax 15.00  sat 0.750
+      step  10000  task 0.0053  gamma_eff 0.1000  mean n_t 3.970  gate |W| 1.911e+01  zmax 14.81  sat 0.750
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.0041  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.909e+01  zmax 15.00  sat 0.750
+      step  14000  task 0.9366  gamma_eff 0.1000  mean n_t 3.000  gate |W| 1.921e+01  zmax 10.12  sat 0.750
+      step  16000  task 0.7792  gamma_eff 0.1000  mean n_t 3.000  gate |W| 1.996e+01  zmax 11.94  sat 0.750
+      step  18000  task 0.0922  gamma_eff 0.1000  mean n_t 3.103  gate |W| 2.138e+01  zmax 13.81  sat 0.760
+      step  20000  task 0.0635  gamma_eff 0.1000  mean n_t 3.100  gate |W| 2.138e+01  zmax 13.75  sat 0.761
+      eval   hard gates: token 0.9834   |   soft gates: token 0.9833, seq 0.6465, mean n_t 3.099
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 15
+------------------------------------------------------------------------------
+      step      1  task 4.8702  gamma_eff 0.0000  mean n_t 0.933  gate |W| 6.730e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8702 vs 4.8702  n_t 0.9334 vs 0.9334  |W| 6.7304 vs 6.7303
+      step    250  task 4.6809  gamma_eff 0.0000  mean n_t 2.352  gate |W| 1.103e+01  zmax 5.34  sat 0.000
+      step    500  task 3.6580  gamma_eff 0.0000  mean n_t 3.831  gate |W| 1.567e+01  zmax 15.81  sat 0.500
+      step    750  task 0.0499  gamma_eff 0.0000  mean n_t 3.974  gate |W| 1.623e+01  zmax 16.75  sat 0.549
+      step   1000  task 0.0227  gamma_eff 0.0000  mean n_t 3.975  gate |W| 1.622e+01  zmax 16.88  sat 0.552
+      step   1250  task 0.0137  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.622e+01  zmax 16.88  sat 0.550
+      step   1500  task 0.0084  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.548
+      step   1750  task 0.0116  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.551
+      step   2000  task 0.0079  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.550
+      step   2250  task 0.0078  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.550
+      step   2500  task 0.0061  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.551
+      step   2750  task 0.0046  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.623e+01  zmax 16.88  sat 0.550
+      step   3000  task 0.0046  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.623e+01  zmax 17.00  sat 0.549
+      step   3250  task 0.0046  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.623e+01  zmax 17.00  sat 0.552
+      step   3500  task 0.0042  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 16.88  sat 0.552
+      step   3750  task 0.0035  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 17.00  sat 0.549
+      step   4000  task 0.0066  gamma_eff 0.0000  mean n_t 3.969  gate |W| 1.622e+01  zmax 17.00  sat 0.551
+      step   6000  task 0.0039  gamma_eff 0.0500  mean n_t 2.228  gate |W| 1.687e+01  zmax 19.12  sat 0.439
+      step   8000  task 0.0033  gamma_eff 0.1000  mean n_t 2.197  gate |W| 1.716e+01  zmax 18.62  sat 0.547
+      step  10000  task 0.0035  gamma_eff 0.1000  mean n_t 2.207  gate |W| 1.758e+01  zmax 19.38  sat 0.550
+      step  12000  task 0.0030  gamma_eff 0.1000  mean n_t 2.204  gate |W| 1.768e+01  zmax 19.12  sat 0.394
+      step  14000  task 0.0030  gamma_eff 0.1000  mean n_t 2.200  gate |W| 1.770e+01  zmax 18.88  sat 0.417
+      step  16000  task 0.0027  gamma_eff 0.1000  mean n_t 2.199  gate |W| 1.771e+01  zmax 18.62  sat 0.415
+      step  18000  task 0.0025  gamma_eff 0.1000  mean n_t 2.197  gate |W| 1.775e+01  zmax 18.38  sat 0.418
+      step  20000  task 0.0021  gamma_eff 0.1000  mean n_t 2.197  gate |W| 1.781e+01  zmax 18.25  sat 0.416
+      eval   hard gates: token 0.9928   |   soft gates: token 1.0000, seq 0.9960, mean n_t 2.192
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 15
+------------------------------------------------------------------------------
+      step      1  task 4.8702  gamma_eff 0.0000  mean n_t 0.933  gate |W| 6.730e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8702 vs 4.8702  n_t 0.9334 vs 0.9334  |W| 6.7304 vs 6.7303
+      step    250  task 4.6808  gamma_eff 0.0000  mean n_t 2.346  gate |W| 1.100e+01  zmax 5.34  sat 0.000
+      step    500  task 3.6731  gamma_eff 0.0000  mean n_t 3.708  gate |W| 1.521e+01  zmax 14.00  sat 0.500
+      step    750  task 0.6234  gamma_eff 0.0000  mean n_t 3.999  gate |W| 1.654e+01  zmax 16.88  sat 0.752
+      step   1000  task 0.1880  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.681e+01  zmax 16.50  sat 0.977
+      step   1250  task 0.0624  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.681e+01  zmax 16.75  sat 0.978
+      step   1500  task 0.0476  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.682e+01  zmax 16.88  sat 0.978
+      step   1750  task 0.0231  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.682e+01  zmax 16.75  sat 0.979
+      step   2000  task 0.0207  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.979
+      step   2250  task 0.0194  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.977
+      step   2500  task 0.0102  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.75  sat 0.977
+      step   2750  task 0.0089  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.977
+      step   3000  task 0.0067  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.978
+      step   3250  task 0.0073  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.977
+      step   3500  task 0.0125  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.979
+      step   3750  task 0.0058  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.62  sat 0.977
+      step   4000  task 0.0085  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.683e+01  zmax 16.75  sat 0.978
+      step   6000  task 0.0058  gamma_eff 0.0500  mean n_t 3.986  gate |W| 1.628e+01  zmax 16.50  sat 0.775
+      step   8000  task 0.0055  gamma_eff 0.1000  mean n_t 3.972  gate |W| 1.610e+01  zmax 16.62  sat 0.774
+      step  10000  task 0.0072  gamma_eff 0.1000  mean n_t 3.972  gate |W| 1.589e+01  zmax 16.50  sat 0.775
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.0043  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.575e+01  zmax 16.50  sat 0.774
+      step  14000  task 0.0254  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.062e+01  zmax 21.50  sat 0.439
+      step  16000  task 0.0326  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.222e+01  zmax 25.12  sat 0.759
+      step  18000  task 0.0219  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.226e+01  zmax 25.00  sat 0.769
+      step  20000  task 0.2848  gamma_eff 0.1000  mean n_t 3.909  gate |W| 2.238e+01  zmax 25.00  sat 0.765
+      eval   hard gates: token 0.9945   |   soft gates: token 0.8205, seq 0.0115, mean n_t 3.553
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 25
+------------------------------------------------------------------------------
+      step      1  task 4.8676  gamma_eff 0.0000  mean n_t 0.938  gate |W| 6.807e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8676 vs 4.8676  n_t 0.9385 vs 0.9385  |W| 6.8073 vs 6.8054
+      step    250  task 4.6830  gamma_eff 0.0000  mean n_t 1.723  gate |W| 1.113e+01  zmax 3.52  sat 0.000
+      step    500  task 4.2734  gamma_eff 0.0000  mean n_t 3.389  gate |W| 1.628e+01  zmax 11.44  sat 0.250
+      step    750  task 2.5938  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.968e+01  zmax 16.38  sat 0.794
+      step   1000  task 0.6879  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   1250  task 0.3233  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   1500  task 0.1746  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   1750  task 0.1289  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   2000  task 0.0749  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   2250  task 0.0741  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   2500  task 0.0635  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   2750  task 0.0512  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.996e+01  zmax 16.75  sat 1.000
+      step   3000  task 0.0535  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.75  sat 1.000
+      step   3250  task 0.0329  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.75  sat 1.000
+      step   3500  task 0.0456  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.75  sat 1.000
+      step   3750  task 0.0357  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step   4000  task 0.0324  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step   6000  task 0.0084  gamma_eff 0.0500  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step   8000  task 0.0029  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  10000  task 0.0038  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  12000  task 0.0024  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  14000  task 0.0031  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  16000  task 0.0024  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  18000  task 0.0025  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      step  20000  task 0.0025  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.997e+01  zmax 16.88  sat 1.000
+      eval   hard gates: token 0.9998   |   soft gates: token 0.9998, seq 0.9890, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 25
+------------------------------------------------------------------------------
+      step      1  task 4.8676  gamma_eff 0.0000  mean n_t 0.938  gate |W| 6.807e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8676 vs 4.8676  n_t 0.9385 vs 0.9385  |W| 6.8073 vs 6.8054
+      step    250  task 4.6831  gamma_eff 0.0000  mean n_t 1.721  gate |W| 1.107e+01  zmax 3.44  sat 0.000
+      step    500  task 4.2984  gamma_eff 0.0000  mean n_t 3.194  gate |W| 1.597e+01  zmax 11.25  sat 0.250
+      step    750  task 2.3814  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.12  sat 1.000
+      step   1000  task 1.4511  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.12  sat 1.000
+      step   1250  task 0.8270  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.12  sat 1.000
+      step   1500  task 0.5709  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.25  sat 1.000
+      step   1750  task 0.4783  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.25  sat 1.000
+      step   2000  task 0.4355  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   2250  task 0.3623  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   2500  task 0.3661  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   2750  task 0.2911  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   3000  task 0.3247  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   3250  task 0.2835  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.38  sat 1.000
+      step   3500  task 0.2698  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step   3750  task 0.2486  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step   4000  task 0.2218  gamma_eff 0.0000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step   6000  task 0.2221  gamma_eff 0.0500  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step   8000  task 0.1492  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step  10000  task 0.1449  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.50  sat 1.000
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.1318  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.62  sat 1.000
+      step  14000  task 0.1502  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.62  sat 1.000
+      step  16000  task 0.1220  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.62  sat 1.000
+      step  18000  task 0.1402  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.62  sat 1.000
+      step  20000  task 0.1517  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.065e+01  zmax 18.62  sat 1.000
+      eval   hard gates: token 0.9630   |   soft gates: token 0.9630, seq 0.5010, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 29
+------------------------------------------------------------------------------
+      step      1  task 4.8711  gamma_eff 0.0000  mean n_t 0.944  gate |W| 6.860e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8711 vs 4.8711  n_t 0.9436 vs 0.9436  |W| 6.8598 vs 6.8598
+      step    250  task 4.6798  gamma_eff 0.0000  mean n_t 1.990  gate |W| 1.202e+01  zmax 4.03  sat 0.000
+      step    500  task 4.2488  gamma_eff 0.0000  mean n_t 2.996  gate |W| 1.474e+01  zmax 10.62  sat 0.250
+      step    750  task 3.5198  gamma_eff 0.0000  mean n_t 3.989  gate |W| 1.698e+01  zmax 16.25  sat 0.592
+      step   1000  task 0.1280  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   1250  task 0.0387  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   1500  task 0.0151  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   1750  task 0.0117  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   2000  task 0.0106  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   2250  task 0.0061  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   2500  task 0.0066  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   2750  task 0.0057  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   3000  task 0.0053  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   3250  task 0.0052  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   3500  task 0.0051  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   3750  task 0.0048  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   4000  task 0.0089  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   6000  task 0.0038  gamma_eff 0.0500  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step   8000  task 0.0036  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step  10000  task 0.0034  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step  12000  task 0.0034  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step  14000  task 0.0029  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.62  sat 1.000
+      step  16000  task 0.0038  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.75  sat 1.000
+      step  18000  task 0.0030  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.62  sat 1.000
+      step  20000  task 0.0024  gamma_eff 0.1000  mean n_t 4.000  gate |W| 1.748e+01  zmax 16.62  sat 1.000
+      eval   hard gates: token 0.9999   |   soft gates: token 0.9999, seq 0.9895, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 29
+------------------------------------------------------------------------------
+      step      1  task 4.8711  gamma_eff 0.0000  mean n_t 0.944  gate |W| 6.860e+00  zmax 0.06  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8711 vs 4.8711  n_t 0.9436 vs 0.9436  |W| 6.8598 vs 6.8598
+      step    250  task 4.6798  gamma_eff 0.0000  mean n_t 1.990  gate |W| 1.202e+01  zmax 4.03  sat 0.000
+      step    500  task 4.3062  gamma_eff 0.0000  mean n_t 2.998  gate |W| 1.468e+01  zmax 10.75  sat 0.250
+      step    750  task 3.6107  gamma_eff 0.0000  mean n_t 3.990  gate |W| 1.680e+01  zmax 17.12  sat 0.656
+      step   1000  task 0.2447  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   1250  task 0.0206  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   1500  task 0.0115  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   1750  task 0.0079  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   2000  task 0.0084  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 0.978
+      step   2250  task 0.0068  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 0.977
+      step   2500  task 0.0054  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   2750  task 0.0053  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   3000  task 0.0047  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   3250  task 0.0046  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   3500  task 0.0050  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 0.977
+      step   3750  task 0.0045  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   4000  task 0.0054  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.737e+01  zmax 16.88  sat 1.000
+      step   6000  task 0.0072  gamma_eff 0.0500  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step   8000  task 0.0067  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  10000  task 0.0052  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.0052  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  14000  task 0.0048  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  16000  task 0.0056  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  18000  task 0.0046  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      step  20000  task 0.0042  gamma_eff 0.1000  mean n_t 4.000  gate |W| 2.553e+01  zmax 28.12  sat 1.000
+      eval   hard gates: token 0.9998   |   soft gates: token 0.9998, seq 0.9855, mean n_t 4.000
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from never  seed 30
+------------------------------------------------------------------------------
+      step      1  task 4.8684  gamma_eff 0.0000  mean n_t 0.937  gate |W| 6.934e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8684 vs 4.8684  n_t 0.9366 vs 0.9366  |W| 6.9344 vs 6.9333
+      step    250  task 4.6812  gamma_eff 0.0000  mean n_t 2.201  gate |W| 1.102e+01  zmax 3.52  sat 0.000
+      step    500  task 3.9652  gamma_eff 0.0000  mean n_t 3.506  gate |W| 1.763e+01  zmax 14.12  sat 0.500
+      step    750  task 3.6516  gamma_eff 0.0000  mean n_t 3.882  gate |W| 1.836e+01  zmax 15.94  sat 0.724
+      step   1000  task 1.1869  gamma_eff 0.0000  mean n_t 3.982  gate |W| 1.913e+01  zmax 20.62  sat 0.775
+      step   1250  task 0.2368  gamma_eff 0.0000  mean n_t 3.994  gate |W| 1.914e+01  zmax 21.12  sat 0.776
+      step   1500  task 0.1158  gamma_eff 0.0000  mean n_t 3.996  gate |W| 1.919e+01  zmax 21.38  sat 0.775
+      step   1750  task 0.0392  gamma_eff 0.0000  mean n_t 3.996  gate |W| 1.918e+01  zmax 21.38  sat 0.775
+      step   2000  task 0.0450  gamma_eff 0.0000  mean n_t 3.996  gate |W| 1.920e+01  zmax 21.38  sat 0.775
+      step   2250  task 0.0371  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.921e+01  zmax 21.38  sat 0.775
+      step   2500  task 0.0244  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.921e+01  zmax 21.25  sat 0.775
+      step   2750  task 0.0198  gamma_eff 0.0000  mean n_t 3.999  gate |W| 1.921e+01  zmax 21.38  sat 0.775
+      step   3000  task 0.0216  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.921e+01  zmax 21.38  sat 0.775
+      step   3250  task 0.0203  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.921e+01  zmax 21.38  sat 0.776
+      step   3500  task 0.0279  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.922e+01  zmax 21.50  sat 0.776
+      step   3750  task 0.0111  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.922e+01  zmax 21.38  sat 0.775
+      step   4000  task 0.0089  gamma_eff 0.0000  mean n_t 4.000  gate |W| 1.922e+01  zmax 21.50  sat 0.774
+      step   6000  task 0.0074  gamma_eff 0.0500  mean n_t 3.973  gate |W| 1.904e+01  zmax 21.00  sat 0.774
+      step   8000  task 0.0083  gamma_eff 0.1000  mean n_t 3.958  gate |W| 1.885e+01  zmax 21.38  sat 0.770
+      step  10000  task 0.0093  gamma_eff 0.1000  mean n_t 3.944  gate |W| 1.870e+01  zmax 21.25  sat 0.761
+      step  12000  task 0.0113  gamma_eff 0.1000  mean n_t 3.945  gate |W| 1.859e+01  zmax 21.25  sat 0.768
+      step  14000  task 0.0041  gamma_eff 0.1000  mean n_t 3.944  gate |W| 1.860e+01  zmax 21.00  sat 0.764
+      step  16000  task 0.0051  gamma_eff 0.1000  mean n_t 3.944  gate |W| 1.864e+01  zmax 20.75  sat 0.763
+      step  18000  task 0.0024  gamma_eff 0.1000  mean n_t 3.944  gate |W| 1.865e+01  zmax 20.50  sat 0.765
+      step  20000  task 0.0026  gamma_eff 0.1000  mean n_t 3.944  gate |W| 1.872e+01  zmax 21.50  sat 0.764
+      eval   hard gates: token 0.9993   |   soft gates: token 0.9988, seq 0.9435, mean n_t 3.944
+------------------------------------------------------------------------------
+learned  gamma 0.1  wall 0  hard from 12000  seed 30
+------------------------------------------------------------------------------
+      step      1  task 4.8684  gamma_eff 0.0000  mean n_t 0.937  gate |W| 6.934e+00  zmax 0.07  sat 0.000
+      fingerprint vs gate_wall_seeds.json: MATCH   task 4.8684 vs 4.8684  n_t 0.9366 vs 0.9366  |W| 6.9344 vs 6.9333
+      step    250  task 4.6812  gamma_eff 0.0000  mean n_t 2.201  gate |W| 1.102e+01  zmax 3.50  sat 0.000
+      step    500  task 3.9628  gamma_eff 0.0000  mean n_t 3.442  gate |W| 1.735e+01  zmax 14.00  sat 0.500
+      step    750  task 3.4275  gamma_eff 0.0000  mean n_t 3.594  gate |W| 1.808e+01  zmax 15.31  sat 0.750
+      step   1000  task 1.1055  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.897e+01  zmax 15.06  sat 0.774
+      step   1250  task 0.4190  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.896e+01  zmax 14.88  sat 0.776
+      step   1500  task 0.2209  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.896e+01  zmax 14.69  sat 0.775
+      step   1750  task 0.1003  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.50  sat 0.775
+      step   2000  task 0.1467  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.894e+01  zmax 14.44  sat 0.775
+      step   2250  task 0.0905  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.44  sat 0.775
+      step   2500  task 0.0978  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.31  sat 0.775
+      step   2750  task 0.0715  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.31  sat 0.775
+      step   3000  task 0.0900  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.31  sat 0.775
+      step   3250  task 0.0700  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.897e+01  zmax 14.31  sat 0.776
+      step   3500  task 0.1057  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.896e+01  zmax 14.31  sat 0.776
+      step   3750  task 0.0511  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.895e+01  zmax 14.25  sat 0.775
+      step   4000  task 0.0695  gamma_eff 0.0000  mean n_t 3.972  gate |W| 1.894e+01  zmax 14.12  sat 0.774
+      step   6000  task 0.0357  gamma_eff 0.0500  mean n_t 3.402  gate |W| 1.896e+01  zmax 15.69  sat 0.774
+      step   8000  task 0.0596  gamma_eff 0.1000  mean n_t 3.232  gate |W| 1.935e+01  zmax 15.00  sat 0.775
+      step  10000  task 0.0476  gamma_eff 0.1000  mean n_t 3.173  gate |W| 1.950e+01  zmax 14.75  sat 0.776
+      step  12000  gates now HARD (straight-through) for the rest of training
+      step  12000  task 0.0743  gamma_eff 0.1000  mean n_t 3.099  gate |W| 1.970e+01  zmax 14.12  sat 0.775
+      step  14000  task 0.0433  gamma_eff 0.1000  mean n_t 3.096  gate |W| 2.384e+01  zmax 15.25  sat 0.768
+      step  16000  task 0.0275  gamma_eff 0.1000  mean n_t 3.104  gate |W| 2.385e+01  zmax 15.25  sat 0.770
+      step  18000  task 0.0154  gamma_eff 0.1000  mean n_t 3.096  gate |W| 2.385e+01  zmax 15.12  sat 0.768
+      step  20000  task 0.0095  gamma_eff 0.1000  mean n_t 3.098  gate |W| 2.386e+01  zmax 15.12  sat 0.770
+      eval   hard gates: token 0.9951   |   soft gates: token 0.9951, seq 0.9225, mean n_t 3.114
+==============================================================================
+arm                            seed   token    soft    seq    cost   mae  under  corr
+------------------------------------------------------------------------------
+learned(g=0.1)                   12  0.9999  0.9999  0.996   4.000  2.70   0.00  0.00
+learned(g=0.1,hard@12000)        12  0.9996  0.9995  0.966   1.659  0.36   0.00  0.86
+learned(g=0.1)                   13  0.9990  0.9997  0.914   3.099  1.80   0.00  1.00
+learned(g=0.1,hard@12000)        13  0.9834  0.9833  0.645   3.099  1.80   0.00  1.00
+learned(g=0.1)                   15  0.9928  1.0000  0.676   2.199  0.90   0.00  1.00
+learned(g=0.1,hard@12000)        15  0.9945  0.8205  0.822   4.000  2.70   0.00  0.00
+learned(g=0.1)                   25  0.9998  0.9998  0.989   4.000  2.70   0.00  0.00
+learned(g=0.1,hard@12000)        25  0.9630  0.9630  0.501   4.000  2.70   0.00  0.00
+learned(g=0.1)                   29  0.9999  0.9999  0.990   4.000  2.70   0.00  0.00
+learned(g=0.1,hard@12000)        29  0.9998  0.9998  0.986   4.000  2.70   0.00  0.00
+learned(g=0.1)                   30  0.9993  0.9988  0.967   4.000  2.70   0.00  0.00
+learned(g=0.1,hard@12000)        30  0.9951  0.9951  0.925   3.099  1.80   0.00  1.00
+==============================================================================
+  LEARNED-GATE ARMS  (separated = corr >= 0.99 and token >= 0.99;
+                      exact = every class gets min(D, K), token >= 0.99)
+  gamma 0.1  wall 0  hard from never   separated 2/6 [0.10, 0.70]   exact 0/6 [0.00, 0.39]
+      separated if judged by SOFT-gate accuracy: 2/6 [0.10, 0.70]
+      costs, sorted: 2.1990 3.0995 4.0000 4.0000 4.0000 4.0000
+  gamma 0.1  wall 0  hard from 12000   separated 1/6 [0.03, 0.56]   exact 0/6 [0.00, 0.39]
+      separated if judged by SOFT-gate accuracy: 1/6 [0.03, 0.56]
+      costs, sorted: 1.6594 3.0995 3.0995 4.0000 4.0000 4.0000
+
+  NO VERDICT: no oracle arm in this run to compare against.
+
+written: results/gate_hard_6seeds.json

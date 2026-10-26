@@ -1,0 +1,84 @@
+time_s5_kernels self-test (CPU)
+T1  counted swap
+  [PASS] swapped kernel called and counted (2 calls, both reach the recurrent kernel)   {'x': 2} ['rec', 'rec']
+  [PASS] kind None: original kernel, nothing counted
+  [PASS] restored after use
+  [PASS] restored after an exception
+T2  harness and statistics on known answers (sleeps)
+  [PASS] best4 = the fastest fixed-4 configuration (f4_fu_rec), not a faster non-fixed-4 one   f4_fu_rec
+  [PASS] ratio g_R_rec / best4 ~ 3/6 = 0.5 and GATE SAVING   0.517 (0.5138349639008165, 0.5200351483633564)
+  [PASS] kernel effect on fixed 4 = best rec / best chunk ~ 6/9   0.680
+  [PASS] gate cost without skipping = g_A_rec / f4_fu_rec ~ 7/6   1.152
+  [PASS] rounds run in varying, reproducible order
+  [PASS] a ratio near 0.95 is NO GATE SAVING   0.958 (0.9468692404362968, 0.9690473415475692)
+  [PASS] decision at the boundary: interval upper 0.90 saves, 0.9001 does not
+  [PASS] interval of a constant is that constant
+T3  joined inputs
+  [PASS] 2 rows of length 8 from 4 consecutive 4-token sequences
+  [PASS] refuses a length that is not a multiple, and too few sequences
+SELF-TEST PASSED
+torch 2.6.0+cu126 | device: cuda (NVIDIA GeForce RTX 4050 Laptop GPU)
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed12.pt
+In file included from /home/hp/.pyenv/versions/3.12.7/include/python3.12/Python.h:12,
+                 from /home/hp/tmp/tmpeaoyxumk/main.c:4:
+/home/hp/.pyenv/versions/3.12.7/include/python3.12/pyconfig.h:1875:9: warning: ‘_POSIX_C_SOURCE’ redefined
+ 1875 | #define _POSIX_C_SOURCE 200809L
+      |         ^~~~~~~~~~~~~~~
+In file included from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,
+                 from /usr/include/stdlib.h:26,
+                 from /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/.venv/lib/python3.12/site-packages/triton/backends/nvidia/include/cuda.h:56,
+                 from /home/hp/tmp/tmpeaoyxumk/main.c:2:
+/usr/include/features.h:319:10: note: this is the location of the previous definition
+  319 | # define _POSIX_C_SOURCE        202405L
+      |          ^~~~~~~~~~~~~~~
+   1 x 512   K1 PASS  order 1.246  best4 f4_fu_rec 2.82 ms | g_R_rec 4.31 ms -> ratio 1.546 (1.510-1.624) NO GATE SAVING
+           fixed-4 rec/chunk 0.776  gate cost no-skip 1.232  floor f1/best4 1.001  g_R_chunk/best4 2.341  | f4_pf_chunk 5.34  f4_fu_chunk 3.63  f4_pf_rec 4.46  f4_fu_rec 2.82  f1_fu_chunk 3.59  f1_fu_rec 2.82  g_A_rec 3.47  g_R_chunk 6.59  g_R_rec 4.31
+   8 x 512   K1 PASS  order 1.305  best4 f4_fu_rec 3.07 ms | g_R_rec 4.24 ms -> ratio 1.375 (1.328-1.411) NO GATE SAVING
+           fixed-4 rec/chunk 0.847  gate cost no-skip 1.131  floor f1/best4 0.872  g_R_chunk/best4 2.097  | f4_pf_chunk 5.15  f4_fu_chunk 3.62  f4_pf_rec 4.63  f4_fu_rec 3.07  f1_fu_chunk 3.41  f1_fu_rec 2.68  g_A_rec 3.47  g_R_chunk 6.43  g_R_rec 4.24
+  32 x 512   K1 PASS  order 1.293  best4 f4_fu_rec 12.05 ms | g_R_rec 8.89 ms -> ratio 0.742 (0.737-0.752) GATE SAVING
+           fixed-4 rec/chunk 0.891  gate cost no-skip 1.058  floor f1/best4 0.379  g_R_chunk/best4 0.967  | f4_pf_chunk 15.50  f4_fu_chunk 13.52  f4_pf_rec 13.70  f4_fu_rec 12.05  f1_fu_chunk 4.83  f1_fu_rec 4.56  g_A_rec 12.75  g_R_chunk 11.65  g_R_rec 8.89
+   1 x 2048  K1 PASS  order 1.281  best4 f4_fu_chunk 3.92 ms | g_R_rec 4.66 ms -> ratio 1.202 (1.142-1.251) NO GATE SAVING
+           fixed-4 rec/chunk 1.461  gate cost no-skip 1.049  floor f1/best4 0.763  g_R_chunk/best4 1.784  | f4_pf_chunk 5.61  f4_fu_chunk 3.92  f4_pf_rec 7.66  f4_fu_rec 5.73  f1_fu_chunk 3.69  f1_fu_rec 2.99  g_A_rec 6.00  g_R_chunk 6.99  g_R_rec 4.66
+   8 x 2048  K1 PASS  order 1.293  best4 f4_fu_rec 12.09 ms | g_R_rec 9.05 ms -> ratio 0.749 (0.745-0.765) GATE SAVING
+           fixed-4 rec/chunk 0.873  gate cost no-skip 1.065  floor f1/best4 0.392  g_R_chunk/best4 0.977  | f4_pf_chunk 15.71  f4_fu_chunk 13.85  f4_pf_rec 13.99  f4_fu_rec 12.09  f1_fu_chunk 5.04  f1_fu_rec 4.74  g_A_rec 12.87  g_R_chunk 11.81  g_R_rec 9.05
+  32 x 2048  K1 PASS  order 1.295  best4 f4_fu_rec 48.75 ms | g_R_rec 34.82 ms -> ratio 0.713 (0.695-0.723) GATE SAVING
+           fixed-4 rec/chunk 0.875  gate cost no-skip 1.062  floor f1/best4 0.374  g_R_chunk/best4 0.894  | f4_pf_chunk 62.47  f4_fu_chunk 55.70  f4_pf_rec 55.27  f4_fu_rec 48.75  f1_fu_chunk 19.81  f1_fu_rec 18.22  g_A_rec 51.76  g_R_chunk 43.60  g_R_rec 34.82
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed13.pt
+   1 x 512   K1 PASS  order 1.246  best4 f4_fu_rec 2.77 ms | g_R_rec 4.30 ms -> ratio 1.534 (1.479-1.587) NO GATE SAVING
+           fixed-4 rec/chunk 0.808  gate cost no-skip 1.221  floor f1/best4 0.995  g_R_chunk/best4 2.227  | f4_pf_chunk 5.16  f4_fu_chunk 3.43  f4_pf_rec 4.41  f4_fu_rec 2.77  f1_fu_chunk 3.51  f1_fu_rec 2.76  g_A_rec 3.39  g_R_chunk 6.17  g_R_rec 4.30
+   8 x 512   K1 PASS  order 1.305  best4 f4_fu_rec 3.11 ms | g_R_rec 4.24 ms -> ratio 1.336 (1.314-1.393) NO GATE SAVING
+           fixed-4 rec/chunk 0.846  gate cost no-skip 1.238  floor f1/best4 0.937  g_R_chunk/best4 2.166  | f4_pf_chunk 5.36  f4_fu_chunk 3.68  f4_pf_rec 4.69  f4_fu_rec 3.11  f1_fu_chunk 3.45  f1_fu_rec 2.91  g_A_rec 3.85  g_R_chunk 6.74  g_R_rec 4.24
+  32 x 512   K1 PASS  order 1.293  best4 f4_fu_rec 11.94 ms | g_R_rec 9.10 ms -> ratio 0.765 (0.730-0.808) GATE SAVING
+           fixed-4 rec/chunk 0.882  gate cost no-skip 1.069  floor f1/best4 0.381  g_R_chunk/best4 0.984  | f4_pf_chunk 15.33  f4_fu_chunk 13.53  f4_pf_rec 13.83  f4_fu_rec 11.94  f1_fu_chunk 5.08  f1_fu_rec 4.55  g_A_rec 12.75  g_R_chunk 11.74  g_R_rec 9.10
+   1 x 2048  K1 PASS  order 1.281  best4 f4_fu_chunk 3.69 ms | g_R_rec 4.61 ms -> ratio 1.256 (1.167-1.314) NO GATE SAVING
+           fixed-4 rec/chunk 1.536  gate cost no-skip 1.055  floor f1/best4 0.766  g_R_chunk/best4 1.769  | f4_pf_chunk 5.49  f4_fu_chunk 3.69  f4_pf_rec 7.60  f4_fu_rec 5.67  f1_fu_chunk 3.75  f1_fu_rec 2.83  g_A_rec 5.99  g_R_chunk 6.53  g_R_rec 4.61
+   8 x 2048  K1 PASS  order 1.293  best4 f4_fu_rec 12.06 ms | g_R_rec 9.03 ms -> ratio 0.751 (0.741-0.758) GATE SAVING
+           fixed-4 rec/chunk 0.869  gate cost no-skip 1.063  floor f1/best4 0.367  g_R_chunk/best4 0.960  | f4_pf_chunk 15.57  f4_fu_chunk 13.88  f4_pf_rec 13.78  f4_fu_rec 12.06  f1_fu_chunk 4.96  f1_fu_rec 4.43  g_A_rec 12.82  g_R_chunk 11.57  g_R_rec 9.03
+  32 x 2048  K1 PASS  order 1.295  best4 f4_fu_rec 48.76 ms | g_R_rec 35.09 ms -> ratio 0.721 (0.714-0.727) GATE SAVING
+           fixed-4 rec/chunk 0.878  gate cost no-skip 1.064  floor f1/best4 0.367  g_R_chunk/best4 0.882  | f4_pf_chunk 62.31  f4_fu_chunk 55.56  f4_pf_rec 55.31  f4_fu_rec 48.76  f1_fu_chunk 19.41  f1_fu_rec 17.88  g_A_rec 51.89  g_R_chunk 43.00  g_R_rec 35.09
+==============================================================================
+learned_g_0_1_hard_1_g0.1_seed31.pt
+   1 x 512   K1 PASS  order 1.246  best4 f4_fu_rec 2.74 ms | g_R_rec 4.31 ms -> ratio 1.562 (1.469-1.663) NO GATE SAVING
+           fixed-4 rec/chunk 0.741  gate cost no-skip 1.309  floor f1/best4 1.013  g_R_chunk/best4 2.327  | f4_pf_chunk 5.42  f4_fu_chunk 3.69  f4_pf_rec 4.54  f4_fu_rec 2.74  f1_fu_chunk 3.52  f1_fu_rec 2.77  g_A_rec 3.58  g_R_chunk 6.37  g_R_rec 4.31
+   8 x 512   K1 PASS  order 1.305  best4 f4_fu_rec 3.10 ms | g_R_rec 4.16 ms -> ratio 1.324 (1.305-1.377) NO GATE SAVING
+           fixed-4 rec/chunk 0.848  gate cost no-skip 1.152  floor f1/best4 0.885  g_R_chunk/best4 2.033  | f4_pf_chunk 5.30  f4_fu_chunk 3.66  f4_pf_rec 4.55  f4_fu_rec 3.10  f1_fu_chunk 3.42  f1_fu_rec 2.75  g_A_rec 3.58  g_R_chunk 6.31  g_R_rec 4.16
+  32 x 512   K1 PASS  order 1.293  best4 f4_fu_rec 12.03 ms | g_R_rec 9.17 ms -> ratio 0.761 (0.751-0.811) GATE SAVING
+           fixed-4 rec/chunk 0.885  gate cost no-skip 1.062  floor f1/best4 0.386  g_R_chunk/best4 1.015  | f4_pf_chunk 15.49  f4_fu_chunk 13.59  f4_pf_rec 13.76  f4_fu_rec 12.03  f1_fu_chunk 4.92  f1_fu_rec 4.64  g_A_rec 12.78  g_R_chunk 12.22  g_R_rec 9.17
+   1 x 2048  K1 PASS  order 1.281  best4 f4_fu_chunk 3.76 ms | g_R_rec 4.41 ms -> ratio 1.183 (1.124-1.237) NO GATE SAVING
+           fixed-4 rec/chunk 1.509  gate cost no-skip 1.062  floor f1/best4 0.731  g_R_chunk/best4 1.712  | f4_pf_chunk 5.52  f4_fu_chunk 3.76  f4_pf_rec 7.64  f4_fu_rec 5.68  f1_fu_chunk 3.74  f1_fu_rec 2.75  g_A_rec 6.03  g_R_chunk 6.45  g_R_rec 4.41
+   8 x 2048  K1 PASS  order 1.293  best4 f4_fu_rec 12.09 ms | g_R_rec 9.24 ms -> ratio 0.759 (0.745-0.785) GATE SAVING
+           fixed-4 rec/chunk 0.872  gate cost no-skip 1.064  floor f1/best4 0.403  g_R_chunk/best4 0.975  | f4_pf_chunk 15.50  f4_fu_chunk 13.87  f4_pf_rec 13.78  f4_fu_rec 12.09  f1_fu_chunk 5.05  f1_fu_rec 4.87  g_A_rec 12.86  g_R_chunk 11.78  g_R_rec 9.24
+  32 x 2048  K1 PASS  order 1.295  best4 f4_fu_rec 48.73 ms | g_R_rec 34.46 ms -> ratio 0.704 (0.692-0.714) GATE SAVING
+           fixed-4 rec/chunk 0.879  gate cost no-skip 1.062  floor f1/best4 0.366  g_R_chunk/best4 0.856  | f4_pf_chunk 62.04  f4_fu_chunk 55.44  f4_pf_rec 55.08  f4_fu_rec 48.73  f1_fu_chunk 19.35  f1_fu_rec 17.83  g_A_rec 51.75  g_R_chunk 41.73  g_R_rec 34.46
+
+==============================================================================
+   1 x 512   1.546  1.534  1.562  -> GATE SAVING on 0 of 3
+   8 x 512   1.375  1.336  1.324  -> GATE SAVING on 0 of 3
+  32 x 512   0.742  0.765  0.761  -> GATE SAVING on every model
+   1 x 2048  1.202  1.256  1.183  -> GATE SAVING on 0 of 3
+   8 x 2048  0.749  0.751  0.759  -> GATE SAVING on every model
+  32 x 2048  0.713  0.721  0.704  -> GATE SAVING on every model
+CLAIM: GATE SAVING on every model at 3 of 6 sizes
+saved /mnt/c/D/B.Tech/Major Project/adaptive-order-state-tracking/results/s5_kernel_timing.json

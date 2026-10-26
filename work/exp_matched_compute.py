@@ -135,12 +135,27 @@ def reinit_halting_gates(model, init_bias: float, to_float32: bool = True) -> in
 
 
 def build(n_h: int, adaptive: bool, n_heads: int, head_dim: int, hidden: int,
-          n_layers: int, vocab: int, seed: int, gate_init_bias: float = 4.0):
+          n_layers: int, vocab: int, seed: int, gate_init_bias: float = 4.0,
+          gate_init: str = "repaired", min_order: int = 0):
     """`gate_init_bias` is the halting gate's output bias at init. The default
     4.0 is the value every experiment before 15 Sept ran with, so existing
     callers are unaffected. It is exposed because sigmoid(4.0) = 0.982 has
     derivative 0.018, and a gate that starts that far into saturation may not
-    become input-dependent at all (see exp_gate_train.py)."""
+    become input-dependent at all (see exp_gate_train.py).
+
+    `gate_init` selects how the halting gate starts:
+
+      "repaired"    (default) reinit_halting_gates(): output weight zero, bias
+                    `gate_init_bias`, gate held and evaluated in float32. Every
+                    run from gate_fixedinit onwards.
+      "hf_default"  no re-initialisation. HuggingFace post_init leaves the
+                    output layer at weight ~ N(0, initializer_range) and bias 0,
+                    so n_t starts near 0.94; the gate is cast to bf16 with the
+                    rest of the model and its sigmoid is evaluated in bf16.
+                    `gate_init_bias` is ignored. This reconstructs the runs made
+                    before the repair existed (gate_train_p10, gate_bias40_more)
+                    and exists only so they can be re-run; it is not a
+                    recommended setting."""
     torch.manual_seed(seed)
     cfg = GatedDeltaProductConfig(
         hidden_size=hidden,
@@ -159,8 +174,29 @@ def build(n_h: int, adaptive: bool, n_heads: int, head_dim: int, hidden: int,
     cfg.gate_init_open_bias = gate_init_bias
     m = GatedDeltaProductForCausalLM(cfg).to(DEV, DTYPE)
     if adaptive:
-        # AFTER the cast: .to(DTYPE) would otherwise undo the gate's float32.
-        reinit_halting_gates(m, gate_init_bias)
+        if gate_init == "repaired":
+            # AFTER the cast: .to(DTYPE) would otherwise undo the gate's float32.
+            reinit_halting_gates(m, gate_init_bias)
+        elif gate_init == "hf_default":
+            # Leave post_init's initialisation alone, and turn off float32
+            # halting, which did not exist when those runs were made.
+            n_g = 0
+            for mod in m.modules():
+                g = getattr(mod, "halting_gate", None)
+                if getattr(mod, "adaptive_order", False) and g is not None:
+                    g.fp32_halting = False
+                    n_g += 1
+            if n_g == 0:
+                raise RuntimeError(
+                    "gate_init='hf_default' but no halting gate was found.")
+        else:
+            raise ValueError(
+                f"gate_init must be 'repaired' or 'hf_default', got {gate_init!r}")
+        # first `min_order` factors always on (see src/gating.py); 0 = off
+        for mod in m.modules():
+            g = getattr(mod, "halting_gate", None)
+            if getattr(mod, "adaptive_order", False) and g is not None:
+                g.min_order = min_order
     if adaptive:
         n_adaptive = sum(1 for mod in m.modules()
                          if getattr(mod, "adaptive_order", False))

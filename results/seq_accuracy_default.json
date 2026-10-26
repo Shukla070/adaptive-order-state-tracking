@@ -1,0 +1,149 @@
+{
+ "rows": [
+  {
+   "checkpoint": "learned_g_0_1_hard_1_g0.1_seed12.pt",
+   "trained": {
+    "token_acc": 0.9997890625,
+    "seq_acc": 0.9795,
+    "mean_n_t": 1.2984648447036744,
+    "gamma": 0.1
+   },
+   "n_seq": 2000,
+   "g1_err_x": 0.0014905532881813932,
+   "g1_err_a": 0.018114139648398694,
+   "A": {
+    "token_acc": 0.9997891187667847,
+    "seq_acc": 0.9795000553131104
+   },
+   "R": {
+    "token_acc": 0.9999219179153442,
+    "seq_acc": 0.9925000667572021
+   },
+   "X": {
+    "token_acc": 0.9999219179153442,
+    "seq_acc": 0.9925000667572021
+   },
+   "disc_AR": [
+    2,
+    28
+   ],
+   "tok_disagree_AR": 38,
+   "margin_disagree_AR": 0.6875,
+   "disc_AX": [
+    2,
+    28
+   ],
+   "tok_disagree_AX": 38,
+   "margin_disagree_AX": 0.6875,
+   "disc_RX": [
+    0,
+    0
+   ],
+   "tok_disagree_RX": 0,
+   "margin_disagree_RX": null,
+   "margin_all": 7.8125,
+   "checks_pass": true
+  },
+  {
+   "checkpoint": "learned_g_0_1_hard_1_g0.1_seed13.pt",
+   "trained": {
+    "token_acc": 0.99996875,
+    "seq_acc": 0.9965,
+    "mean_n_t": 1.2984648447036744,
+    "gamma": 0.1
+   },
+   "n_seq": 2000,
+   "g1_err_x": 0.0016621330464827915,
+   "g1_err_a": 0.021435346492039237,
+   "A": {
+    "token_acc": 0.9999688267707825,
+    "seq_acc": 0.9965000748634338
+   },
+   "R": {
+    "token_acc": 0.9999688267707825,
+    "seq_acc": 0.9960000514984131
+   },
+   "X": {
+    "token_acc": 0.9999688267707825,
+    "seq_acc": 0.9960000514984131
+   },
+   "disc_AR": [
+    4,
+    3
+   ],
+   "tok_disagree_AR": 8,
+   "margin_disagree_AR": 0.5,
+   "disc_AX": [
+    4,
+    3
+   ],
+   "tok_disagree_AX": 8,
+   "margin_disagree_AX": 0.5,
+   "disc_RX": [
+    0,
+    0
+   ],
+   "tok_disagree_RX": 0,
+   "margin_disagree_RX": null,
+   "margin_all": 8.078125,
+   "checks_pass": true
+  },
+  {
+   "checkpoint": "learned_g_0_1_hard_1_g0.1_seed1040.pt",
+   "trained": {
+    "token_acc": 0.99930859375,
+    "seq_acc": 0.9665,
+    "mean_n_t": 1.2984648447036744,
+    "gamma": 0.1
+   },
+   "n_seq": 2000,
+   "g1_err_x": 0.0015889460411826967,
+   "g1_err_a": 0.01936152102087215,
+   "A": {
+    "token_acc": 0.9993086457252502,
+    "seq_acc": 0.9665000438690186
+   },
+   "R": {
+    "token_acc": 0.9995937943458557,
+    "seq_acc": 0.9850000739097595
+   },
+   "X": {
+    "token_acc": 0.9995937943458557,
+    "seq_acc": 0.9850000739097595
+   },
+   "disc_AR": [
+    2,
+    39
+   ],
+   "tok_disagree_AR": 135,
+   "margin_disagree_AR": 0.6875,
+   "disc_AX": [
+    2,
+    39
+   ],
+   "tok_disagree_AX": 135,
+   "margin_disagree_AX": 0.6875,
+   "disc_RX": [
+    0,
+    0
+   ],
+   "tok_disagree_RX": 0,
+   "margin_disagree_RX": null,
+   "margin_all": 7.96875,
+   "checks_pass": true
+  }
+ ],
+ "summary": {
+  "n_models": 3,
+  "n_learned": 3,
+  "seq_A": 0.9808333913485209,
+  "seq_R": 0.9911667307217916,
+  "seq_X": 0.9911667307217916,
+  "verdict": "NO GENERAL DROP",
+  "per_model_drop_A_minus_R": [
+   -0.018500030040740967,
+   -0.013000011444091797,
+   0.000500023365020752
+  ]
+ }
+}
