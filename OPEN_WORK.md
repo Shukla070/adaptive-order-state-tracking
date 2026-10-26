@@ -130,6 +130,11 @@ fixed 4 ~0.88). Small batches (2k–4k tokens) are 18–56% slower: overhead-bou
 faster path's fixed cost. Next: make the recurrent kernel the faster path's default
 (+ re-run its correctness checks); optionally cut the small-batch overhead or dispatch
 by workload size; then the progress deck.
+*25 Oct:* default switched to the recurrent kernel in the layer patch (`ragged_kernel`),
+checks C9/C1r/C2r/C6r/C3r/C7r added to `work/check_ragged.py`; pre-registered, awaiting the GPU run.
+*25 Oct, result:* **adopted** — check_ragged ALL PASS (recurrent 1.66e-3 from float64);
+end-to-end the default reproduces Rrec exactly on seeds 12/13/1040 (0.9925/0.9960/0.9850) and
+matches the exact path on every sequence. Next: progress deck; γ from the task loss; Synthea.
 The items below are the 8 Oct queue, kept as the record.
 
 **A. Demand-model scoring** — *built 8 Oct*: `--demand model` (S₅ alphabet → ℓ;

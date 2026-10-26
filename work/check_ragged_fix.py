@@ -445,6 +445,13 @@ def main():
         model.load_state_dict(ck["state_dict"])
         model.eval()
         set_gate_hard(model, True)
+        # Pinned 25 Oct: these paths are defined with the packed recurrence on the bf16 chunk
+        # kernel and the other kernels swapped in for it. The layer's default became the
+        # recurrent kernel after this script's run; pin the old one so the labels keep their
+        # pre-registered meaning.
+        for _m in model.modules():
+            if hasattr(_m, "ragged_kernel"):
+                _m.ragged_kernel = "chunk"
         name = Path(path).name
         print("=" * 78 + f"\n{name}   trained: token {res['token_acc']:.5f}", flush=True)
         row = {"checkpoint": name, "n_seq": int(te_x.shape[0])}

@@ -319,6 +319,13 @@ def main():
         g.load_state_dict(ck["state_dict"])
         g.eval()
         set_gate_hard(g, True)
+        # Pinned 25 Oct: these paths are defined with the packed recurrence on the bf16 chunk
+        # kernel and the other kernels swapped in for it. The layer's default became the
+        # recurrent kernel after this script's run; pin the old one so the labels keep their
+        # pre-registered meaning.
+        for _m in g.modules():
+            if hasattr(_m, "ragged_kernel"):
+                _m.ragged_kernel = "chunk"
         common = dict(n_heads=b["n_heads"], head_dim=b["head_dim"], hidden=b["hidden"], n_layers=b["n_layers"],
                       vocab=b["vocab"], seed=0)
         models = {"g": g, "f4": build(n_h=4, adaptive=False, **common).eval(),

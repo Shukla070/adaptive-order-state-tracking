@@ -2332,6 +2332,62 @@ layer given the same kernels, at 16k–65k tokens per batch, on three trained mo
 token accuracy equal to fixed 4's; at 2k–4k tokens per batch it is 18–56% slower. RTX
 4050 laptop GPU, inference only.
 
+### The float32-state kernel as the default for the faster path — pre-registered 25 October
+
+*Change.* `flash-linear-attention/fla/layers/gated_deltaproduct.py` (previous version kept as
+`gated_deltaproduct.py.orig.recurrent`): a layer switch `ragged_kernel`, default
+**"recurrent"** — the packed (ragged) recurrence calls fla's
+`fused_recurrent_gated_delta_rule` (state in float32), exactly as path Rrec did by swapping;
+**"chunk"** keeps the 13 October behaviour. Path A (training, and the non-ragged inference
+path) is unchanged. `work/check_ragged_fix.py` and `work/time_s5_kernels.py` now pin
+"chunk", so their already-run, pre-registered paths keep their meaning (each also contains a
+check that would fail if the pin were missing: G1 and K1).
+
+*Checks* (`python work/check_ragged.py --selftest`, real kernels, random-weight model):
+- **C9** each setting calls only its kernel (a call counter on the layer module's three
+  kernels), per-factor and fused; Path A never calls the recurrent kernel; the default is
+  "recurrent"; an unknown name is refused.
+- **C1r / C2r / C6r** with the recurrent kernel, the packed recurrence output is within
+  **5e-3** (relative L2) of the float64 reference — random orders 0–4, all gates open, and
+  the fused path. Judged against float64, not Path A, because Path A carries its own bf16
+  error (1e-2 to 9e-2 on trained models); 5e-3 sits above bf16 output rounding (1.5–1.8e-3
+  measured on 20 trained models).
+- **C3r / C7r** every indexing mutant is still detected (relative difference > 0.1).
+- The chunk setting keeps C1, C1c, C2, C6, C6b, C3, C7 as before; C1b, C4, C5, C8 unchanged.
+
+*End-to-end* (`work/check_seq_accuracy.py` on seeds 12, 13, 1040; its path R is now the
+default): R's sequence accuracy must equal `results/ragged_fix.json`'s Rrec within 0.001
+(0.9925, 0.9960, 0.9850) and be at least Path A − 0.002 on each model.
+
+*Decision.* All pass → the recurrent kernel is the faster path's default. Any failure → the
+previous file is restored and the cause found before anything uses the faster path.
+
+### The float32-state kernel as the default for the faster path — result, 25 October
+
+**Adopted: the faster path's packed recurrence now uses the float32-state recurrent kernel
+by default** (`ragged_kernel = "recurrent"`). Every pre-registered check passed.
+- `work/check_ragged.py --selftest` (`results/check_ragged_default.log`, copied from the
+  terminal): **PART 1: ALL PASS**, 35 checks. C9: each setting called only its kernel
+  (per-factor and fused); Path A still calls only the chunk kernel; an unknown name is
+  refused. C1r / C2r / C6r: the recurrent kernel's packed recurrence is **1.66e-3** from the
+  float64 reference (bf16 output rounding), against Path A's 6.57e-3 / 7.29e-3. C3r / C7r:
+  every mutant detected (0.26–0.78). The chunk setting reproduces the 13 October numbers
+  exactly (C1c 7.05e-3 vs 6.57e-3). This random-weight model has no forget gate, so the
+  zero-decay branch of the new code was exercised and passed.
+- End-to-end (`results/seq_accuracy_default.{log,json}`; path R is the new default):
+
+| model | Path A | R (new default) | target (Rrec, 25 Oct) | X (exact) | R vs X discordant |
+|---|---|---|---|---|---|
+| seed 12 | 0.9795 | **0.9925** | 0.9925 | 0.9925 | 0 / 0 |
+| seed 13 | 0.9965 | **0.9960** | 0.9960 | 0.9960 | 0 / 0 |
+| seed 1040 | 0.9665 | **0.9850** | 0.9850 | 0.9850 | 0 / 0 |
+
+  R equals the pre-registered targets exactly, is at least Path A − 0.002 on every model,
+  and agrees with the exact path on every sequence.
+- Unchanged by this: training, Path A, and every earlier result (they were produced with
+  the kernel they state). Scripts that time or score "the faster path" without pinning a
+  kernel now get the recurrent one.
+
 ### Revised plan, 8 October (supersedes the October list below)
 
 **Main deliverable:** a DeltaProduct layer whose order is *learned by the halting

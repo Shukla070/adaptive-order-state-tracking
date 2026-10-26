@@ -11,6 +11,7 @@ from einops import rearrange
 from fla.modules import FusedRMSNormSwishGate, RMSNorm, ShortConvolution
 from fla.ops.delta_rule import chunk_delta_rule
 from fla.ops.gated_delta_rule import chunk_gated_delta_rule
+from fla.ops.gated_delta_rule import fused_recurrent_gated_delta_rule  # PATCH(ragged-kernel)
 
 # --- PATCH(adaptive-order) -------------------------------------------------
 # The halting gate lives in this project's src/, not inside fla, so that
@@ -31,6 +32,26 @@ if TYPE_CHECKING:
     from transformers.processing_utils import Unpack
 
     from fla.models.utils import Cache
+
+
+def _ragged_kernel_kind(layer):
+    """PATCH(ragged-kernel): the packed recurrence's kernel, validated."""
+    kind = getattr(layer, "ragged_kernel", "recurrent")
+    if kind not in ("recurrent", "chunk"):
+        raise ValueError(f"ragged_kernel must be 'recurrent' or 'chunk', got {kind!r}")
+    return kind
+
+
+def _packed_recurrent(pq, pk, pv, pg, pb, cu):
+    """PATCH(ragged-kernel): packed recurrence with the float32-state recurrent kernel.
+    Same call as work/check_ragged_fix.py's 'recurrent' swap (path Rrec): for a layer
+    without a forget gate, g = 0 (no decay)."""
+    if pg is None:
+        pg = pq.new_zeros(pq.shape[:3], dtype=torch.float32)
+    return fused_recurrent_gated_delta_rule(
+        q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,
+        output_final_state=False, cu_seqlens=cu,
+        use_qk_l2norm_in_kernel=True)[0]
 
 
 def elu_p1(x):
@@ -113,6 +134,14 @@ class GatedDeltaProduct(nn.Module):
         # PATCH(ragged-expansion): inference-time switch, off by default.
         self.ragged = False
         self.ragged_mutant = ""   # self-tests only
+        # PATCH(ragged-kernel), 25 Oct: the kernel for the PACKED (ragged) recurrence.
+        # "recurrent" (default): fla's fused_recurrent_gated_delta_rule, state kept in
+        # float32 -- on 20 trained S5 models it matches an exact float64 recurrence
+        # (sequence accuracy 0.9956) where the bf16 chunk kernel on packed sequences lost
+        # 2.5 points, and it is faster (results/ragged_fix.json, s5_kernel_timing.json).
+        # "chunk": the bf16 chunk kernel, the 13 Oct behaviour, kept for comparison.
+        # Path A (training and the non-ragged inference path) is unchanged.
+        self.ragged_kernel = "recurrent"
         if adaptive_order:
             if _HaltingGate is None:
                 raise ImportError(
@@ -320,6 +349,8 @@ class GatedDeltaProduct(nn.Module):
             import ragged_expansion as _rx
 
             def _kern_packed(pq, pk, pv, pg, pb, cu):
+                if cu is not None and _ragged_kernel_kind(self) == "recurrent":
+                    return _packed_recurrent(pq, pk, pv, pg, pb, cu)
                 if pg is not None:
                     return chunk_gated_delta_rule(
                         q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,
@@ -465,6 +496,8 @@ class GatedDeltaProduct(nn.Module):
                     self.a_proj(hidden_states).float() + self.dt_bias)
 
             def _kernel(pq, pk, pv, pg, pb, cu):
+                if _ragged_kernel_kind(self) == "recurrent":
+                    return _packed_recurrent(pq, pk, pv, pg, pb, cu)
                 if pg is not None:
                     return chunk_gated_delta_rule(
                         q=pq, k=pk, v=pv, g=pg, beta=pb, initial_state=None,

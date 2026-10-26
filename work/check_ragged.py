@@ -29,6 +29,15 @@ PART 1 — CORRECTNESS (the real Triton kernel, bf16)
     C2  the same with every gate open
     C3  each mutant: relative L2 difference > 0.1 (clearly detected)
     C4  harness: timing a function that does 2x the work reads 1.6x-2.5x
+    C9, C1r, C2r, C6r, C3r, C7r (added 25 Oct, before their first run): the packed
+        recurrence now defaults to fla's float32-state recurrent kernel
+        (layer.ragged_kernel = "recurrent"; "chunk" keeps the 13 Oct behaviour).
+        C9  each kernel setting calls only its kernel; Path A never changes kernel;
+            an unknown name is refused
+        C1r/C2r/C6r  the recurrent kernel's packed recurrence is within 5e-3 of the
+            float64 reference (judged against float64, not Path A, which carries its
+            own bf16 error of ~1e-2 or more); the chunk kernel keeps C1/C2/C6
+        C3r/C7r  every mutant is still detected with the recurrent kernel
     C5-C8 (added 12 Oct, before their first run) the fused-factor path:
         C5  fused Path A vs per-factor Path A: relative L2 <= 1e-2
         C6  fused ragged vs per-factor Path A: relative L2 <= 1e-2
@@ -62,6 +71,7 @@ Nothing here trains. Inference only: ragged expansion cannot train a gate
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import statistics
 import sys
@@ -190,6 +200,33 @@ def rel_err(a, ref) -> float:
 # Part 1
 # ---------------------------------------------------------------------------
 
+def set_ragged_kernel(model, kind: str):
+    """The packed (ragged) recurrence's kernel: 'recurrent' (default since 25 Oct) or 'chunk'."""
+    for m in dp_layers(model):
+        m.ragged_kernel = kind
+
+
+@contextlib.contextmanager
+def kernel_counter(counts):
+    """Count calls to the layer module's three kernels during the block (C9)."""
+    import fla.layers.gated_deltaproduct as gdp
+    names = ("chunk_gated_delta_rule", "chunk_delta_rule", "fused_recurrent_gated_delta_rule")
+    saved = {n: getattr(gdp, n) for n in names}
+
+    def wrap(n, fn):
+        def w(*a, **k):
+            counts[n] = counts.get(n, 0) + 1
+            return fn(*a, **k)
+        return w
+    for n in names:
+        setattr(gdp, n, wrap(n, saved[n]))
+    try:
+        yield
+    finally:
+        for n in names:
+            setattr(gdp, n, saved[n])
+
+
 def correctness() -> bool:
     ok_all = True
 
@@ -198,97 +235,156 @@ def correctness() -> bool:
         ok_all &= bool(cond)
         print(f"  [{'PASS' if cond else 'FAIL'}] {name}   {detail}")
 
-    print("PART 1 — correctness, real kernel, bf16")
+    print("PART 1 — correctness, real kernels, bf16")
     model = build(n_h=K, adaptive=True, n_heads=12, head_dim=32, hidden=128,
                   n_layers=1, vocab=VOCAB, seed=0).eval()
     gen = torch.Generator(device=DEV).manual_seed(0)
     B, T = 8, 256
     x = torch.randint(0, VOCAB, (B, T), generator=gen, device=DEV)
+    n_t = orders("random", B, T, gen)
+    n4 = orders("all4", B, T, gen)
+
+    # C9 (added 25 Oct): the packed recurrence uses the kernel it is told to; Path A never
+    # changes kernel; the default is the float32-state recurrent kernel.
+    check("C9a default packed kernel is 'recurrent'",
+          all(getattr(m, "ragged_kernel", None) == "recurrent" for m in dp_layers(model)))
+    set_external_gates(model, prefix_gates(n_t))
+    for fused in (False, True):
+        set_fused(model, fused)
+        for kind, want in (("recurrent", {"fused_recurrent_gated_delta_rule"}),
+                           ("chunk", {"chunk_gated_delta_rule", "chunk_delta_rule"})):
+            set_ragged_kernel(model, kind)
+            counts = {}
+            set_ragged(model, True)
+            with kernel_counter(counts):
+                logits(model, x)
+            set_ragged(model, False)
+            hit = sum(v for n, v in counts.items() if n in want)
+            other = sum(v for n, v in counts.items() if n not in want)
+            check(f"C9b {'fused' if fused else 'per-factor'} ragged, kernel '{kind}': only that kernel is called",
+                  hit > 0 and other == 0, str(counts))
+        counts = {}
+        set_ragged_kernel(model, "recurrent")
+        with kernel_counter(counts):
+            logits(model, x)
+        check(f"C9c {'fused' if fused else 'per-factor'} Path A still uses the chunk kernel",
+              counts.get("chunk_gated_delta_rule", 0) + counts.get("chunk_delta_rule", 0) > 0
+              and counts.get("fused_recurrent_gated_delta_rule", 0) == 0, str(counts))
+    set_fused(model, False)
+    set_ragged_kernel(model, "neither")
+    set_ragged(model, True)
+    try:
+        logits(model, x)
+        refused = False
+    except ValueError:
+        refused = True
+    set_ragged(model, False)
+    set_ragged_kernel(model, "recurrent")
+    check("C9d an unknown kernel name is refused", refused)
 
     # C0: Path A against itself — the noise floor the tolerance is set above
-    n_t = orders("random", B, T, gen)
-    set_external_gates(model, prefix_gates(n_t))
     set_ragged(model, False)
     a1, a2 = logits(model, x), logits(model, x)
     rel0, mx0 = compare(a1, a2)
     print(f"  [info] Path A run-to-run: relative L2 {rel0:.2e}, max {mx0:.2e}")
-
-    # C1: random orders 0..4
-    set_ragged(model, True)
-    r = logits(model, x)
-    rel, mx = compare(a1, r)
-    check("C1 ragged == Path A, random orders 0-4", rel <= 1e-2,
-          f"relative L2 {rel:.2e} (max {mx:.2e}), "
-          f"{int(n_t.clamp(min=1).sum())} micro-steps instead of {K * B * T}")
-
-    # C1b / C1c: judge both paths against a float64 reference of the recurrence
     ca = capture(model, x, ragged_on=False)
-    cb = capture(model, x, ragged_on=True)
     ref = reference_output(ca)
     err_a = rel_err(ca["o"], ref)
-    err_b = rel_err(cb["o"], ref)
     check("C1b float64 reference reproduces the kernel's Path A", err_a <= 5e-2,
           f"Path A vs reference: relative L2 {err_a:.2e}")
-    check("C1c ragged is as close to the reference as Path A is",
-          err_b <= 2 * err_a + 1e-4,
-          f"ragged vs reference {err_b:.2e}, Path A vs reference {err_a:.2e}")
-
-    # C2: all open
-    n4 = orders("all4", B, T, gen)
     set_external_gates(model, prefix_gates(n4))
-    set_ragged(model, False)
-    a = logits(model, x)
-    set_ragged(model, True)
-    r = logits(model, x)
-    rel, mx = compare(a, r)
-    check("C2 all gates open: ragged == Path A", rel <= 1e-2,
-          f"relative L2 {rel:.2e} (max {mx:.2e})")
-
-    # C3: mutants must be detected
+    ca4 = capture(model, x, ragged_on=False)
+    ref4 = reference_output(ca4)
+    err_a4 = rel_err(ca4["o"], ref4)
     set_external_gates(model, prefix_gates(n_t))
-    set_ragged(model, False)
-    a = logits(model, x)
-    for mut in ("no_cu_seqlens", "query_at_first", "read_at_first", "decay_at_last"):
-        set_ragged(model, True, mutant=mut)
+
+    for kind in ("chunk", "recurrent"):
+        set_ragged_kernel(model, kind)
+        tag = "" if kind == "chunk" else "r"
+        # C1: random orders 0..4
+        set_ragged(model, True)
         r = logits(model, x)
-        rel, mx = compare(a, r)
-        if mut == "decay_at_last" and not any(
-                getattr(m, "use_forget_gate", False) for m in adaptive_layers(model)):
-            print(f"  [skip] C3 {mut}: this model has no decay term (use_forget_gate=False)")
-            continue
-        check(f"C3 mutant '{mut}' detected", rel > 0.1,
-              f"relative L2 {rel:.2e} (max {mx:.2e})")
-    set_ragged(model, False)
-    set_external_gates(model, None)
+        set_ragged(model, False)
+        rel, mx = compare(a1, r)
+        cb = capture(model, x, ragged_on=True)
+        err_b = rel_err(cb["o"], ref)
+        if kind == "chunk":
+            check("C1 [chunk] ragged == Path A, random orders 0-4", rel <= 1e-2,
+                  f"relative L2 {rel:.2e} (max {mx:.2e}), "
+                  f"{int(n_t.clamp(min=1).sum())} micro-steps instead of {K * B * T}")
+            check("C1c [chunk] ragged is as close to the reference as Path A is",
+                  err_b <= 2 * err_a + 1e-4,
+                  f"ragged vs reference {err_b:.2e}, Path A vs reference {err_a:.2e}")
+        else:
+            # Judged against float64, not Path A: Path A carries its own bf16 error.
+            print(f"  [info] [recurrent] ragged vs Path A layer output: relative L2 {rel:.2e}")
+            check("C1r [recurrent] ragged == float64 reference, random orders 0-4", err_b <= 5e-3,
+                  f"ragged vs reference {err_b:.2e} (bf16 output rounding ~1.6e-3); Path A {err_a:.2e}")
 
-    # C5-C8: the fused-factor path (one matmul / one conv for all K factors)
-    set_external_gates(model, prefix_gates(n_t))
-    set_fused(model, False)
-    a_unf = logits(model, x)                          # per-factor Path A
-    ca = capture(model, x, ragged_on=False)
-    err_a = rel_err(ca["o"], reference_output(ca))
+        # C2: all open
+        set_external_gates(model, prefix_gates(n4))
+        set_ragged(model, False)
+        a = logits(model, x)
+        set_ragged(model, True)
+        r = logits(model, x)
+        set_ragged(model, False)
+        if kind == "chunk":
+            rel, mx = compare(a, r)
+            check("C2 [chunk] all gates open: ragged == Path A", rel <= 1e-2,
+                  f"relative L2 {rel:.2e} (max {mx:.2e})")
+        else:
+            c4 = capture(model, x, ragged_on=True)
+            e4 = rel_err(c4["o"], ref4)
+            check("C2r [recurrent] all gates open: ragged == float64 reference", e4 <= 5e-3,
+                  f"ragged vs reference {e4:.2e}; Path A {err_a4:.2e}")
+
+        # C3: mutants must be detected
+        set_external_gates(model, prefix_gates(n_t))
+        for mut in ("no_cu_seqlens", "query_at_first", "read_at_first", "decay_at_last"):
+            set_ragged(model, True, mutant=mut)
+            r = logits(model, x)
+            rel, mx = compare(a1, r)
+            if mut == "decay_at_last" and not any(
+                    getattr(m, "use_forget_gate", False) for m in adaptive_layers(model)):
+                print(f"  [skip] C3{tag} {mut}: this model has no decay term (use_forget_gate=False)")
+                continue
+            check(f"C3{tag} [{kind}] mutant '{mut}' detected", rel > 0.1,
+                  f"relative L2 {rel:.2e} (max {mx:.2e})")
+        set_ragged(model, False)
+
+        # C6/C7: the fused-factor path
+        set_fused(model, True)
+        set_ragged(model, True)
+        r_f = logits(model, x)
+        set_ragged(model, False)
+        rel, mx = compare(a1, r_f)
+        cf = capture(model, x, ragged_on=True)            # fused + ragged
+        err_f = rel_err(cf["o"], reference_output(cf))
+        if kind == "chunk":
+            check("C6 [chunk] fused ragged == per-factor Path A", rel <= 1e-2,
+                  f"relative L2 {rel:.2e} (max {mx:.2e})")
+            check("C6b [chunk] fused ragged is as close to the float64 reference as Path A is",
+                  err_f <= 2 * err_a + 1e-4,
+                  f"fused ragged vs reference {err_f:.2e}, per-factor Path A {err_a:.2e}")
+        else:
+            check("C6r [recurrent] fused ragged == float64 reference", err_f <= 5e-3,
+                  f"fused ragged vs reference {err_f:.2e}; per-factor Path A {err_a:.2e}")
+        for mut in ("no_cu_seqlens", "query_at_first", "read_at_first"):
+            set_ragged(model, True, mutant=mut)
+            rel, mx = compare(a1, logits(model, x))
+            check(f"C7{tag} [{kind}] fused mutant '{mut}' detected", rel > 0.1,
+                  f"relative L2 {rel:.2e} (max {mx:.2e})")
+        set_ragged(model, False)
+        set_fused(model, False)
+    set_ragged_kernel(model, "recurrent")
+
+    # C5: fused Path A == per-factor Path A (Path A is unchanged by the kernel switch)
     set_fused(model, True)
     a_f = logits(model, x)
-    rel, mx = compare(a_unf, a_f)
+    set_fused(model, False)
+    rel, mx = compare(a1, a_f)
     check("C5 fused Path A == per-factor Path A", rel <= 1e-2,
           f"relative L2 {rel:.2e} (max {mx:.2e})")
-    set_ragged(model, True)
-    r_f = logits(model, x)
-    rel, mx = compare(a_unf, r_f)
-    check("C6 fused ragged == per-factor Path A", rel <= 1e-2,
-          f"relative L2 {rel:.2e} (max {mx:.2e})")
-    cf = capture(model, x, ragged_on=True)            # fused + ragged
-    err_f = rel_err(cf["o"], reference_output(cf))
-    check("C6b fused ragged is as close to the float64 reference as Path A is",
-          err_f <= 2 * err_a + 1e-4,
-          f"fused ragged vs reference {err_f:.2e}, per-factor Path A {err_a:.2e}")
-    for mut in ("no_cu_seqlens", "query_at_first", "read_at_first"):
-        set_ragged(model, True, mutant=mut)
-        rel, mx = compare(a_unf, logits(model, x))
-        check(f"C7 fused mutant '{mut}' detected", rel > 0.1,
-              f"relative L2 {rel:.2e} (max {mx:.2e})")
-    set_ragged(model, False)
-    set_fused(model, False)
     set_external_gates(model, None)
     fixed = build(n_h=K, adaptive=False, n_heads=12, head_dim=32, hidden=128,
                   n_layers=1, vocab=VOCAB, seed=0).eval()
